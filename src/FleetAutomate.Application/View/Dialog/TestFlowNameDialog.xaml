@@ -1,4 +1,4 @@
-﻿<Window x:Class="FleetAutomate.Dialogs.TestFlowNameDialog"
+﻿<Window x:Class="FleetAutomate.View.Dialog.TestFlowNameDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"

@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Wpf.Ui.Controls;
 
-namespace FleetAutomate.Dialogs
+namespace FleetAutomate.View.Dialog
 {
     /// <summary>
     /// Interaction logic for IfActionDialog.xaml

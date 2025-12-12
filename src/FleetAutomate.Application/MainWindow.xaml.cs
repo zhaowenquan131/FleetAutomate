@@ -1,4 +1,4 @@
-﻿using FleetAutomate.Dialogs;
+﻿using FleetAutomate.View.Dialog;
 using FleetAutomate.ViewModel;
 
 using System.Text;
@@ -440,7 +440,7 @@ namespace FleetAutomate
             }
 
             // Create and show the IfActionDialog with pre-populated values
-            var dialog = new FleetAutomate.Dialogs.IfActionDialog(conditionType, conditionExpression, elementIdentifier, identifierType, retryTimes)
+            var dialog = new FleetAutomate.View.Dialog.IfActionDialog(conditionType, conditionExpression, elementIdentifier, identifierType, retryTimes)
             {
                 Owner = this
             };
@@ -484,7 +484,7 @@ namespace FleetAutomate
             bool useInvoke = clickAction.UseInvoke;
 
             // Create and show the ClickElementDialog with pre-populated values
-            var dialog = new FleetAutomate.Dialogs.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke)
+            var dialog = new FleetAutomate.View.Dialog.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke)
             {
                 Owner = this
             };
@@ -515,7 +515,7 @@ namespace FleetAutomate
             bool deepSearch = windowTextAction.DeepSearch;
 
             // Create and show the IfWindowContainsTextDialog with pre-populated values
-            var dialog = new FleetAutomate.Dialogs.IfWindowContainsTextDialog(windowIdentifier, identifierType, searchText, caseSensitive, deepSearch)
+            var dialog = new FleetAutomate.View.Dialog.IfWindowContainsTextDialog(windowIdentifier, identifierType, searchText, caseSensitive, deepSearch)
             {
                 Owner = this
             };

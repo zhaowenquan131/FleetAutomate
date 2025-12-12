@@ -4,7 +4,7 @@ using FleetAutomate.Model.Flow;
 using FleetAutomate.Model.Actions.UIAutomation;
 using FleetAutomate.Model.Actions.System;
 
-namespace FleetAutomate.Dialogs
+namespace FleetAutomate.View.Dialog
 {
     public partial class ActionPropertiesDialog : Wpf.Ui.Controls.FluentWindow
     {

@@ -10,7 +10,7 @@ using WinForms = System.Windows.Forms;
 using FlaUI.Core.Overlay;
 using FlaUI.Core.WindowsAPI;
 
-namespace FleetAutomate.Dialogs
+namespace FleetAutomate.View.Dialog
 {
     /// <summary>
     /// Interaction logic for ElementCaptureDialog.xaml

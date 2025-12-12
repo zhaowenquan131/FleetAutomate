@@ -1,7 +1,7 @@
 using System.Windows;
 using Wpf.Ui.Controls;
 
-namespace FleetAutomate.Dialogs
+namespace FleetAutomate.View.Dialog
 {
     /// <summary>
     /// Interaction logic for LaunchApplicationDialog.xaml

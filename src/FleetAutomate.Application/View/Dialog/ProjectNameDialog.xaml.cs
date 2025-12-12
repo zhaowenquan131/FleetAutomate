@@ -8,7 +8,7 @@ using Wpf.Ui.Controls;
 
 using MessageBox = Wpf.Ui.Controls.MessageBox;
 
-namespace FleetAutomate.Dialogs
+namespace FleetAutomate.View.Dialog
 {
     public partial class ProjectNameDialog : Window
     {

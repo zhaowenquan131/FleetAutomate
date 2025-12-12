@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace FleetAutomate.Dialogs
+namespace FleetAutomate.View.Dialog
 {
     public partial class TestFlowNameDialog : Window
     {
