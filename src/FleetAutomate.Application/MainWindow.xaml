@@ -118,20 +118,53 @@
             </Border>
             
             <!-- Actions ToolBox -->
-            <ListBox Grid.Row="1" Name="ActionsToolBox" ItemsSource="{Binding AvailableActions}" 
-                     MouseDoubleClick="ActionsToolBox_MouseDoubleClick">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <StackPanel Orientation="Horizontal" Margin="5,2">
-                            <TextBlock Text="{Binding Icon}" FontSize="14" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                            <StackPanel>
-                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11"/>
-                                <TextBlock Text="{Binding Category}" FontSize="9" Foreground="Gray"/>
-                            </StackPanel>
+            <TreeView Grid.Row="1"
+                      Name="ActionsToolBox"
+                      ItemsSource="{Binding ActionCategories}"
+                      MouseDoubleClick="ActionsToolBox_MouseDoubleClick">
+
+                <!-- Category Level (HierarchicalDataTemplate) -->
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate ItemsSource="{Binding Actions}">
+                        <StackPanel Orientation="Horizontal" Margin="2">
+                            <TextBlock Text="{Binding Icon}"
+                                       FontSize="16"
+                                       Margin="0,0,5,0"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Name}"
+                                       FontWeight="Bold"
+                                       FontSize="12"/>
                         </StackPanel>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
+
+                        <!-- Action Level (nested DataTemplate) -->
+                        <HierarchicalDataTemplate.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="5,2">
+                                    <TextBlock Text="{Binding Icon}"
+                                               FontSize="14"
+                                               Margin="0,0,5,0"
+                                               VerticalAlignment="Center"/>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="Bold"
+                                                   FontSize="11"/>
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="9"
+                                                   Foreground="Gray"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </HierarchicalDataTemplate.ItemTemplate>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+
+                <!-- All categories expanded by default -->
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsExpanded" Value="True"/>
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
         </Grid>
         
         <GridSplitter Grid.Row="2" Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>

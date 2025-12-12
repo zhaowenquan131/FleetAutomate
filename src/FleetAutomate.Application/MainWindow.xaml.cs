@@ -258,9 +258,28 @@ namespace FleetAutomate
 
         private void ActionsToolBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is System.Windows.Controls.ListBox listBox && listBox.SelectedItem is FleetAutomate.Model.ActionTemplate actionTemplate)
+            // TreeView implementation - differentiate between category and action
+            if (sender is System.Windows.Controls.TreeView treeView)
             {
-                ViewModel.AddActionFromTemplate(actionTemplate);
+                var selectedItem = treeView.SelectedItem;
+
+                // Check if it's an ActionTemplate (leaf node)
+                if (selectedItem is FleetAutomate.Model.ActionTemplate actionTemplate)
+                {
+                    ViewModel.AddActionFromTemplate(actionTemplate);
+                    e.Handled = true;
+                }
+                // If it's an ActionCategory, toggle expansion
+                else if (selectedItem is FleetAutomate.Model.ActionCategory category)
+                {
+                    // Toggle expansion on category double-click
+                    var item = treeView.ItemContainerGenerator.ContainerFromItem(category) as System.Windows.Controls.TreeViewItem;
+                    if (item != null)
+                    {
+                        item.IsExpanded = !item.IsExpanded;
+                    }
+                    e.Handled = true;
+                }
             }
         }
 

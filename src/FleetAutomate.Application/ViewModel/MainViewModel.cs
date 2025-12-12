@@ -1,6 +1,7 @@
 ﻿using FleetAutomate.Model;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Loops;
+using Canvas.TestRunner.Model.Actions;
 using FleetAutomate.Model.Flow;
 using FleetAutomate.Model.Project;
 using FleetAutomate.Services;
@@ -95,10 +96,9 @@ namespace FleetAutomate.ViewModel
         }
 
         /// <summary>
-        /// Gets the available action templates for the ToolBox.
+        /// Gets the hierarchical action categories for the ToolBox TreeView.
         /// </summary>
-        public ObservableCollection<ActionTemplate> AvailableActions { get; } = new();
-
+        public ObservableCollection<ActionCategory> ActionCategories { get; } = new();
 
         /// <summary>
         /// Event fired when UI needs to prompt user for project name and folder.
@@ -234,8 +234,8 @@ namespace FleetAutomate.ViewModel
             ExecuteStepCommand = new RelayCommand(ExecuteStep, () => SelectedAction != null);
             AddExistingTestFlowCommand = new RelayCommand(AddExistingTestFlow, () => IsProjectLoaded);
 
-            // Initialize available actions
-            InitializeAvailableActions();
+            // Initialize action categories for toolbox
+            InitializeActionCategories();
 
             // Note: OnPromptProjectName event should be handled by the UI layer (MainWindow)
             // This default implementation is for testing purposes only
@@ -638,34 +638,133 @@ namespace FleetAutomate.ViewModel
         }
 
         /// <summary>
-        /// Initializes the available actions for the ToolBox.
+        /// Initializes the hierarchical action categories for the TreeView toolbox.
         /// </summary>
-        private void InitializeAvailableActions()
+        private void InitializeActionCategories()
         {
-            AvailableActions.Clear();
+            ActionCategories.Clear();
 
-            // Logic Actions
-            AvailableActions.Add(new ActionTemplate("If Statement", "Logic", "🔀", typeof(IfAction), "Conditional execution based on a boolean expression"));
-            AvailableActions.Add(new ActionTemplate("Set Variable", "Logic", "📝", typeof(FleetAutomate.Model.Actions.Logic.SetVariableAction<object>), "Assign a value to a variable"));
+            // 1. Logic & Flow Category (4 actions)
+            var logicAndFlow = new ActionCategory("Logic & Flow", "🔀");
+            logicAndFlow.Actions.Add(new ActionTemplate("If", "LogicAndFlow", "🔀",
+                typeof(IfAction), "Conditional execution"));
+            logicAndFlow.Actions.Add(new ActionTemplate("While Loop", "LogicAndFlow", "🔄",
+                typeof(WhileLoopAction), "Loop while condition is true"));
+            logicAndFlow.Actions.Add(new ActionTemplate("For Loop", "LogicAndFlow", "🔁",
+                typeof(ForLoopAction), "Loop with counter"));
+            logicAndFlow.Actions.Add(new ActionTemplate("Set Variable", "LogicAndFlow", "📝",
+                typeof(FleetAutomate.Model.Actions.Logic.SetVariableAction<object>), "Assign value to variable"));
 
-            // Loop Actions
-            AvailableActions.Add(new ActionTemplate("While Loop", "Loops", "🔄", typeof(WhileLoopAction), "Execute actions while a condition is true"));
-            AvailableActions.Add(new ActionTemplate("For Loop", "Loops", "🔁", typeof(ForLoopAction), "Execute actions with initialization, condition, and increment"));
+            // 2. System Category (6 actions)
+            var system = new ActionCategory("System", "💻");
+            system.Actions.Add(new ActionTemplate("Launch Application", "System", "🚀",
+                typeof(Model.Actions.System.LaunchApplicationAction), "Launch an application"));
+            system.Actions.Add(new ActionTemplate("If Process Exists", "System", "🔍",
+                typeof(NotImplementedAction), "Check if process is running"));
+            system.Actions.Add(new ActionTemplate("Kill Process", "System", "❌",
+                typeof(NotImplementedAction), "Terminate a process"));
+            system.Actions.Add(new ActionTemplate("Get Screenshot", "System", "📸",
+                typeof(NotImplementedAction), "Capture screen to file"));
+            system.Actions.Add(new ActionTemplate("Set Clipboard", "System", "📋",
+                typeof(NotImplementedAction), "Set clipboard text"));
+            system.Actions.Add(new ActionTemplate("Play Sound", "System", "🔊",
+                typeof(NotImplementedAction), "Play audio file"));
 
-            // System Actions
-            AvailableActions.Add(new ActionTemplate("Launch Application", "System", "🚀", typeof(Model.Actions.System.LaunchApplicationAction), "Launch an application or execute a command"));
+            // 3. UI Automation Category (10 actions)
+            var uiAutomation = new ActionCategory("UI Automation", "🖱️");
+            uiAutomation.Actions.Add(new ActionTemplate("Wait for Element", "UIAutomation", "⏱️",
+                typeof(Model.Actions.UIAutomation.WaitForElementAction), "Wait for UI element"));
+            uiAutomation.Actions.Add(new ActionTemplate("Click Element", "UIAutomation", "👆",
+                typeof(Model.Actions.UIAutomation.ClickElementAction), "Click on UI element"));
+            uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Text", "UIAutomation", "🔍",
+                typeof(NotImplementedAction), "Check if window contains text"));
+            uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Element", "UIAutomation", "🔎",
+                typeof(NotImplementedAction), "Check if window contains element"));
+            uiAutomation.Actions.Add(new ActionTemplate("Set Text to Input", "UIAutomation", "⌨️",
+                typeof(NotImplementedAction), "Type text into input field"));
+            uiAutomation.Actions.Add(new ActionTemplate("Set Focus on Element", "UIAutomation", "🎯",
+                typeof(NotImplementedAction), "Focus on UI element"));
+            uiAutomation.Actions.Add(new ActionTemplate("Select Radio Button", "UIAutomation", "🔘",
+                typeof(NotImplementedAction), "Select radio button"));
+            uiAutomation.Actions.Add(new ActionTemplate("Set CheckBox State", "UIAutomation", "☑️",
+                typeof(NotImplementedAction), "Check/uncheck checkbox"));
+            uiAutomation.Actions.Add(new ActionTemplate("Select Item in ComboBox", "UIAutomation", "📋",
+                typeof(NotImplementedAction), "Select combobox item"));
+            uiAutomation.Actions.Add(new ActionTemplate("Select Tab Item", "UIAutomation", "📑",
+                typeof(NotImplementedAction), "Switch to tab"));
 
-            // UI Automation Actions
-            AvailableActions.Add(new ActionTemplate("Wait for Element", "UI Automation", "⏱️", typeof(Model.Actions.UIAutomation.WaitForElementAction), "Wait until a UI element exists"));
-            AvailableActions.Add(new ActionTemplate("Click Element", "UI Automation", "👆", typeof(Model.Actions.UIAutomation.ClickElementAction), "Click on a UI element"));
+            // 4. Scripts Category (5 actions)
+            var scripts = new ActionCategory("Scripts", "📜");
+            scripts.Actions.Add(new ActionTemplate("Run CMD", "Scripts", "💻",
+                typeof(NotImplementedAction), "Execute command prompt command"));
+            scripts.Actions.Add(new ActionTemplate("Run PowerShell Command", "Scripts", "🔷",
+                typeof(NotImplementedAction), "Execute PowerShell command"));
+            scripts.Actions.Add(new ActionTemplate("Run Batch Script", "Scripts", "📜",
+                typeof(NotImplementedAction), "Execute batch file"));
+            scripts.Actions.Add(new ActionTemplate("Run PowerShell Script", "Scripts", "📘",
+                typeof(NotImplementedAction), "Execute PowerShell script file"));
+            scripts.Actions.Add(new ActionTemplate("Run Python Script", "Scripts", "🐍",
+                typeof(NotImplementedAction), "Execute Python script"));
 
-            // Future categories can be added here
-            // AvailableActions.Add(new ActionTemplate("Click Element", "UI Automation", "👆", typeof(ClickAction), "Click on a UI element"));
-            // AvailableActions.Add(new ActionTemplate("Type Text", "UI Automation", "⌨️", typeof(TypeAction), "Type text into an input field"));
+            // 5. File System Category (13 actions)
+            var fileSystem = new ActionCategory("File System", "📁");
+            fileSystem.Actions.Add(new ActionTemplate("If File Exists", "FileSystem", "📄",
+                typeof(NotImplementedAction), "Check if file exists"));
+            fileSystem.Actions.Add(new ActionTemplate("If Directory Exists", "FileSystem", "📁",
+                typeof(NotImplementedAction), "Check if directory exists"));
+            fileSystem.Actions.Add(new ActionTemplate("Create Directory", "FileSystem", "📁+",
+                typeof(NotImplementedAction), "Create new directory"));
+            fileSystem.Actions.Add(new ActionTemplate("Clear Directory", "FileSystem", "🗑️",
+                typeof(NotImplementedAction), "Delete all files in directory"));
+            fileSystem.Actions.Add(new ActionTemplate("Delete Directory", "FileSystem", "❌",
+                typeof(NotImplementedAction), "Remove directory"));
+            fileSystem.Actions.Add(new ActionTemplate("Wait for File", "FileSystem", "⏱️",
+                typeof(NotImplementedAction), "Wait until file exists"));
+            fileSystem.Actions.Add(new ActionTemplate("Copy File", "FileSystem", "📋",
+                typeof(NotImplementedAction), "Copy file to destination"));
+            fileSystem.Actions.Add(new ActionTemplate("Move File", "FileSystem", "➡️",
+                typeof(NotImplementedAction), "Move file to destination"));
+            fileSystem.Actions.Add(new ActionTemplate("Delete File", "FileSystem", "🗑️",
+                typeof(NotImplementedAction), "Delete file"));
+            fileSystem.Actions.Add(new ActionTemplate("Rename File", "FileSystem", "✏️",
+                typeof(NotImplementedAction), "Rename file"));
+            fileSystem.Actions.Add(new ActionTemplate("Read Text from File", "FileSystem", "📖",
+                typeof(NotImplementedAction), "Read file content"));
+            fileSystem.Actions.Add(new ActionTemplate("Write Text to File", "FileSystem", "💾",
+                typeof(NotImplementedAction), "Write text to file"));
+            fileSystem.Actions.Add(new ActionTemplate("Get Directory of File", "FileSystem", "📂",
+                typeof(NotImplementedAction), "Extract directory path"));
 
-            // File System Actions
-            // AvailableActions.Add(new ActionTemplate("Read File", "File System", "📄", typeof(ReadFileAction), "Read content from a file"));
-            // AvailableActions.Add(new ActionTemplate("Write File", "File System", "💾", typeof(WriteFileAction), "Write content to a file"));
+            // 6. Mouse & Keyboard Category (6 actions)
+            var mouseAndKeyboard = new ActionCategory("Mouse & Keyboard", "⌨️");
+            mouseAndKeyboard.Actions.Add(new ActionTemplate("Move Mouse To", "MouseAndKeyboard", "🖱️",
+                typeof(NotImplementedAction), "Move mouse to coordinates"));
+            mouseAndKeyboard.Actions.Add(new ActionTemplate("Mouse Single Click", "MouseAndKeyboard", "👆",
+                typeof(NotImplementedAction), "Perform mouse click"));
+            mouseAndKeyboard.Actions.Add(new ActionTemplate("Mouse Double Click", "MouseAndKeyboard", "👆👆",
+                typeof(NotImplementedAction), "Perform double click"));
+            mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Keys", "MouseAndKeyboard", "⌨️",
+                typeof(NotImplementedAction), "Send keyboard input"));
+            mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Key Down", "MouseAndKeyboard", "⬇️",
+                typeof(NotImplementedAction), "Press key down"));
+            mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Key Up", "MouseAndKeyboard", "⬆️",
+                typeof(NotImplementedAction), "Release key"));
+
+            // 7. Text Category (pending - empty for now)
+            var text = new ActionCategory("Text", "📝");
+
+            // 8. Date & Time Category (pending - empty for now)
+            var dateAndTime = new ActionCategory("Date & Time", "🕐");
+
+            // Add all categories to collection
+            ActionCategories.Add(logicAndFlow);
+            ActionCategories.Add(system);
+            ActionCategories.Add(uiAutomation);
+            ActionCategories.Add(scripts);
+            ActionCategories.Add(fileSystem);
+            ActionCategories.Add(mouseAndKeyboard);
+            ActionCategories.Add(text);
+            ActionCategories.Add(dateAndTime);
         }
 
         /// <summary>
@@ -744,6 +843,16 @@ namespace FleetAutomate.ViewModel
                     }
 
                     action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke);
+                }
+                // Special handling for NotImplementedAction - create placeholder with proper name
+                else if (actionTemplate.ActionType == typeof(NotImplementedAction))
+                {
+                    action = new NotImplementedAction
+                    {
+                        Name = actionTemplate.Name,
+                        Description = actionTemplate.Description,
+                        PlannedActionName = actionTemplate.Name
+                    };
                 }
                 else
                 {

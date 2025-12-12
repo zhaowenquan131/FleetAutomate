@@ -3,6 +3,7 @@ using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Loops;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.UIAutomation;
+using Canvas.TestRunner.Model.Actions;
 using FleetAutomate.Model.Flow;
 
 using System.Collections.ObjectModel;
@@ -28,6 +29,7 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(LaunchApplicationAction))]
     [KnownType(typeof(WaitForElementAction))]
     [KnownType(typeof(ClickElementAction))]
+    [KnownType(typeof(NotImplementedAction))]
     public partial class TestFlow : ILogicAction
     {
         public TestFlow(CancellationTokenSource tokenSource)
