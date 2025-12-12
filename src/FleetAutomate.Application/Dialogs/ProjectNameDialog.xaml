@@ -1,0 +1,64 @@
+﻿<Window x:Class="Canvas.TestRunner.Dialogs.ProjectNameDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Create New Project" 
+        Height="250" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+    <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Title Bar -->
+            <ui:TitleBar Grid.Row="0" Title="Create New Project" 
+                         Icon="{ui:SymbolIcon DocumentAdd20}" Height="32"/>
+            
+            <!-- Content -->
+            <Grid Grid.Row="1" Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Project Name:" Margin="0,0,0,5"/>
+                
+                <TextBox Grid.Row="1" Grid.ColumnSpan="2" Name="ProjectNameTextBox" 
+                         Height="35" Margin="0,0,0,10"/>
+
+                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="Project Folder Path:" Margin="0,0,0,5"/>
+
+                <TextBox Grid.Row="3" Grid.Column="0" Name="ProjectFolderTextBox" 
+                        Height="35" Margin="0,0,5,10"/>
+                
+                <ui:Button Grid.Row="3" Grid.Column="1" Name="BrowseButton" 
+                          Content="Browse..." Height="35" Margin="0,0,0,10"
+                          Click="BrowseButton_Click"/>
+            </Grid>
+            
+            <!-- Buttons -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" 
+                        HorizontalAlignment="Right" Margin="20,0,20,20">
+                <ui:Button Content="Create" Name="CreateButton" 
+                           Width="75" Height="32" Margin="0,0,10,0" 
+                           Click="CreateButton_Click" IsDefault="True"
+                           Appearance="Primary"/>
+                <ui:Button Content="Cancel" Name="CancelButton" 
+                           Width="75" Height="32" 
+                           Click="CancelButton_Click" IsCancel="True"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

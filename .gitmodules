@@ -1,0 +1,3 @@
+[submodule "src/FlaUI"]
+	path = src/FlaUI
+	url = git@github.com:FlaUI/FlaUI.git

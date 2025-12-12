@@ -1,0 +1,21 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Canvas.TestRunner.Model.Actions.Logic
+{
+    [DataContract]
+    public abstract class ExpressionBase<TResult>
+    {
+        [DataMember]
+        public string RawText { get; set; }
+
+        [DataMember]
+        public TResult Result { get; set; }
+
+        public abstract void Evaluate();
+    }
+}

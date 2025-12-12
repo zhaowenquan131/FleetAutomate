@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FlaUI/src/FlaUI.Core/FlaUI.Core.csproj" />
+  <Project Path="FlaUI/src/FlaUI.UIA2/FlaUI.UIA2.csproj" />
+  <Project Path="FlaUI/src/FlaUI.UIA3/FlaUI.UIA3.csproj" />
+  <Project Path="FleetAutomate.Application/FleetAutomate.csproj" />
+</Solution>

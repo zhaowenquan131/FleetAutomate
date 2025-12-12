@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="WPF-UI" Version="4.0.2" />
+    <ProjectReference Include="..\FlaUI\src\FlaUI.Core\FlaUI.Core.csproj" />
+    <ProjectReference Include="..\FlaUI\src\FlaUI.UIA2\FlaUI.UIA2.csproj" />
+    <ProjectReference Include="..\FlaUI\src\FlaUI.UIA3\FlaUI.UIA3.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Model\Actions\FlowControl\" />
+    <Folder Include="Model\Actions\LocalMachine\" />
+    <Folder Include="Model\Actions\File\" />
+    <Folder Include="Model\Actions\Folder\" />
+    <Folder Include="Model\Actions\Compression\" />
+    <Folder Include="Model\Actions\HTTP\" />
+    <Folder Include="Model\Actions\DateAndTime\" />
+    <Folder Include="Model\Actions\FTP\" />
+    <Folder Include="Model\Actions\Text\" />
+    <Folder Include="Model\Actions\UIAutomation\" />
+    <Folder Include="Model\Actions\Scripts\" />
+    <Folder Include="Model\Actions\System\" />
+    <Folder Include="View\" />
+  </ItemGroup>
+
+</Project>

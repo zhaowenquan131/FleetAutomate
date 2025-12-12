@@ -1,0 +1,46 @@
+﻿<Window x:Class="Canvas.TestRunner.Dialogs.TestFlowNameDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Add TestFlow" Height="300" Width="450"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ui:SymbolIcon Grid.Row="0" Symbol="DocumentAdd20" FontSize="32" 
+                       HorizontalAlignment="Center" Margin="0,0,0,15"/>
+        
+        <TextBlock Grid.Row="1" Text="Add New TestFlow" 
+                   FontSize="16" FontWeight="Bold" 
+                   HorizontalAlignment="Center" Margin="0,0,0,15"/>
+        
+        <TextBlock Grid.Row="2" Text="TestFlow Name:" Margin="0,0,0,5"/>
+        
+        <TextBox Grid.Row="3" Name="TestFlowNameTextBox" 
+                 Height="25" Margin="0,0,0,15"/>
+
+        <TextBlock Grid.Row="4" Text="Description (Optional):" Margin="0,0,0,5"/>
+        
+        <TextBox Grid.Row="5" Name="DescriptionTextBox" 
+                 TextWrapping="Wrap" AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto"
+                 Margin="0,0,0,20"/>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+            <Button Content="Add" Name="OkButton" Width="75" Height="25" 
+                    Margin="0,0,10,0" Click="OkButton_Click" IsDefault="True"/>
+            <Button Content="Cancel" Name="CancelButton" Width="75" Height="25" 
+                    Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

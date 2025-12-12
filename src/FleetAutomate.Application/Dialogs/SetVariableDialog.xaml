@@ -1,0 +1,82 @@
+<ui:FluentWindow x:Class="Canvas.TestRunner.Dialogs.SetVariableDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Create Variable"
+        Height="350"
+        Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="Create Variable"
+                    Icon="{ui:SymbolIcon DocumentAdd20}"/>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1" Margin="20" VerticalAlignment="Top">
+            <!-- Variable Name -->
+            <TextBlock Text="Name" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <TextBox Name="VariableNameTextBox"
+                    Padding="8"
+                    Margin="0,0,0,15"
+                    Height="32"
+                    ToolTip="Enter a valid variable name (alphanumeric and underscore)"/>
+
+            <!-- Variable Type -->
+            <TextBlock Text="Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <ComboBox Name="VariableTypeComboBox"
+                     Padding="8"
+                     Margin="0,0,0,15"
+                     Height="32"
+                     SelectedIndex="0">
+                <ComboBoxItem>Integer (int)</ComboBoxItem>
+                <ComboBoxItem>Decimal (double)</ComboBoxItem>
+                <ComboBoxItem>Text</ComboBoxItem>
+                <ComboBoxItem>Boolean</ComboBoxItem>
+            </ComboBox>
+
+            <!-- Variable Value -->
+            <TextBlock Text="Value" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <TextBox Name="VariableValueTextBox"
+                    Padding="8"
+                    Margin="0,0,0,15"
+                    Height="32"
+                    ToolTip="Enter the initial value for the variable"/>
+
+            <!-- Hint Text -->
+            <TextBlock Name="HintTextBlock"
+                      Text="Enter an integer value"
+                      FontSize="10"
+                      Foreground="Gray"
+                      Margin="0,0,0,15"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="Create"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
