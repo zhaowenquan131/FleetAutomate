@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace Canvas.TestRunner.Dialogs
+namespace FleetAutomate.Dialogs
 {
     public partial class TestFlowNameDialog : Window
     {

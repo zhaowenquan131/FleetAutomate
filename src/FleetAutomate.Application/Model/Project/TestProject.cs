@@ -1,10 +1,12 @@
-﻿using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Utilities;
+﻿using FleetAutomate.Model.Flow;
+using FleetAutomate.Utilities;
+
+using FleetAutomate.Model.Flow;
 
 using System.IO;
 using System.Runtime.Serialization;
 
-namespace Canvas.TestRunner.Model.Project
+namespace FleetAutomate.Model.Project
 {
     [DataContract]
     public class TestProject

@@ -3,7 +3,7 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.UIA3;
 
-namespace Canvas.TestRunner.Model.Actions.Logic.Expression
+namespace FleetAutomate.Model.Actions.Logic.Expression
 {
     /// <summary>
     /// Expression that evaluates to true if a UI element exists, false otherwise.

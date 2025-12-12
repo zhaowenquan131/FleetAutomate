@@ -1,10 +1,11 @@
-﻿using Canvas.TestRunner.Model.Flow;
+﻿using FleetAutomate.Model.Flow;
 
 using System.Runtime.Serialization;
 using System.Collections.ObjectModel;
 using System.Linq;
+using FleetAutomate.Model.Flow;
 
-namespace Canvas.TestRunner.Model.Actions.Logic.Loops
+namespace FleetAutomate.Model.Actions.Logic.Loops
 {
     [DataContract]
     [KnownType(typeof(SetVariableAction<object>))]

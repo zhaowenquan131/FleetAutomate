@@ -1,10 +1,11 @@
-﻿using Canvas.TestRunner.Model.Project;
+﻿using FleetAutomate.Model.Project;
+
 using System;
 using System.Globalization;
 using System.IO;
 using System.Windows.Data;
 
-namespace Canvas.TestRunner.Converters
+namespace FleetAutomate.Converters
 {
     public class ProjectToTitleConverter : IValueConverter
     {

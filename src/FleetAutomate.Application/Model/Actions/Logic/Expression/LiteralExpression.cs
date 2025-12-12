@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 
-namespace Canvas.TestRunner.Model.Actions.Logic.Expression
+namespace FleetAutomate.Model.Actions.Logic.Expression
 {
     /// <summary>
     /// A literal expression that holds a constant value.

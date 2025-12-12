@@ -1,5 +1,8 @@
-﻿using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Flow;
+﻿using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Flow;
+
+using FleetAutomate.Model.Flow;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Examples
+namespace FleetAutomate.Examples
 {
     /// <summary>
     /// Example demonstrating TestFlow XML serialization capabilities.

@@ -8,7 +8,7 @@ using Wpf.Ui.Controls;
 
 using MessageBox = Wpf.Ui.Controls.MessageBox;
 
-namespace Canvas.TestRunner.Dialogs
+namespace FleetAutomate.Dialogs
 {
     public partial class ProjectNameDialog : Window
     {

@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace Canvas.TestRunner.Model
+namespace FleetAutomate.Model
 {
     /// <summary>
     /// Interface for actions that can contain child actions (composite/container actions).

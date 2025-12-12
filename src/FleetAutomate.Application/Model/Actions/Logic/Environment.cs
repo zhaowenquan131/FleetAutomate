@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
 
-namespace Canvas.TestRunner.Model.Actions.Logic
+namespace FleetAutomate.Model.Actions.Logic
 {
     [XmlRoot("Environment")]
     public class Environment

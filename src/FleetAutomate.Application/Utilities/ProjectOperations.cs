@@ -1,5 +1,8 @@
-﻿using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Project;
+﻿using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Project;
+
+using FleetAutomate.Model.Flow;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -7,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Utilities
+namespace FleetAutomate.Utilities
 {
     /// <summary>
     /// Static utility class for common project operations.

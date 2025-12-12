@@ -1,5 +1,5 @@
-﻿using Canvas.TestRunner.Dialogs;
-using Canvas.TestRunner.ViewModel;
+﻿using FleetAutomate.Dialogs;
+using FleetAutomate.ViewModel;
 
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +17,7 @@ using Wpf.Ui.Controls;
 
 using MessageBox = Wpf.Ui.Controls.MessageBox;
 
-namespace Canvas.TestRunner
+namespace FleetAutomate
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -258,7 +258,7 @@ namespace Canvas.TestRunner
 
         private void ActionsToolBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is System.Windows.Controls.ListBox listBox && listBox.SelectedItem is Canvas.TestRunner.Model.ActionTemplate actionTemplate)
+            if (sender is System.Windows.Controls.ListBox listBox && listBox.SelectedItem is FleetAutomate.Model.ActionTemplate actionTemplate)
             {
                 ViewModel.AddActionFromTemplate(actionTemplate);
             }
@@ -340,15 +340,15 @@ namespace Canvas.TestRunner
                 if (dependencyObject is System.Windows.Controls.TreeViewItem treeViewItem)
                 {
                     // Get the action from the TreeViewItem's DataContext
-                    if (treeViewItem.DataContext is Canvas.TestRunner.Model.IAction action)
+                    if (treeViewItem.DataContext is FleetAutomate.Model.IAction action)
                     {
                         // Special handling for IfAction - use IfActionDialog for editing
-                        if (action is Canvas.TestRunner.Model.Actions.Logic.IfAction ifAction)
+                        if (action is FleetAutomate.Model.Actions.Logic.IfAction ifAction)
                         {
                             EditIfAction(ifAction);
                         }
                         // Special handling for ClickElementAction - use ClickElementDialog for editing
-                        else if (action is Canvas.TestRunner.Model.Actions.UIAutomation.ClickElementAction clickAction)
+                        else if (action is FleetAutomate.Model.Actions.UIAutomation.ClickElementAction clickAction)
                         {
                             EditClickElementAction(clickAction);
                         }
@@ -377,7 +377,7 @@ namespace Canvas.TestRunner
             }
         }
 
-        private void EditIfAction(Canvas.TestRunner.Model.Actions.Logic.IfAction ifAction)
+        private void EditIfAction(FleetAutomate.Model.Actions.Logic.IfAction ifAction)
         {
             // Determine the condition type and extract values
             string conditionType;
@@ -386,7 +386,7 @@ namespace Canvas.TestRunner
             string identifierType = "XPath";
             int retryTimes = 1;
 
-            if (ifAction.Condition is Canvas.TestRunner.Model.Actions.Logic.Expression.UIElementExistsExpression uiExpr)
+            if (ifAction.Condition is FleetAutomate.Model.Actions.Logic.Expression.UIElementExistsExpression uiExpr)
             {
                 conditionType = "UIElementExists";
                 elementIdentifier = uiExpr.ElementIdentifier;
@@ -400,7 +400,7 @@ namespace Canvas.TestRunner
             }
 
             // Create and show the IfActionDialog with pre-populated values
-            var dialog = new Canvas.TestRunner.Dialogs.IfActionDialog(conditionType, conditionExpression, elementIdentifier, identifierType, retryTimes)
+            var dialog = new FleetAutomate.Dialogs.IfActionDialog(conditionType, conditionExpression, elementIdentifier, identifierType, retryTimes)
             {
                 Owner = this
             };
@@ -410,7 +410,7 @@ namespace Canvas.TestRunner
                 // Update the IfAction with new values
                 if (dialog.ConditionType == "Expression")
                 {
-                    var parsedCondition = Canvas.TestRunner.Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
+                    var parsedCondition = FleetAutomate.Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
                     if (parsedCondition != null)
                     {
                         ifAction.Condition = parsedCondition;
@@ -419,7 +419,7 @@ namespace Canvas.TestRunner
                 }
                 else if (dialog.ConditionType == "UIElementExists")
                 {
-                    ifAction.Condition = new Canvas.TestRunner.Model.Actions.Logic.Expression.UIElementExistsExpression(
+                    ifAction.Condition = new FleetAutomate.Model.Actions.Logic.Expression.UIElementExistsExpression(
                         dialog.ElementIdentifier,
                         dialog.IdentifierType,
                         1000,
@@ -435,7 +435,7 @@ namespace Canvas.TestRunner
             }
         }
 
-        private void EditClickElementAction(Canvas.TestRunner.Model.Actions.UIAutomation.ClickElementAction clickAction)
+        private void EditClickElementAction(FleetAutomate.Model.Actions.UIAutomation.ClickElementAction clickAction)
         {
             // Extract current values from the ClickElementAction
             string elementIdentifier = clickAction.ElementIdentifier;
@@ -444,7 +444,7 @@ namespace Canvas.TestRunner
             bool useInvoke = clickAction.UseInvoke;
 
             // Create and show the ClickElementDialog with pre-populated values
-            var dialog = new Canvas.TestRunner.Dialogs.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke)
+            var dialog = new FleetAutomate.Dialogs.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke)
             {
                 Owner = this
             };

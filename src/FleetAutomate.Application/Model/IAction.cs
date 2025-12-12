@@ -1,4 +1,4 @@
-﻿using Canvas.TestRunner.Model.Flow;
+﻿using FleetAutomate.Model.Flow;
 
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model
+namespace FleetAutomate.Model
 {
 
     public interface IAction

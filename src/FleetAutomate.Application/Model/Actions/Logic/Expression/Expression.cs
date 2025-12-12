@@ -5,7 +5,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model.Actions.Logic
+namespace FleetAutomate.Model.Actions.Logic
 {
     [DataContract]
     public abstract class ExpressionBase<TResult>

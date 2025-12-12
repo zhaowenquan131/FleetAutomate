@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model.Flow
+namespace FleetAutomate.Model.Flow
 {
     /// <summary>
     /// Provides a summary of Flow syntax validation results.

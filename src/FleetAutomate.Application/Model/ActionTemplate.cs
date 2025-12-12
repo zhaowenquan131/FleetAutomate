@@ -1,6 +1,6 @@
 using System;
 
-namespace Canvas.TestRunner.Model
+namespace FleetAutomate.Model
 {
     /// <summary>
     /// Represents an action template for the ToolBox.

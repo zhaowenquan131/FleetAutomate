@@ -1,9 +1,9 @@
 using System.Diagnostics;
 using System.Runtime.Serialization;
 using System.ComponentModel;
-using Canvas.TestRunner.Model.Flow;
+using FleetAutomate.Model.Flow;
 
-namespace Canvas.TestRunner.Model.Actions.System
+namespace FleetAutomate.Model.Actions.System
 {
     /// <summary>
     /// Action to launch an application using a command or executable path.

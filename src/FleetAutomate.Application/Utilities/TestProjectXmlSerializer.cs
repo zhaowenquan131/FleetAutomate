@@ -1,5 +1,7 @@
-﻿using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Project;
+﻿using FleetAutomate.Model.Project;
+
+using FleetAutomate.Model.Flow;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,7 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace Canvas.TestRunner.Utilities
+namespace FleetAutomate.Utilities
 {
     /// <summary>
     /// Custom DataContract serialization utilities for TestProject to handle project file operations.

@@ -1,5 +1,7 @@
-﻿using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Flow;
+﻿using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Flow;
+
+using FleetAutomate.Model.Flow;
 
 using System;
 using System.Collections.Generic;
@@ -10,14 +12,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace Canvas.TestRunner.Model.Actions.Logic.Loops
+namespace FleetAutomate.Model.Actions.Logic.Loops
 {
     [DataContract]
     [KnownType(typeof(SetVariableAction<object>))]
     [KnownType(typeof(WhileLoopAction))]
     [KnownType(typeof(ForLoopAction))]
     [KnownType(typeof(IfAction))]
-    [KnownType(typeof(Flow.TestFlow))]
+    [KnownType(typeof(TestFlow))]
     [KnownType(typeof(System.LaunchApplicationAction))]
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]

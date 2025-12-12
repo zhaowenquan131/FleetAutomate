@@ -1,7 +1,8 @@
-﻿using Canvas.TestRunner.Model.Flow;
+﻿using FleetAutomate.Model.Flow;
+
 using System.Runtime.Serialization;
 
-namespace Canvas.TestRunner.Model.Actions.Logic
+namespace FleetAutomate.Model.Actions.Logic
 {
     [DataContract]
     public partial class SetVariableAction<TResult> : ILogicAction

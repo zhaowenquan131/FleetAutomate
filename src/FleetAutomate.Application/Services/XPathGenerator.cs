@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaUI.Core.AutomationElements;
 
-namespace Canvas.TestRunner.Services
+namespace FleetAutomate.Services
 {
     /// <summary>
     /// Generates human-friendly XPaths for UI elements.

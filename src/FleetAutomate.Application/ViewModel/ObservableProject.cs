@@ -1,5 +1,5 @@
-﻿using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Project;
+﻿using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Project;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -7,7 +7,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 
-namespace Canvas.TestRunner.ViewModel
+namespace FleetAutomate.ViewModel
 {
     public partial class ObservableProject : ObservableObject
     {

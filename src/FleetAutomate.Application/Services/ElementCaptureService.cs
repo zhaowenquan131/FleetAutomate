@@ -8,7 +8,7 @@ using FlaUI.Core.AutomationElements;
 using FlaUI.UIA2;
 using FlaUI.UIA3;
 
-namespace Canvas.TestRunner.Services
+namespace FleetAutomate.Services
 {
     /// <summary>
     /// Service for capturing UI elements by mouse position and Ctrl key press.

@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace Canvas.TestRunner.Services
+namespace FleetAutomate.Services
 {
     /// <summary>
     /// Manages the list of recently opened projects.

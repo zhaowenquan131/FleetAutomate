@@ -1,9 +1,10 @@
-using Canvas.TestRunner.Model.Flow;
+using FleetAutomate.Model.Flow;
+
 using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace Canvas.TestRunner.Converters
+namespace FleetAutomate.Converters
 {
     /// <summary>
     /// Converts ActionState enum to appropriate icon emoji.

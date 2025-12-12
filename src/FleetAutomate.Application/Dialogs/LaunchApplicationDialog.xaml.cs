@@ -1,7 +1,7 @@
 using System.Windows;
 using Wpf.Ui.Controls;
 
-namespace Canvas.TestRunner.Dialogs
+namespace FleetAutomate.Dialogs
 {
     /// <summary>
     /// Interaction logic for LaunchApplicationDialog.xaml

@@ -1,7 +1,9 @@
-﻿using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Actions.Logic.Loops;
-using Canvas.TestRunner.Model.Actions.System;
-using Canvas.TestRunner.Model.Actions.UIAutomation;
+﻿using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.UIAutomation;
+
+using FleetAutomate.Model.Flow;
 
 using System;
 using System.Collections.Generic;
@@ -12,7 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace Canvas.TestRunner.Model.Flow
+namespace FleetAutomate.Model.Flow
 {
     /// <summary>
     /// Custom DataContract serialization utilities for TestFlow to handle interface serialization.

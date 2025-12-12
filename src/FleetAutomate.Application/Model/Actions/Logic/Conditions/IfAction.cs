@@ -1,12 +1,12 @@
-﻿using Canvas.TestRunner.Model.Flow;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-using CommunityToolkit.Mvvm.ComponentModel;
+using FleetAutomate.Model.Flow;
 
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Runtime.Serialization;
 
-namespace Canvas.TestRunner.Model.Actions.Logic
+namespace FleetAutomate.Model.Actions.Logic
 {
     [ObservableObject]
     [DataContract]

@@ -1,6 +1,6 @@
-﻿using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Project;
-using Canvas.TestRunner.Services;
+﻿using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Project;
+using FleetAutomate.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Examples
+namespace FleetAutomate.Examples
 {
     /// <summary>
     /// Example demonstrating how to handle UI events for TestProjectManager.

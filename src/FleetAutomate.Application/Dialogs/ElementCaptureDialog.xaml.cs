@@ -3,14 +3,14 @@ using System.Drawing;
 using System.Windows;
 using FlaUI.Core.AutomationElements;
 using Wpf.Ui.Controls;
-using Canvas.TestRunner.Services;
+using FleetAutomate.Services;
 using WpfMessageBox = Wpf.Ui.Controls.MessageBox;
 using System.Windows.Media;
 using WinForms = System.Windows.Forms;
 using FlaUI.Core.Overlay;
 using FlaUI.Core.WindowsAPI;
 
-namespace Canvas.TestRunner.Dialogs
+namespace FleetAutomate.Dialogs
 {
     /// <summary>
     /// Interaction logic for ElementCaptureDialog.xaml

@@ -1,10 +1,11 @@
-using Canvas.TestRunner.Model.Flow;
+using FleetAutomate.Model.Flow;
+
 using System;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace Canvas.TestRunner.Converters
+namespace FleetAutomate.Converters
 {
     /// <summary>
     /// Converts ActionState enum to appropriate foreground color.

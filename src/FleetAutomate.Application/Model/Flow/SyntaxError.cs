@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model.Flow
+namespace FleetAutomate.Model.Flow
 {
     /// <summary>
     /// Represents a syntax error found during validation of a Flow.

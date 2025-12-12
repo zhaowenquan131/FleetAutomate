@@ -1,14 +1,18 @@
-﻿using Canvas.TestRunner.Model;
-using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Flow;
+﻿using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Flow;
 using CommunityToolkit.Mvvm.ComponentModel;
+
+using FleetAutomate.Model;
+using FleetAutomate.Model.Flow;
+
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Canvas.TestRunner.ViewModel
+namespace FleetAutomate.ViewModel
 {
     public partial class ObservableFlow : ObservableObject
     {
@@ -479,7 +483,7 @@ namespace Canvas.TestRunner.ViewModel
         /// <summary>
         /// Gets the environment for logic actions.
         /// </summary>
-        public Canvas.TestRunner.Model.Actions.Logic.Environment Environment => _model.Environment;
+        public FleetAutomate.Model.Actions.Logic.Environment Environment => _model.Environment;
 
         /// <summary>
         /// Refreshes all properties from the model.

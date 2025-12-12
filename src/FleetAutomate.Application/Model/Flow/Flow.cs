@@ -1,12 +1,14 @@
-﻿using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Actions.Logic.Loops;
-using Canvas.TestRunner.Model.Actions.System;
-using Canvas.TestRunner.Model.Actions.UIAutomation;
+﻿using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.UIAutomation;
+using FleetAutomate.Model.Flow;
 
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 
-namespace Canvas.TestRunner.Model.Flow
+namespace FleetAutomate.Model.Flow
 {
 
     public enum ActionState

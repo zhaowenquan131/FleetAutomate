@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model.Flow
+namespace FleetAutomate.Model.Flow
 {
     /// <summary>
     /// Interface for actions that can validate their own syntax.

@@ -1,14 +1,14 @@
 using System;
 using System.Globalization;
 using System.Windows.Data;
-using Canvas.TestRunner.Model;
-using Canvas.TestRunner.Model.Actions.UIAutomation;
-using Canvas.TestRunner.Model.Actions.System;
-using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Actions.Logic.Loops;
-using Canvas.TestRunner.Model.Flow;
+using FleetAutomate.Model.Actions.UIAutomation;
+using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.Model;
+using FleetAutomate.Model.Flow;
 
-namespace Canvas.TestRunner.Converters
+namespace FleetAutomate.Converters
 {
     /// <summary>
     /// Converts an action type to its corresponding icon.

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Windows.Data;
-using Canvas.TestRunner.Model;
+using FleetAutomate.Model;
 
-namespace Canvas.TestRunner.Converters
+namespace FleetAutomate.Converters
 {
     /// <summary>
     /// Converts an action to its child actions if it implements ICompositeAction.

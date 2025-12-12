@@ -1,10 +1,10 @@
 using System.Windows;
-using Canvas.TestRunner.Model;
-using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Actions.UIAutomation;
-using Canvas.TestRunner.Model.Actions.System;
+using FleetAutomate.Model;
+using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Actions.UIAutomation;
+using FleetAutomate.Model.Actions.System;
 
-namespace Canvas.TestRunner.Dialogs
+namespace FleetAutomate.Dialogs
 {
     public partial class ActionPropertiesDialog : Wpf.Ui.Controls.FluentWindow
     {

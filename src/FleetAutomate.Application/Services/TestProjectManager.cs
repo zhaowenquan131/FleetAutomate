@@ -1,6 +1,9 @@
-﻿using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Project;
-using Canvas.TestRunner.Utilities;
+﻿using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Project;
+using FleetAutomate.Utilities;
+
+using FleetAutomate.Model.Flow;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,7 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Services
+namespace FleetAutomate.Services
 {
     /// <summary>
     /// Response options for save prompts.

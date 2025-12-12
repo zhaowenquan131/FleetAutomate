@@ -1,12 +1,12 @@
 using System.Runtime.Serialization;
 using System.ComponentModel;
-using Canvas.TestRunner.Model.Flow;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.UIA3;
+using FleetAutomate.Model.Flow;
 
-namespace Canvas.TestRunner.Model.Actions.UIAutomation
+namespace FleetAutomate.Model.Actions.UIAutomation
 {
     /// <summary>
     /// Action to click on a UI element.

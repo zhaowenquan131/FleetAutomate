@@ -1,11 +1,13 @@
-﻿using System;
+﻿using FleetAutomate.Model.Actions.Logic;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model.Actions.Logic.Expression
+namespace FleetAutomate.Model.Actions.Logic.Expression
 {
     public enum ArithmeticOperator
     {

@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Canvas.TestRunner.Model.Actions.Logic.Expression
+namespace FleetAutomate.Model.Actions.Logic.Expression
 {
     public class GreaterThanExpression : ExpressionBase<bool>
     {

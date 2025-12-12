@@ -1,10 +1,11 @@
 using System.Collections.ObjectModel;
-using Canvas.TestRunner.Model.Flow;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FleetAutomate.Model;
+using FleetAutomate.Model.Flow;
 
-namespace Canvas.TestRunner.Model
+namespace FleetAutomate.Model
 {
     /// <summary>
     /// Represents a visual action block within a composite action (e.g., "If Block", "Else Block").
@@ -16,7 +17,7 @@ namespace Canvas.TestRunner.Model
         /// <summary>
         /// The parent IfAction that owns this block.
         /// </summary>
-        public Canvas.TestRunner.Model.Actions.Logic.IfAction ParentIfAction { get; set; }
+        public FleetAutomate.Model.Actions.Logic.IfAction ParentIfAction { get; set; }
 
         /// <summary>
         /// The collection that this block manages.

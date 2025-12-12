@@ -1,12 +1,14 @@
-﻿using Canvas.TestRunner.Model;
-using Canvas.TestRunner.Model.Actions.Logic;
-using Canvas.TestRunner.Model.Actions.Logic.Loops;
-using Canvas.TestRunner.Model.Flow;
-using Canvas.TestRunner.Model.Project;
-using Canvas.TestRunner.Services;
+﻿using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Project;
+using FleetAutomate.Services;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+
+using FleetAutomate.Model;
 
 using System;
 using System.Collections.Generic;
@@ -20,7 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace Canvas.TestRunner.ViewModel
+namespace FleetAutomate.ViewModel
 {
     public partial class MainViewModel : ObservableObject
     {
@@ -644,7 +646,7 @@ namespace Canvas.TestRunner.ViewModel
 
             // Logic Actions
             AvailableActions.Add(new ActionTemplate("If Statement", "Logic", "🔀", typeof(IfAction), "Conditional execution based on a boolean expression"));
-            AvailableActions.Add(new ActionTemplate("Set Variable", "Logic", "📝", typeof(Canvas.TestRunner.Model.Actions.Logic.SetVariableAction<object>), "Assign a value to a variable"));
+            AvailableActions.Add(new ActionTemplate("Set Variable", "Logic", "📝", typeof(FleetAutomate.Model.Actions.Logic.SetVariableAction<object>), "Assign a value to a variable"));
 
             // Loop Actions
             AvailableActions.Add(new ActionTemplate("While Loop", "Loops", "🔄", typeof(WhileLoopAction), "Execute actions while a condition is true"));
