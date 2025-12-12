@@ -139,6 +139,22 @@ namespace FleetAutomate
                 return null; // User cancelled
             };
 
+            // Handle if window contains text prompt
+            ViewModel.OnPromptIfWindowContainsText += () =>
+            {
+                var dialog = new IfWindowContainsTextDialog
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    return (dialog.WindowIdentifier, dialog.IdentifierType, dialog.SearchText, dialog.CaseSensitive, dialog.DeepSearch);
+                }
+
+                return null; // User cancelled
+            };
+
             // Handle error messages
             ViewModel.OnShowError += async (title, message) =>
             {
@@ -371,6 +387,11 @@ namespace FleetAutomate
                         {
                             EditClickElementAction(clickAction);
                         }
+                        // Special handling for IfWindowContainsTextAction - use IfWindowContainsTextDialog for editing
+                        else if (action is FleetAutomate.Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
+                        {
+                            EditIfWindowContainsTextAction(windowTextAction);
+                        }
                         else
                         {
                             // Open the standard properties dialog
@@ -476,6 +497,38 @@ namespace FleetAutomate
                 clickAction.IsDoubleClick = dialog.IsDoubleClick;
                 clickAction.UseInvoke = dialog.UseInvoke;
                 clickAction.Description = $"Click {(dialog.IsDoubleClick ? "(double) " : "")}{(dialog.UseInvoke ? "(invoke) " : "")}element: {dialog.IdentifierType}={dialog.ElementIdentifier}";
+
+                // Force refresh
+                var currentTestFlow = ViewModel.SelectedTestFlow;
+                ViewModel.SelectedTestFlow = null;
+                ViewModel.SelectedTestFlow = currentTestFlow;
+            }
+        }
+
+        private void EditIfWindowContainsTextAction(FleetAutomate.Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
+        {
+            // Extract current values from the IfWindowContainsTextAction
+            string windowIdentifier = windowTextAction.WindowIdentifier;
+            string identifierType = windowTextAction.IdentifierType;
+            string searchText = windowTextAction.SearchText;
+            bool caseSensitive = windowTextAction.CaseSensitive;
+            bool deepSearch = windowTextAction.DeepSearch;
+
+            // Create and show the IfWindowContainsTextDialog with pre-populated values
+            var dialog = new FleetAutomate.Dialogs.IfWindowContainsTextDialog(windowIdentifier, identifierType, searchText, caseSensitive, deepSearch)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                // Update the IfWindowContainsTextAction with new values
+                windowTextAction.WindowIdentifier = dialog.WindowIdentifier;
+                windowTextAction.IdentifierType = dialog.IdentifierType;
+                windowTextAction.SearchText = dialog.SearchText;
+                windowTextAction.CaseSensitive = dialog.CaseSensitive;
+                windowTextAction.DeepSearch = dialog.DeepSearch;
+                windowTextAction.Description = $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}";
 
                 // Force refresh
                 var currentTestFlow = ViewModel.SelectedTestFlow;

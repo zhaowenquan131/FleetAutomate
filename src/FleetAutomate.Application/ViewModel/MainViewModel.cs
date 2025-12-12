@@ -166,6 +166,12 @@ namespace FleetAutomate.ViewModel
         public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke)?>? OnPromptClickElement;
 
         /// <summary>
+        /// Event fired when UI needs to show an "If Window Contains Text" dialog.
+        /// Should return the window identifier, search text, and options, or null if cancelled.
+        /// </summary>
+        public event Func<(string windowIdentifier, string identifierType, string searchText, bool caseSensitive, bool deepSearch)?>? OnPromptIfWindowContainsText;
+
+        /// <summary>
         /// Command to create a new project.
         /// </summary>
         public ICommand CreateNewProjectCommand { get; }
@@ -677,7 +683,7 @@ namespace FleetAutomate.ViewModel
             uiAutomation.Actions.Add(new ActionTemplate("Click Element", "UIAutomation", "👆",
                 typeof(Model.Actions.UIAutomation.ClickElementAction), "Click on UI element"));
             uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Text", "UIAutomation", "🔍",
-                typeof(NotImplementedAction), "Check if window contains text"));
+                typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction), "Check if window contains text"));
             uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Element", "UIAutomation", "🔎",
                 typeof(NotImplementedAction), "Check if window contains element"));
             uiAutomation.Actions.Add(new ActionTemplate("Set Text to Input", "UIAutomation", "⌨️",
@@ -843,6 +849,18 @@ namespace FleetAutomate.ViewModel
                     }
 
                     action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke);
+                }
+                // Special handling for IfWindowContainsTextAction - prompt user for window and text search parameters
+                else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction))
+                {
+                    var result = OnPromptIfWindowContainsText?.Invoke();
+                    if (result == null)
+                    {
+                        // User cancelled
+                        return;
+                    }
+
+                    action = CreateIfWindowContainsTextAction(result.Value.windowIdentifier, result.Value.identifierType, result.Value.searchText, result.Value.caseSensitive, result.Value.deepSearch);
                 }
                 // Special handling for NotImplementedAction - create placeholder with proper name
                 else if (actionTemplate.ActionType == typeof(NotImplementedAction))
@@ -1088,6 +1106,32 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Error", $"Failed to create click element action: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates an IfWindowContainsTextAction with the given parameters.
+        /// </summary>
+        private IAction? CreateIfWindowContainsTextAction(string windowIdentifier, string identifierType, string searchText, bool caseSensitive, bool deepSearch)
+        {
+            try
+            {
+                var action = new Model.Actions.UIAutomation.IfWindowContainsTextAction
+                {
+                    WindowIdentifier = windowIdentifier,
+                    IdentifierType = identifierType,
+                    SearchText = searchText,
+                    CaseSensitive = caseSensitive,
+                    DeepSearch = deepSearch,
+                    Description = $"If window '{windowIdentifier}' contains '{searchText}'{(caseSensitive ? " (case-sensitive)" : "")}"
+                };
+
+                return action;
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Error", $"Failed to create if window contains text action: {ex.Message}");
                 return null;
             }
         }

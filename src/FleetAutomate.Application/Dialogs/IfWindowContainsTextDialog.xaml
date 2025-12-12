@@ -1,0 +1,102 @@
+<ui:FluentWindow x:Class="FleetAutomate.Dialogs.IfWindowContainsTextDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="If Window Contains Text"
+        Height="450"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="If Window Contains Text"
+                    Icon="{ui:SymbolIcon Search20}"/>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="20" VerticalAlignment="Top">
+                <!-- Window Identifier Type -->
+                <TextBlock Text="Window Identifier Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <ComboBox Name="IdentifierTypeComboBox"
+                         Padding="8"
+                         Margin="0,0,0,15"
+                         Height="32"
+                         SelectedIndex="0">
+                    <ComboBoxItem>Name (Window Title)</ComboBoxItem>
+                    <ComboBoxItem>AutomationId</ComboBoxItem>
+                </ComboBox>
+
+                <!-- Window Identifier -->
+                <TextBlock Text="Window Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="WindowIdentifierTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="32"
+                        ToolTip="Enter the window title or AutomationId"/>
+
+                <!-- Search Text -->
+                <TextBlock Text="Search Text" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="SearchTextTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="60"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        ToolTip="Enter the text to search for in the window"/>
+
+                <!-- Case Sensitive Checkbox -->
+                <CheckBox Name="CaseSensitiveCheckBox"
+                         Content="Case Sensitive"
+                         Margin="0,0,0,10"
+                         ToolTip="Check to make the search case-sensitive"/>
+
+                <!-- Deep Search Checkbox -->
+                <CheckBox Name="DeepSearchCheckBox"
+                         Content="Deep Search (Search in all child elements)"
+                         IsChecked="True"
+                         Margin="0,0,0,15"
+                         ToolTip="Search in all descendant elements of the window"/>
+
+                <!-- Hint Text -->
+                <TextBlock Text="Example Window Name: Notepad"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,5"/>
+                <TextBlock Text="Example Search Text: Hello World"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,10"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="Create"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

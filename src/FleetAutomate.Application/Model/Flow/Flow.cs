@@ -29,6 +29,7 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(LaunchApplicationAction))]
     [KnownType(typeof(WaitForElementAction))]
     [KnownType(typeof(ClickElementAction))]
+    [KnownType(typeof(IfWindowContainsTextAction))]
     [KnownType(typeof(NotImplementedAction))]
     public partial class TestFlow : ILogicAction
     {
