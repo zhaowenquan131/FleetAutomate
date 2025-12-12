@@ -1,3 +1,6 @@
 ﻿src/bin
 src/.vs
 src/obj
+src/FleetAutomate.Application/.vs
+src/FleetAutomate.Application/bin
+src/FleetAutomate.Application/obj
