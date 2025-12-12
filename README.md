@@ -1,10 +1,20 @@
-# FleetAutomate
+# Fleet Automate
 
 A visual, WYSIWYG automation test tool for Windows, built on FlaUI and inspired by Microsoft Power Automate.
 
 ## Overview
 
-FleetAutomate provides a drag-and-drop interface for creating Windows UI automation test flows without writing code. Design complex test scenarios visually, execute them with a single click, and debug failures with detailed execution state tracking.
+Fleet Automate provides a drag-and-drop interface for creating Windows UI automation test flows without writing code. Design complex test scenarios visually, execute them with a single click, and debug failures with detailed execution state tracking.
+
+> **⚠️ Early Development Notice**
+>
+> This tool is currently in an early development period. Many features still need to be added or improved. We welcome and appreciate every pull request! Your contributions help make Fleet Automate better for everyone.
+
+### Project and TestFlows
+<img src="img/Project and TestFlows.png" alt="Project and TestFlows" width="800">
+
+### UI Element Capturing
+<img src="img/UI Element Capturing.png" alt="UI Element Capturing" width="1000">
 
 ## Features
 

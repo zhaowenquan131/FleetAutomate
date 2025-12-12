@@ -10,7 +10,7 @@ namespace Canvas.TestRunner.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var baseTitle = "Canvas Test Runner";
+            var baseTitle = "Fleet Automate";
             
             if (value is not TestProject project)
                 return baseTitle;
