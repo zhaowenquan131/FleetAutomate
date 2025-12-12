@@ -1,0 +1,104 @@
+<ui:FluentWindow x:Class="Canvas.TestRunner.Dialogs.ActionPropertiesDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Edit Action Properties"
+        Height="500" Width="600"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock Text="{Binding ActionName}" FontSize="20" FontWeight="Bold"/>
+            <TextBlock Text="Edit action properties" FontSize="12" Foreground="Gray" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Properties Editor -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Name="PropertiesPanel">
+                <!-- Common Properties -->
+                <TextBlock Text="Description" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBox Name="DescriptionTextBox"
+                         TextWrapping="Wrap"
+                         AcceptsReturn="True"
+                         MinHeight="60"
+                         Margin="0,0,0,15"/>
+
+                <CheckBox Name="IsEnabledCheckBox"
+                          Content="Enabled"
+                          Margin="0,0,0,15"/>
+
+                <!-- WaitForElementAction / ClickElementAction Properties -->
+                <StackPanel Name="UIAutomationPanel" Visibility="Collapsed">
+                    <TextBlock Text="Identifier Type" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <ComboBox Name="IdentifierTypeComboBox" Margin="0,0,0,15">
+                        <ComboBoxItem Content="XPath"/>
+                        <ComboBoxItem Content="AutomationId"/>
+                        <ComboBoxItem Content="Name"/>
+                        <ComboBoxItem Content="ClassName"/>
+                    </ComboBox>
+
+                    <TextBlock Text="Element Identifier" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="ElementIdentifierTextBox"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MinHeight="60"
+                             Margin="0,0,0,15"/>
+
+                    <!-- WaitForElementAction specific -->
+                    <StackPanel Name="WaitForElementPanel" Visibility="Collapsed">
+                        <TextBlock Text="Timeout (milliseconds)" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBox Name="TimeoutTextBox" Margin="0,0,0,15"/>
+
+                        <TextBlock Text="Polling Interval (milliseconds)" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <TextBox Name="PollingIntervalTextBox" Margin="0,0,0,15"/>
+                    </StackPanel>
+
+                    <!-- ClickElementAction specific -->
+                    <StackPanel Name="ClickElementPanel" Visibility="Collapsed">
+                        <CheckBox Name="IsDoubleClickCheckBox"
+                                  Content="Double Click"
+                                  Margin="0,0,0,15"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- LaunchApplicationAction Properties -->
+                <StackPanel Name="LaunchAppPanel" Visibility="Collapsed">
+                    <TextBlock Text="Executable Path" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="ExecutablePathTextBox" Margin="0,0,0,15"/>
+
+                    <TextBlock Text="Arguments" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="ArgumentsTextBox" Margin="0,0,0,15"/>
+
+                    <TextBlock Text="Working Directory" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="WorkingDirectoryTextBox" Margin="0,0,0,15"/>
+
+                    <CheckBox Name="WaitForCompletionCheckBox"
+                              Content="Wait for Completion"
+                              Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Timeout (milliseconds)" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBox Name="LaunchTimeoutTextBox" Margin="0,0,0,15"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <ui:Button Content="OK"
+                      Appearance="Primary"
+                      Click="OkButton_Click"
+                      Margin="0,0,10,0"
+                      MinWidth="80"/>
+            <ui:Button Content="Cancel"
+                      Click="CancelButton_Click"
+                      MinWidth="80"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow>

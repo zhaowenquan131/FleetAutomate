@@ -1,0 +1,113 @@
+<ui:FluentWindow x:Class="Canvas.TestRunner.Dialogs.LaunchApplicationDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Launch Application"
+        Height="450"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="Launch Application"
+                    Icon="{ui:SymbolIcon Rocket20}"/>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="20" VerticalAlignment="Top">
+                <!-- Executable Path -->
+                <TextBlock Text="Executable Path or Command" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Name="ExecutablePathTextBox"
+                            Grid.Column="0"
+                            Padding="8"
+                            Height="32"
+                            ToolTip="Path to .exe file or command (e.g., notepad.exe, C:\Program Files\App\app.exe)"/>
+                    <ui:Button Name="BrowseButton"
+                              Grid.Column="1"
+                              Content="Browse"
+                              Click="BrowseButton_Click"
+                              Padding="16,0"
+                              Margin="10,0,0,0"
+                              Height="32"/>
+                </Grid>
+
+                <!-- Arguments -->
+                <TextBlock Text="Arguments (Optional)" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="ArgumentsTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="60"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        ToolTip="Command-line arguments to pass to the executable"/>
+
+                <!-- Working Directory -->
+                <TextBlock Text="Working Directory (Optional)" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="WorkingDirectoryTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="32"
+                        ToolTip="Starting directory for the process"/>
+
+                <!-- Wait for Completion -->
+                <CheckBox Name="WaitForCompletionCheckBox"
+                         Content="Wait for application to exit"
+                         Margin="0,0,0,15"
+                         IsChecked="False"/>
+
+                <!-- Timeout -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                    <TextBlock Text="Timeout (ms):" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="12"/>
+                    <TextBox Name="TimeoutTextBox"
+                            Text="30000"
+                            Width="120"
+                            Padding="8"
+                            Height="32"
+                            VerticalContentAlignment="Center"
+                            ToolTip="Timeout in milliseconds (1000-300000)"/>
+                    <TextBlock Text="(1-300 seconds)" VerticalAlignment="Center" Margin="10,0,0,0" FontSize="10" Foreground="Gray"/>
+                </StackPanel>
+
+                <!-- Hint Text -->
+                <TextBlock Text="Examples: notepad, cmd /c dir, C:\Program Files\MyApp\app.exe"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,10"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="Create"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

@@ -1,0 +1,95 @@
+<ui:FluentWindow x:Class="Canvas.TestRunner.Dialogs.ClickElementDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Click Element"
+        Height="400"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="Click Element"
+                    Icon="{ui:SymbolIcon CursorClick20}"/>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="20" VerticalAlignment="Top">
+                <!-- Identifier Type -->
+                <TextBlock Text="Identifier Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <ComboBox Name="IdentifierTypeComboBox"
+                         Padding="8"
+                         Margin="0,0,0,15"
+                         Height="32"
+                         SelectedIndex="0">
+                    <ComboBoxItem>XPath</ComboBoxItem>
+                    <ComboBoxItem>AutomationId</ComboBoxItem>
+                    <ComboBoxItem>Name</ComboBoxItem>
+                    <ComboBoxItem>ClassName</ComboBoxItem>
+                </ComboBox>
+
+                <!-- Element Identifier -->
+                <TextBlock Text="Element Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="ElementIdentifierTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="60"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        ToolTip="Enter the element identifier (XPath, AutomationId, Name, or ClassName)"/>
+
+                <!-- Double Click Checkbox -->
+                <CheckBox Name="DoubleClickCheckBox"
+                         Content="Double Click"
+                         Margin="0,0,0,10"
+                         ToolTip="Check to perform a double-click instead of single-click"/>
+
+                <!-- Use Invoke Checkbox -->
+                <CheckBox Name="UseInvokeCheckBox"
+                         Content="Use Invoke Pattern"
+                         Margin="0,0,0,15"
+                         ToolTip="Use Invoke pattern instead of mouse click (useful when element is behind another element)"/>
+
+                <!-- Hint Text -->
+                <TextBlock Text="XPath Example: //Button[@Name='Login']"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,5"/>
+                <TextBlock Text="AutomationId Example: btnLogin"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,10"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="Create"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
