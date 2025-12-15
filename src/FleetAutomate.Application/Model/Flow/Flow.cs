@@ -152,6 +152,31 @@ namespace FleetAutomate.Model.Flow
         }
 
         /// <summary>
+        /// Executes the TestFlow starting from the specified action.
+        /// </summary>
+        /// <param name="startAction">The action to start execution from.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>True if execution completed successfully, false otherwise.</returns>
+        public async Task<bool> ExecuteFromAction(IAction startAction, CancellationToken cancellationToken)
+        {
+            // Verify the action exists in the Actions collection
+            if (!Actions.Contains(startAction))
+            {
+                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
+            }
+
+            // Set the current action and state to Paused so ExecuteAsync will use SkipWhile logic
+            CurrentAction = startAction;
+            State = ActionState.Paused;
+
+            // Reset all action states to Ready (except those before startAction)
+            ResetAllActionStates();
+
+            // Call ExecuteAsync which will start from CurrentAction
+            return await ExecuteAsync(cancellationToken);
+        }
+
+        /// <summary>
         /// Initializes runtime objects after deserialization.
         /// </summary>
         public void InitializeAfterDeserialization()

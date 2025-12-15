@@ -12,7 +12,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to set text in a UI input element.
     /// </summary>
     [DataContract]
-    public class SetTextAction : IAction, INotifyPropertyChanged
+    public class SetTextAction : IRetryableAction, INotifyPropertyChanged
     {
         public string Name => "Set Text";
 

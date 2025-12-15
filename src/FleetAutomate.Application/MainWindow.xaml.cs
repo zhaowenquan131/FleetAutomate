@@ -378,6 +378,28 @@ namespace FleetAutomate
             }
         }
 
+        private void TestFlowActionsTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // Find the TreeViewItem that was right-clicked
+            var hitTestResult = VisualTreeHelper.HitTest(TestFlowActionsTreeView, e.GetPosition(TestFlowActionsTreeView));
+            if (hitTestResult?.VisualHit == null) return;
+
+            // Walk up the visual tree to find the TreeViewItem
+            var dependencyObject = hitTestResult.VisualHit as DependencyObject;
+            while (dependencyObject != null)
+            {
+                if (dependencyObject is System.Windows.Controls.TreeViewItem treeViewItem)
+                {
+                    // Select the TreeViewItem
+                    treeViewItem.IsSelected = true;
+                    treeViewItem.Focus();
+                    e.Handled = true;
+                    return;
+                }
+                dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
+            }
+        }
+
         private void TestFlowActionsTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Check if we double-clicked on a TreeViewItem

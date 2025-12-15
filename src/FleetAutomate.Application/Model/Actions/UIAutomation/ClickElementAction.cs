@@ -14,7 +14,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to click on a UI element.
     /// </summary>
     [DataContract]
-    public class ClickElementAction : IAction, INotifyPropertyChanged
+    public class ClickElementAction : IRetryableAction, INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public string Name => "Click Element";

@@ -269,12 +269,15 @@
                                              SelectedItemChanged="TestFlowActionsTreeView_SelectedItemChanged"
                                              KeyDown="TestFlowActionsTreeView_KeyDown"
                                              PreviewMouseDown="TestFlowActionsTreeView_PreviewMouseDown"
+                                             PreviewMouseRightButtonDown="TestFlowActionsTreeView_PreviewMouseRightButtonDown"
                                              MouseDoubleClick="TestFlowActionsTreeView_MouseDoubleClick">
                                         <TreeView.ContextMenu>
                                             <ContextMenu>
                                                 <MenuItem Header="Execute Step"
                                                          Command="{Binding ExecuteStepCommand}"
                                                          InputGestureText="F9"/>
+                                                <MenuItem Header="Execute from this step"
+                                                         Command="{Binding ExecuteFromThisStepCommand}"/>
                                                 <Separator/>
                                                 <MenuItem Header="Add Else Block"
                                                          Command="{Binding ToggleElseBlockCommand}"

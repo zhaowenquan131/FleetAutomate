@@ -91,6 +91,7 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)DeleteActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ToggleElseBlockCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ExecuteStepCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)ExecuteFromThisStepCommand).NotifyCanExecuteChanged();
                 }
             }
         }
@@ -223,6 +224,11 @@ namespace FleetAutomate.ViewModel
         public ICommand ExecuteStepCommand { get; }
 
         /// <summary>
+        /// Command to execute the TestFlow starting from the selected action.
+        /// </summary>
+        public ICommand ExecuteFromThisStepCommand { get; }
+
+        /// <summary>
         /// Command to add an existing .testfl file to the current project.
         /// </summary>
         public ICommand AddExistingTestFlowCommand { get; }
@@ -244,6 +250,7 @@ namespace FleetAutomate.ViewModel
             ToggleElseBlockCommand = new RelayCommand(ToggleElseBlock, CanToggleElseBlock);
             RunTestFlowCommand = new RelayCommand(RunTestFlow, () => SelectedTestFlow != null);
             ExecuteStepCommand = new RelayCommand(ExecuteStep, () => SelectedAction != null);
+            ExecuteFromThisStepCommand = new RelayCommand(ExecuteFromThisStep, () => SelectedAction != null && SelectedTestFlow != null);
             AddExistingTestFlowCommand = new RelayCommand(AddExistingTestFlow, () => IsProjectLoaded);
 
             // Initialize action categories for toolbox
@@ -1377,6 +1384,43 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Step Execution Error", $"An error occurred while executing the action: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Executes the TestFlow starting from the currently selected action.
+        /// </summary>
+        private async void ExecuteFromThisStep()
+        {
+            if (SelectedAction == null)
+            {
+                OnShowError?.Invoke("No Action Selected", "Please select an action to start execution from.");
+                return;
+            }
+
+            if (SelectedTestFlow == null)
+            {
+                OnShowError?.Invoke("No TestFlow Selected", "Please select a TestFlow.");
+                return;
+            }
+
+            try
+            {
+                // Sync the observable flow to the model before execution
+                SelectedTestFlow.SyncToModel();
+
+                // Execute the test flow starting from the selected action
+                var result = await SelectedTestFlow.Model.ExecuteFromAction(SelectedAction, CancellationToken.None);
+
+                if (!result)
+                {
+                    OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                }
+                // Success - no message shown
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
             }
         }
     }
