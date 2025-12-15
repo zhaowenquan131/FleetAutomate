@@ -139,6 +139,22 @@ namespace FleetAutomate
                 return null; // User cancelled
             };
 
+            // Handle set text prompt
+            ViewModel.OnPromptSetText += () =>
+            {
+                var dialog = new SetTextDialog
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TextToSet, dialog.ClearExistingText);
+                }
+
+                return null; // User cancelled
+            };
+
             // Handle if window contains text prompt
             ViewModel.OnPromptIfWindowContainsText += () =>
             {

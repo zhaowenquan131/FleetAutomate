@@ -1,0 +1,100 @@
+<ui:FluentWindow x:Class="FleetAutomate.View.Dialog.SetTextDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Set Text"
+        Height="450"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="Set Text"
+                    Icon="{ui:SymbolIcon Keyboard20}"/>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="20" VerticalAlignment="Top">
+                <!-- Identifier Type -->
+                <TextBlock Text="Identifier Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <ComboBox Name="IdentifierTypeComboBox"
+                         Padding="8"
+                         Margin="0,0,0,15"
+                         Height="32"
+                         SelectedIndex="0">
+                    <ComboBoxItem>XPath</ComboBoxItem>
+                    <ComboBoxItem>AutomationId</ComboBoxItem>
+                    <ComboBoxItem>Name</ComboBoxItem>
+                    <ComboBoxItem>ClassName</ComboBoxItem>
+                </ComboBox>
+
+                <!-- Element Identifier -->
+                <TextBlock Text="Element Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="ElementIdentifierTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="60"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        ToolTip="Enter the element identifier (XPath, AutomationId, Name, or ClassName)"/>
+
+                <!-- Text to Set -->
+                <TextBlock Text="Text to Set" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="TextToSetTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="60"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        ToolTip="Enter the text to set in the input field"/>
+
+                <!-- Clear Existing Text Checkbox -->
+                <CheckBox Name="ClearExistingTextCheckBox"
+                         Content="Clear existing text before setting new text"
+                         IsChecked="True"
+                         Margin="0,0,0,15"
+                         ToolTip="Check to clear any existing text before setting the new text"/>
+
+                <!-- Hint Text -->
+                <TextBlock Text="XPath Example: //TextBox[@Name='Username']"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,5"/>
+                <TextBlock Text="AutomationId Example: txtUsername"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,10"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="Create"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>

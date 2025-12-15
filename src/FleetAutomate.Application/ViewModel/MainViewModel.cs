@@ -166,6 +166,12 @@ namespace FleetAutomate.ViewModel
         public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke)?>? OnPromptClickElement;
 
         /// <summary>
+        /// Event fired when UI needs to show a "Set Text" dialog.
+        /// Should return the element identifier, text to set, and clear flag, or null if cancelled.
+        /// </summary>
+        public event Func<(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText)?>? OnPromptSetText;
+
+        /// <summary>
         /// Event fired when UI needs to show an "If Window Contains Text" dialog.
         /// Should return the window identifier, search text, and options, or null if cancelled.
         /// </summary>
@@ -687,7 +693,7 @@ namespace FleetAutomate.ViewModel
             uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Element", "UIAutomation", "🔎",
                 typeof(NotImplementedAction), "Check if window contains element"));
             uiAutomation.Actions.Add(new ActionTemplate("Set Text to Input", "UIAutomation", "⌨️",
-                typeof(NotImplementedAction), "Type text into input field"));
+                typeof(Model.Actions.UIAutomation.SetTextAction), "Type text into input field"));
             uiAutomation.Actions.Add(new ActionTemplate("Set Focus on Element", "UIAutomation", "🎯",
                 typeof(NotImplementedAction), "Focus on UI element"));
             uiAutomation.Actions.Add(new ActionTemplate("Select Radio Button", "UIAutomation", "🔘",
@@ -849,6 +855,18 @@ namespace FleetAutomate.ViewModel
                     }
 
                     action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke);
+                }
+                // Special handling for SetTextAction - prompt user for element and text parameters
+                else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.SetTextAction))
+                {
+                    var result = OnPromptSetText?.Invoke();
+                    if (result == null)
+                    {
+                        // User cancelled
+                        return;
+                    }
+
+                    action = CreateSetTextAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.textToSet, result.Value.clearExistingText);
                 }
                 // Special handling for IfWindowContainsTextAction - prompt user for window and text search parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction))
@@ -1106,6 +1124,31 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Error", $"Failed to create click element action: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates a SetTextAction with the given parameters.
+        /// </summary>
+        private IAction? CreateSetTextAction(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText)
+        {
+            try
+            {
+                var action = new Model.Actions.UIAutomation.SetTextAction
+                {
+                    ElementIdentifier = elementIdentifier,
+                    IdentifierType = identifierType,
+                    TextToSet = textToSet,
+                    ClearExistingText = clearExistingText,
+                    Description = $"Set text '{textToSet}' to element: {identifierType}={elementIdentifier}{(clearExistingText ? " (clear first)" : "")}"
+                };
+
+                return action;
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Error", $"Failed to create set text action: {ex.Message}");
                 return null;
             }
         }
