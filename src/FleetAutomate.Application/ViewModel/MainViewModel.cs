@@ -1079,6 +1079,40 @@ namespace FleetAutomate.ViewModel
         }
 
         /// <summary>
+        /// Extracts a concise description from element identifier.
+        /// For XPath, extracts the last property (e.g., "@Name='OK'" becomes "Name: OK").
+        /// For other types, returns "Type: Value" format.
+        /// </summary>
+        private string FormatElementDescription(string elementIdentifier, string identifierType)
+        {
+            if (identifierType == "XPath")
+            {
+                // Extract the LAST property from XPath (leaf node, not root)
+                // Pattern: [@PropertyName='Value'] or [@PropertyName="Value"]
+                var matches = System.Text.RegularExpressions.Regex.Matches(
+                    elementIdentifier,
+                    @"\[@(\w+)=['""]([^'""]+)['""]");
+
+                if (matches.Count > 0)
+                {
+                    // Get the LAST match (leaf node)
+                    var lastMatch = matches[matches.Count - 1];
+                    string propertyName = lastMatch.Groups[1].Value;
+                    string propertyValue = lastMatch.Groups[2].Value;
+                    return $"{propertyName}: {propertyValue}";
+                }
+
+                // If we can't parse it, return the full XPath
+                return $"XPath: {elementIdentifier}";
+            }
+            else
+            {
+                // For Name, AutomationId, ClassName, etc.
+                return $"{identifierType}: {elementIdentifier}";
+            }
+        }
+
+        /// <summary>
         /// Creates a WaitForElementAction with the given parameters.
         /// </summary>
         private IAction? CreateWaitForElementAction(string elementIdentifier, string identifierType, int timeoutMs, int pollingIntervalMs)
@@ -1091,7 +1125,7 @@ namespace FleetAutomate.ViewModel
                     IdentifierType = identifierType,
                     TimeoutMilliseconds = timeoutMs,
                     PollingIntervalMilliseconds = pollingIntervalMs,
-                    Description = $"Wait for {identifierType}: {elementIdentifier}"
+                    Description = $"{FormatElementDescription(elementIdentifier, identifierType)} (timeout:{timeoutMs}ms)"
                 };
 
                 return action;
@@ -1118,7 +1152,7 @@ namespace FleetAutomate.ViewModel
                     UseInvoke = useInvoke,
                     RetryTimes = retryTimes,
                     RetryDelayMilliseconds = retryDelayMilliseconds,
-                    Description = $"Click {(isDoubleClick ? "(double) " : "")}{(useInvoke ? "(invoke) " : "")}element: {identifierType}={elementIdentifier} (retry:{retryTimes}x)"
+                    Description = $"{FormatElementDescription(elementIdentifier, identifierType)}{(isDoubleClick ? " (double)" : "")}{(useInvoke ? " (invoke)" : "")} (retry:{retryTimes}x)"
                 };
 
                 return action;
@@ -1145,7 +1179,7 @@ namespace FleetAutomate.ViewModel
                     ClearExistingText = clearExistingText,
                     RetryTimes = retryTimes,
                     RetryDelayMilliseconds = retryDelayMilliseconds,
-                    Description = $"Set text '{textToSet}' to element: {identifierType}={elementIdentifier}{(clearExistingText ? " (clear first)" : "")} (retry:{retryTimes}x)"
+                    Description = $"{FormatElementDescription(elementIdentifier, identifierType)} = '{textToSet}'{(clearExistingText ? " (clear first)" : "")} (retry:{retryTimes}x)"
                 };
 
                 return action;

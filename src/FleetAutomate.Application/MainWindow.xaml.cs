@@ -296,13 +296,13 @@ namespace FleetAutomate
                 var selectedItem = treeView.SelectedItem;
 
                 // Check if it's an ActionTemplate (leaf node)
-                if (selectedItem is FleetAutomate.Model.ActionTemplate actionTemplate)
+                if (selectedItem is Model.ActionTemplate actionTemplate)
                 {
                     ViewModel.AddActionFromTemplate(actionTemplate);
                     e.Handled = true;
                 }
                 // If it's an ActionCategory, toggle expansion
-                else if (selectedItem is FleetAutomate.Model.ActionCategory category)
+                else if (selectedItem is Model.ActionCategory category)
                 {
                     // Toggle expansion on category double-click
                     var item = treeView.ItemContainerGenerator.ContainerFromItem(category) as System.Windows.Controls.TreeViewItem;
@@ -391,25 +391,25 @@ namespace FleetAutomate
                 if (dependencyObject is System.Windows.Controls.TreeViewItem treeViewItem)
                 {
                     // Get the action from the TreeViewItem's DataContext
-                    if (treeViewItem.DataContext is FleetAutomate.Model.IAction action)
+                    if (treeViewItem.DataContext is Model.IAction action)
                     {
                         // Special handling for IfAction - use IfActionDialog for editing
-                        if (action is FleetAutomate.Model.Actions.Logic.IfAction ifAction)
+                        if (action is Model.Actions.Logic.IfAction ifAction)
                         {
                             EditIfAction(ifAction);
                         }
                         // Special handling for ClickElementAction - use ClickElementDialog for editing
-                        else if (action is FleetAutomate.Model.Actions.UIAutomation.ClickElementAction clickAction)
+                        else if (action is Model.Actions.UIAutomation.ClickElementAction clickAction)
                         {
                             EditClickElementAction(clickAction);
                         }
                         // Special handling for SetTextAction - use SetTextDialog for editing
-                        else if (action is FleetAutomate.Model.Actions.UIAutomation.SetTextAction setTextAction)
+                        else if (action is Model.Actions.UIAutomation.SetTextAction setTextAction)
                         {
                             EditSetTextAction(setTextAction);
                         }
                         // Special handling for IfWindowContainsTextAction - use IfWindowContainsTextDialog for editing
-                        else if (action is FleetAutomate.Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
+                        else if (action is Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
                         {
                             EditIfWindowContainsTextAction(windowTextAction);
                         }
@@ -438,7 +438,41 @@ namespace FleetAutomate
             }
         }
 
-        private void EditIfAction(FleetAutomate.Model.Actions.Logic.IfAction ifAction)
+        /// <summary>
+        /// Extracts a concise description from element identifier.
+        /// For XPath, extracts the last property (e.g., "@Name='OK'" becomes "Name: OK").
+        /// For other types, returns "Type: Value" format.
+        /// </summary>
+        private string FormatElementDescription(string elementIdentifier, string identifierType)
+        {
+            if (identifierType == "XPath")
+            {
+                // Extract the LAST property from XPath (leaf node, not root)
+                // Pattern: [@PropertyName='Value'] or [@PropertyName="Value"]
+                var matches = System.Text.RegularExpressions.Regex.Matches(
+                    elementIdentifier,
+                    @"\[@(\w+)=['""]([^'""]+)['""]");
+
+                if (matches.Count > 0)
+                {
+                    // Get the LAST match (leaf node)
+                    var lastMatch = matches[matches.Count - 1];
+                    string propertyName = lastMatch.Groups[1].Value;
+                    string propertyValue = lastMatch.Groups[2].Value;
+                    return $"{propertyName}: {propertyValue}";
+                }
+
+                // If we can't parse it, return the full XPath
+                return $"XPath: {elementIdentifier}";
+            }
+            else
+            {
+                // For Name, AutomationId, ClassName, etc.
+                return $"{identifierType}: {elementIdentifier}";
+            }
+        }
+
+        private void EditIfAction(Model.Actions.Logic.IfAction ifAction)
         {
             // Determine the condition type and extract values
             string conditionType;
@@ -447,7 +481,7 @@ namespace FleetAutomate
             string identifierType = "XPath";
             int retryTimes = 1;
 
-            if (ifAction.Condition is FleetAutomate.Model.Actions.Logic.Expression.UIElementExistsExpression uiExpr)
+            if (ifAction.Condition is Model.Actions.Logic.Expression.UIElementExistsExpression uiExpr)
             {
                 conditionType = "UIElementExists";
                 elementIdentifier = uiExpr.ElementIdentifier;
@@ -461,7 +495,7 @@ namespace FleetAutomate
             }
 
             // Create and show the IfActionDialog with pre-populated values
-            var dialog = new FleetAutomate.View.Dialog.IfActionDialog(conditionType, conditionExpression, elementIdentifier, identifierType, retryTimes)
+            var dialog = new IfActionDialog(conditionType, conditionExpression, elementIdentifier, identifierType, retryTimes)
             {
                 Owner = this
             };
@@ -471,7 +505,7 @@ namespace FleetAutomate
                 // Update the IfAction with new values
                 if (dialog.ConditionType == "Expression")
                 {
-                    var parsedCondition = FleetAutomate.Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
+                    var parsedCondition = Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
                     if (parsedCondition != null)
                     {
                         ifAction.Condition = parsedCondition;
@@ -480,13 +514,13 @@ namespace FleetAutomate
                 }
                 else if (dialog.ConditionType == "UIElementExists")
                 {
-                    ifAction.Condition = new FleetAutomate.Model.Actions.Logic.Expression.UIElementExistsExpression(
+                    ifAction.Condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
                         dialog.ElementIdentifier,
                         dialog.IdentifierType,
                         1000,
                         dialog.RetryTimes
                     );
-                    ifAction.Description = $"If element '{dialog.ElementIdentifier}' exists (retry {dialog.RetryTimes}x)";
+                    ifAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (retry:{dialog.RetryTimes}x)";
                 }
 
                 // Force refresh
@@ -496,7 +530,7 @@ namespace FleetAutomate
             }
         }
 
-        private void EditClickElementAction(FleetAutomate.Model.Actions.UIAutomation.ClickElementAction clickAction)
+        private void EditClickElementAction(Model.Actions.UIAutomation.ClickElementAction clickAction)
         {
             // Extract current values from the ClickElementAction
             string elementIdentifier = clickAction.ElementIdentifier;
@@ -507,7 +541,7 @@ namespace FleetAutomate
             int retryDelayMilliseconds = clickAction.RetryDelayMilliseconds;
 
             // Create and show the ClickElementDialog with pre-populated values
-            var dialog = new FleetAutomate.View.Dialog.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke, retryTimes, retryDelayMilliseconds)
+            var dialog = new ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke, retryTimes, retryDelayMilliseconds)
             {
                 Owner = this
             };
@@ -521,7 +555,7 @@ namespace FleetAutomate
                 clickAction.UseInvoke = dialog.UseInvoke;
                 clickAction.RetryTimes = dialog.RetryTimes;
                 clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
-                clickAction.Description = $"Click {(dialog.IsDoubleClick ? "(double) " : "")}{(dialog.UseInvoke ? "(invoke) " : "")}element: {dialog.IdentifierType}={dialog.ElementIdentifier} (retry:{dialog.RetryTimes}x)";
+                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? " (invoke)" : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Force refresh
                 var currentTestFlow = ViewModel.SelectedTestFlow;
@@ -530,7 +564,7 @@ namespace FleetAutomate
             }
         }
 
-        private void EditSetTextAction(FleetAutomate.Model.Actions.UIAutomation.SetTextAction setTextAction)
+        private void EditSetTextAction(Model.Actions.UIAutomation.SetTextAction setTextAction)
         {
             // Extract current values from the SetTextAction
             string elementIdentifier = setTextAction.ElementIdentifier;
@@ -541,7 +575,7 @@ namespace FleetAutomate
             int retryDelayMilliseconds = setTextAction.RetryDelayMilliseconds;
 
             // Create and show the SetTextDialog with pre-populated values
-            var dialog = new FleetAutomate.View.Dialog.SetTextDialog(elementIdentifier, identifierType, textToSet, clearExistingText, retryTimes, retryDelayMilliseconds)
+            var dialog = new SetTextDialog(elementIdentifier, identifierType, textToSet, clearExistingText, retryTimes, retryDelayMilliseconds)
             {
                 Owner = this
             };
@@ -555,7 +589,7 @@ namespace FleetAutomate
                 setTextAction.ClearExistingText = dialog.ClearExistingText;
                 setTextAction.RetryTimes = dialog.RetryTimes;
                 setTextAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
-                setTextAction.Description = $"Set text '{dialog.TextToSet}' to element: {dialog.IdentifierType}={dialog.ElementIdentifier}{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
+                setTextAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Force refresh
                 var currentTestFlow = ViewModel.SelectedTestFlow;
@@ -564,7 +598,7 @@ namespace FleetAutomate
             }
         }
 
-        private void EditIfWindowContainsTextAction(FleetAutomate.Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
+        private void EditIfWindowContainsTextAction(Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
         {
             // Extract current values from the IfWindowContainsTextAction
             string windowIdentifier = windowTextAction.WindowIdentifier;
@@ -574,7 +608,7 @@ namespace FleetAutomate
             bool deepSearch = windowTextAction.DeepSearch;
 
             // Create and show the IfWindowContainsTextDialog with pre-populated values
-            var dialog = new FleetAutomate.View.Dialog.IfWindowContainsTextDialog(windowIdentifier, identifierType, searchText, caseSensitive, deepSearch)
+            var dialog = new IfWindowContainsTextDialog(windowIdentifier, identifierType, searchText, caseSensitive, deepSearch)
             {
                 Owner = this
             };
