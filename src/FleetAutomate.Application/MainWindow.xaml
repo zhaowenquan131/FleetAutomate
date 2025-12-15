@@ -9,6 +9,7 @@
         xmlns:converters="clr-namespace:FleetAutomate.Converters"
         xmlns:model="clr-namespace:FleetAutomate.Model"
         xmlns:actions="clr-namespace:FleetAutomate.Model.Actions.Logic"
+        xmlns:view="clr-namespace:FleetAutomate.View"
         WindowStyle="None"
         mc:Ignorable="d"
         Height="450" Width="800">
@@ -31,6 +32,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="150" MinHeight="100"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -405,8 +408,14 @@
             </TextBlock>
         </Grid>
 
+        <!-- GridSplitter for Output View -->
+        <GridSplitter Grid.Row="3" Grid.ColumnSpan="5" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="LightGray"/>
+
+        <!-- Output View -->
+        <view:OutputView Grid.Row="4" Grid.ColumnSpan="5"/>
+
         <!-- Status Bar -->
-        <StatusBar Grid.Row="3" Grid.ColumnSpan="5">
+        <StatusBar Grid.Row="5" Grid.ColumnSpan="5">
             <StatusBarItem>
                 <TextBlock Text="{Binding CurrentProjectPath, Converter={StaticResource ProjectToStatusConverter}}" />
             </StatusBarItem>

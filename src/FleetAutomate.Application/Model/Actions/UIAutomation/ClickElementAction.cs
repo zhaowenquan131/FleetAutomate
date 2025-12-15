@@ -6,6 +6,7 @@ using FlaUI.Core.Conditions;
 using FlaUI.UIA3;
 using FleetAutomate.Model.Flow;
 using FleetAutomate.Helpers;
+using NLog;
 
 namespace FleetAutomate.Model.Actions.UIAutomation
 {
@@ -15,6 +16,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     [DataContract]
     public class ClickElementAction : IAction, INotifyPropertyChanged
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         public string Name => "Click Element";
 
         [DataMember]
@@ -104,11 +106,11 @@ namespace FleetAutomate.Model.Actions.UIAutomation
             State = ActionState.Running;
             // Yield to allow UI to update the action state immediately
             await Task.Yield();
-            global::System.Diagnostics.Debug.WriteLine($"[ClickElement] Starting - IdentifierType: {IdentifierType}, Identifier: {ElementIdentifier}, IsDoubleClick: {IsDoubleClick}, RetryTimes: {RetryTimes}");
+            Logger.Info($"[ClickElement] Starting - IdentifierType: {IdentifierType}, Identifier: {ElementIdentifier}, IsDoubleClick: {IsDoubleClick}, RetryTimes: {RetryTimes}");
 
             if (string.IsNullOrWhiteSpace(ElementIdentifier))
             {
-                global::System.Diagnostics.Debug.WriteLine("[ClickElement] ERROR: Element identifier is empty");
+                Logger.Error("[ClickElement] ERROR: Element identifier is empty");
                 State = ActionState.Failed;
                 return false;
             }
