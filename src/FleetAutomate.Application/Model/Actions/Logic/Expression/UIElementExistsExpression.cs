@@ -2,6 +2,7 @@ using System.Runtime.Serialization;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
 using FlaUI.UIA3;
+using FleetAutomate.Helpers;
 
 namespace FleetAutomate.Model.Actions.Logic.Expression
 {
@@ -64,7 +65,7 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
                 for (int i = 0; i < attempts; i++)
                 {
                     // Try to find the element
-                    element = FindElement(desktop);
+                    element = UIAutomationHelper.FindElement(desktop, IdentifierType, ElementIdentifier, "UIElementExists");
 
                     if (element != null)
                     {
@@ -98,170 +99,6 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
                 {
                     // Ignore disposal errors
                 }
-            }
-        }
-
-        private AutomationElement? FindElement(AutomationElement root)
-        {
-            try
-            {
-                return IdentifierType switch
-                {
-                    "XPath" => FindByXPath(root),
-                    "AutomationId" => FindByAutomationId(root),
-                    "Name" => FindByName(root),
-                    "ClassName" => FindByClassName(root),
-                    _ => null
-                };
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private AutomationElement? FindByXPath(AutomationElement root)
-        {
-            try
-            {
-                // Optimization: If searching from desktop and XPath starts with //Window,
-                // find windows directly instead of using XPath from desktop
-                if (ElementIdentifier.StartsWith("//Window["))
-                {
-                    var parts = ElementIdentifier.Split(new[] { "]//" }, StringSplitOptions.None);
-                    if (parts.Length >= 2)
-                    {
-                        var windowXPath = parts[0] + "]";
-
-                        AutomationElement? targetWindow = null;
-
-                        // Parse @Name="value" from window XPath
-                        var nameMatch = global::System.Text.RegularExpressions.Regex.Match(windowXPath, @"@Name\s*=\s*[""']([^""']+)[""']");
-                        if (nameMatch.Success)
-                        {
-                            var windowName = nameMatch.Groups[1].Value;
-                            var allWindows = root.FindAllChildren();
-
-                            foreach (var window in allWindows ?? Array.Empty<AutomationElement>())
-                            {
-                                try
-                                {
-                                    if (window.Name == windowName)
-                                    {
-                                        targetWindow = window;
-                                        break;
-                                    }
-                                }
-                                catch { }
-                            }
-                        }
-                        else
-                        {
-                            // Parse @AutomationId="value" from window XPath
-                            var idMatch = global::System.Text.RegularExpressions.Regex.Match(windowXPath, @"@AutomationId\s*=\s*[""']([^""']+)[""']");
-                            if (idMatch.Success)
-                            {
-                                var automationId = idMatch.Groups[1].Value;
-                                var allWindows = root.FindAllChildren();
-
-                                foreach (var window in allWindows ?? Array.Empty<AutomationElement>())
-                                {
-                                    try
-                                    {
-                                        if (window.AutomationId == automationId)
-                                        {
-                                            targetWindow = window;
-                                            break;
-                                        }
-                                    }
-                                    catch { }
-                                }
-                            }
-                        }
-
-                        if (targetWindow != null)
-                        {
-                            // Handle nested paths: parts[1], parts[2], parts[3], etc.
-                            // Example: //Window[@Name="x"]//TitleBar[@Name="y"]//Button[@Name="z"]
-                            // parts[0] = "//Window[@Name="x"
-                            // parts[1] = "TitleBar[@Name="y"
-                            // parts[2] = "Button[@Name="z"]"
-
-                            AutomationElement? currentElement = targetWindow;
-
-                            for (int i = 1; i < parts.Length; i++)
-                            {
-                                // Add back the closing bracket that was lost in split
-                                var childPath = parts[i];
-                                if (!childPath.EndsWith("]"))
-                                {
-                                    childPath += "]";
-                                }
-
-                                currentElement = FindChildElementByPath(currentElement, childPath);
-
-                                if (currentElement == null)
-                                {
-                                    global::System.Diagnostics.Debug.WriteLine($"[UIElementExists] Failed to find child element: {childPath}");
-                                    return null;
-                                }
-                            }
-
-                            return currentElement;
-                        }
-                        else
-                        {
-                            return null;
-                        }
-                    }
-                }
-
-                // Fallback to standard XPath search
-                var allElements = root.FindAllByXPath(ElementIdentifier);
-                return allElements?.FirstOrDefault();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private AutomationElement? FindByAutomationId(AutomationElement root)
-        {
-            try
-            {
-                var condition = root.ConditionFactory.ByAutomationId(ElementIdentifier);
-                return root.FindFirstDescendant(condition);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private AutomationElement? FindByName(AutomationElement root)
-        {
-            try
-            {
-                var condition = root.ConditionFactory.ByName(ElementIdentifier);
-                return root.FindFirstDescendant(condition);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private AutomationElement? FindByClassName(AutomationElement root)
-        {
-            try
-            {
-                var condition = root.ConditionFactory.ByClassName(ElementIdentifier);
-                return root.FindFirstDescendant(condition);
-            }
-            catch
-            {
-                return null;
             }
         }
 

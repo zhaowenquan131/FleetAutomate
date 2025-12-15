@@ -8,6 +8,7 @@ using FleetAutomate.Model.Flow;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.UIA3;
+using FleetAutomate.Helpers;
 
 namespace FleetAutomate.Model.Actions.UIAutomation
 {
@@ -128,7 +129,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
 
                 // Find the window
                 global::System.Diagnostics.Debug.WriteLine("[IfWindowContainsText] Searching for window...");
-                var window = FindWindow(desktop);
+                var window = UIAutomationHelper.FindWindow(desktop, IdentifierType, WindowIdentifier, "IfWindowContainsText");
                 if (window == null)
                 {
                     global::System.Diagnostics.Debug.WriteLine("[IfWindowContainsText] Window not found");
@@ -172,50 +173,6 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 {
                     // Ignore
                 }
-            }
-        }
-
-        /// <summary>
-        /// Finds the window based on identifier type
-        /// </summary>
-        private AutomationElement? FindWindow(AutomationElement desktop)
-        {
-            try
-            {
-                var allWindows = desktop.FindAllChildren();
-                global::System.Diagnostics.Debug.WriteLine($"[IfWindowContainsText] Found {allWindows?.Length ?? 0} top-level windows");
-
-                foreach (var window in allWindows ?? Array.Empty<AutomationElement>())
-                {
-                    try
-                    {
-                        if (IdentifierType == "Name")
-                        {
-                            if (window.Name == WindowIdentifier)
-                            {
-                                return window;
-                            }
-                        }
-                        else if (IdentifierType == "AutomationId")
-                        {
-                            if (window.AutomationId == WindowIdentifier)
-                            {
-                                return window;
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // Skip windows we can't access
-                    }
-                }
-
-                return null;
-            }
-            catch (Exception ex)
-            {
-                global::System.Diagnostics.Debug.WriteLine($"[IfWindowContainsText] FindWindow exception: {ex.Message}");
-                return null;
             }
         }
 
