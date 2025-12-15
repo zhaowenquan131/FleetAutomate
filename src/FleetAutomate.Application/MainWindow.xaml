@@ -1,9 +1,10 @@
-﻿<ui:FluentWindow x:Class="FleetAutomate.MainWindow"
+<ui:FluentWindow x:Class="FleetAutomate.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:avalonDock="https://github.com/Dirkster99/AvalonDock"
         xmlns:local="clr-namespace:Canvas.TestRunner"
         xmlns:vm="clr-namespace:FleetAutomate.ViewModel"
         xmlns:converters="clr-namespace:FleetAutomate.Converters"
@@ -12,7 +13,7 @@
         xmlns:view="clr-namespace:FleetAutomate.View"
         WindowStyle="None"
         mc:Ignorable="d"
-        Height="450" Width="800">
+        Height="700" Width="1200">
     <ui:FluentWindow.DataContext>
         <vm:MainViewModel/>
     </ui:FluentWindow.DataContext>
@@ -27,24 +28,22 @@
         <!-- Easing function for smooth pulsing animation -->
         <SineEase x:Key="SineEase" EasingMode="EaseInOut"/>
     </ui:FluentWindow.Resources>
+
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="150" MinHeight="100"/>
-            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="250" />
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <ui:TitleBar Background="LightGray" Height="30" Title="{Binding ActiveProject, Converter={StaticResource ProjectToTitleConverter}}" Grid.ColumnSpan="5"/>
-        <Menu Grid.Row="1" Grid.ColumnSpan="5">
+
+        <!-- TitleBar -->
+        <ui:TitleBar Background="LightGray" Height="30"
+                     Title="{Binding ActiveProject, Converter={StaticResource ProjectToTitleConverter}}"
+                     Grid.Row="0"/>
+
+        <!-- Menu -->
+        <Menu Grid.Row="1">
             <ui:MenuItem Header="File" Icon="{ui:SymbolIcon DocumentSplitHint20}">
                 <MenuItem Header="New Project" Command="{Binding CreateNewProjectCommand}"
                          InputGestureText="Ctrl+N"/>
@@ -68,8 +67,8 @@
                          InputGestureText="Alt+F4"/>
             </ui:MenuItem>
             <Separator/>
-            <ui:MenuItem Header="Open Project" Icon="{ui:SymbolIcon FolderOpen20}" 
-                        Command="{Binding OpenProjectCommand}" 
+            <ui:MenuItem Header="Open Project" Icon="{ui:SymbolIcon FolderOpen20}"
+                        Command="{Binding OpenProjectCommand}"
                         ToolTip="Open Project (Ctrl+O)"/>
             <ui:MenuItem Header="Save" Icon="{ui:SymbolIcon Save20}"
                         Command="{Binding SaveProjectCommand}"
@@ -111,311 +110,305 @@
             </ui:MenuItem>
         </Menu>
 
-        <!-- Action ToolBox (Far Left) -->
-        <Grid Grid.Row="2" Grid.Column="0">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            
-            <!-- Header -->
-            <Border Grid.Row="0" Background="DarkGray" Padding="5">
-                <TextBlock Text="ToolBox" FontWeight="Bold" FontSize="14" Foreground="White"/>
-            </Border>
-            
-            <!-- Actions ToolBox -->
-            <TreeView Grid.Row="1"
-                      Name="ActionsToolBox"
-                      ItemsSource="{Binding ActionCategories}"
-                      MouseDoubleClick="ActionsToolBox_MouseDoubleClick">
+        <!-- AvalonDock DockingManager -->
+        <avalonDock:DockingManager Grid.Row="2"
+                                   AllowMixedOrientation="True"
+                                   BorderBrush="Gray"
+                                   BorderThickness="0">
 
-                <!-- Category Level (HierarchicalDataTemplate) -->
-                <TreeView.ItemTemplate>
-                    <HierarchicalDataTemplate ItemsSource="{Binding Actions}">
-                        <StackPanel Orientation="Horizontal" Margin="2">
-                            <TextBlock Text="{Binding Icon}"
-                                       FontSize="16"
-                                       Margin="0,0,5,0"
-                                       VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Name}"
-                                       FontWeight="Bold"
-                                       FontSize="12"/>
-                        </StackPanel>
+            <avalonDock:LayoutRoot>
+                <avalonDock:LayoutPanel Orientation="Horizontal">
 
-                        <!-- Action Level (nested DataTemplate) -->
-                        <HierarchicalDataTemplate.ItemTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal" Margin="5,2">
-                                    <TextBlock Text="{Binding Icon}"
-                                               FontSize="14"
-                                               Margin="0,0,5,0"
-                                               VerticalAlignment="Center"/>
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontWeight="Bold"
-                                                   FontSize="11"/>
-                                        <TextBlock Text="{Binding Description}"
-                                                   FontSize="9"
-                                                   Foreground="Gray"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </DataTemplate>
-                        </HierarchicalDataTemplate.ItemTemplate>
-                    </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
+                    <!-- Left Side: ToolBox and TestFlows -->
+                    <avalonDock:LayoutAnchorablePaneGroup DockWidth="250" Orientation="Vertical">
 
-                <!-- All categories expanded by default -->
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <Setter Property="IsExpanded" Value="True"/>
-                    </Style>
-                </TreeView.ItemContainerStyle>
-            </TreeView>
-        </Grid>
-        
-        <GridSplitter Grid.Row="2" Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
-        
-        <!-- TestFlows List (Middle Left) -->
-        <Grid Grid.Row="2" Grid.Column="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            
-            <!-- Header -->
-            <Border Grid.Row="0" Background="LightGray" Padding="5">
-                <TextBlock Text="TestFlows" FontWeight="Bold" FontSize="14"/>
-            </Border>
-            
-            <!-- TestFlows ListView -->
-            <ListView Grid.Row="1" Name="TestFlowsListView" ItemsSource="{Binding ActiveProject.TestFlows}"
-                     SelectedItem="{Binding SelectedTestFlow}" SelectionMode="Single"
-                     PreviewMouseDown="TestFlowsListView_PreviewMouseDown">
-                <ListView.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Run TestFlow" IsEnabled="False"/>
-                        <Separator/>
-                        <MenuItem Header="Enable/Disable" IsEnabled="False"/>
-                        <Separator/>
-                        <MenuItem Header="Remove TestFlow" IsEnabled="False"/>
-                    </ContextMenu>
-                </ListView.ContextMenu>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Margin="5">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            
-                            <!-- TestFlow Name -->
-                            <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
-                            
-                            <!-- Description -->
-                            <TextBlock Grid.Row="1" Text="{Binding Description}" FontSize="10" 
-                                      Foreground="Gray" TextWrapping="Wrap" MaxWidth="220"/>
-                            
-                            <!-- Status and Actions Count -->
-                            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
-                                <TextBlock Text="●" FontSize="8" VerticalAlignment="Center" Margin="0,0,3,0">
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock">
-                                            <Setter Property="Foreground" Value="Green"/>
+                        <!-- ToolBox Pane -->
+                        <avalonDock:LayoutAnchorablePane DockHeight="*">
+                            <avalonDock:LayoutAnchorable Title="ToolBox" CanClose="False" CanHide="False">
+                                <TreeView Name="ActionsToolBox"
+                                          ItemsSource="{Binding ActionCategories}"
+                                          MouseDoubleClick="ActionsToolBox_MouseDoubleClick">
+
+                                    <!-- Category Level (HierarchicalDataTemplate) -->
+                                    <TreeView.ItemTemplate>
+                                        <HierarchicalDataTemplate ItemsSource="{Binding Actions}">
+                                            <StackPanel Orientation="Horizontal" Margin="2">
+                                                <TextBlock Text="{Binding Icon}"
+                                                           FontSize="16"
+                                                           Margin="0,0,5,0"
+                                                           VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="Bold"
+                                                           FontSize="12"/>
+                                            </StackPanel>
+
+                                            <!-- Action Level (nested DataTemplate) -->
+                                            <HierarchicalDataTemplate.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="5,2">
+                                                        <TextBlock Text="{Binding Icon}"
+                                                                   FontSize="14"
+                                                                   Margin="0,0,5,0"
+                                                                   VerticalAlignment="Center"/>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}"
+                                                                       FontWeight="Bold"
+                                                                       FontSize="11"/>
+                                                            <TextBlock Text="{Binding Description}"
+                                                                       FontSize="9"
+                                                                       Foreground="Gray"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </HierarchicalDataTemplate.ItemTemplate>
+                                        </HierarchicalDataTemplate>
+                                    </TreeView.ItemTemplate>
+
+                                    <!-- All categories expanded by default -->
+                                    <TreeView.ItemContainerStyle>
+                                        <Style TargetType="TreeViewItem">
+                                            <Setter Property="IsExpanded" Value="True"/>
+                                        </Style>
+                                    </TreeView.ItemContainerStyle>
+                                </TreeView>
+                            </avalonDock:LayoutAnchorable>
+                        </avalonDock:LayoutAnchorablePane>
+
+                        <!-- TestFlows Pane -->
+                        <avalonDock:LayoutAnchorablePane DockHeight="300">
+                            <avalonDock:LayoutAnchorable Title="TestFlows" CanClose="False" CanHide="False">
+                                <ListView Name="TestFlowsListView" ItemsSource="{Binding ActiveProject.TestFlows}"
+                                         SelectedItem="{Binding SelectedTestFlow}" SelectionMode="Single"
+                                         PreviewMouseDown="TestFlowsListView_PreviewMouseDown">
+                                    <ListView.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Run TestFlow" IsEnabled="False"/>
+                                            <Separator/>
+                                            <MenuItem Header="Enable/Disable" IsEnabled="False"/>
+                                            <Separator/>
+                                            <MenuItem Header="Remove TestFlow" IsEnabled="False"/>
+                                        </ContextMenu>
+                                    </ListView.ContextMenu>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="5">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+
+                                                <!-- TestFlow Name -->
+                                                <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
+
+                                                <!-- Description -->
+                                                <TextBlock Grid.Row="1" Text="{Binding Description}" FontSize="10"
+                                                          Foreground="Gray" TextWrapping="Wrap" MaxWidth="220"/>
+
+                                                <!-- Status and Actions Count -->
+                                                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <TextBlock Text="●" FontSize="8" VerticalAlignment="Center" Margin="0,0,3,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="Green"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                                        <Setter Property="Foreground" Value="Red"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Actions.Count, StringFormat=\{0\} actions}" FontSize="10" Foreground="Gray"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                    <Setter Property="Foreground" Value="Red"/>
+                                                    <Setter Property="Opacity" Value="0.6"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
-                                <TextBlock Text="{Binding Actions.Count, StringFormat=\{0\} actions}" FontSize="10" Foreground="Gray"/>
-                            </StackPanel>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                <Setter Property="Opacity" Value="0.6"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </ListView.ItemContainerStyle>
-            </ListView>
-        </Grid>
-        
-        <GridSplitter Grid.Row="2" Grid.Column="3" Width="5" HorizontalAlignment="Stretch"/>
-        
-        <!-- TestFlow Actions TreeView (Right Side) -->
-        <Grid Grid.Row="2" Grid.Column="4">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
+                                    </ListView.ItemContainerStyle>
+                                </ListView>
+                            </avalonDock:LayoutAnchorable>
+                        </avalonDock:LayoutAnchorablePane>
 
-            <!-- Header -->
-            <Border Grid.Row="0" Background="LightGray" Padding="5">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="TestFlow Structure" FontWeight="Bold" FontSize="14"/>
-                    <TextBlock Text="{Binding SelectedTestFlow.Name, StringFormat=' - {0}'}" FontWeight="Normal" FontSize="12" Margin="5,0,0,0"/>
-                </StackPanel>
-            </Border>
+                    </avalonDock:LayoutAnchorablePaneGroup>
 
-            <!-- Toolbar with Delete Button -->
-            <Border Grid.Row="1" Background="#F5F5F5" Padding="5" BorderBrush="LightGray" BorderThickness="0,1">
-                <StackPanel Orientation="Horizontal">
-                    <ui:Button
-                              Command="{Binding DeleteActionCommand}"
-                              Icon="{ui:SymbolIcon Delete20}"
-                              Appearance="Danger"
-                              Margin="0,0,5,0"
-                              ToolTip="Delete selected action (Delete key)"/>
-                </StackPanel>
-            </Border>
+                    <!-- Center: TestFlow Actions Document -->
+                    <avalonDock:LayoutPanel Orientation="Vertical">
+                        <avalonDock:LayoutDocumentPane>
+                            <avalonDock:LayoutDocument Title="{Binding SelectedTestFlow.Name, FallbackValue='TestFlow Structure'}"
+                                                       CanClose="False">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-            <!-- Actions TreeView -->
-            <TreeView Grid.Row="2" Name="TestFlowActionsTreeView"
-                     ItemsSource="{Binding SelectedTestFlow.Actions, Mode=OneWay}"
-                     SelectedItemChanged="TestFlowActionsTreeView_SelectedItemChanged"
-                     KeyDown="TestFlowActionsTreeView_KeyDown"
-                     PreviewMouseDown="TestFlowActionsTreeView_PreviewMouseDown"
-                     MouseDoubleClick="TestFlowActionsTreeView_MouseDoubleClick">
-                <TreeView.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Execute Step"
-                                 Command="{Binding ExecuteStepCommand}"
-                                 InputGestureText="F9"/>
-                        <Separator/>
-                        <MenuItem Header="Add Else Block"
-                                 Command="{Binding ToggleElseBlockCommand}"
-                                 InputGestureText="Ctrl+E"/>
-                        <Separator/>
-                        <MenuItem Header="Delete Action"
-                                 Command="{Binding DeleteActionCommand}"
-                                 InputGestureText="Del"/>
-                    </ContextMenu>
-                </TreeView.ContextMenu>
-                <TreeView.Style>
-                    <Style TargetType="TreeView">
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedTestFlow}" Value="{x:Null}">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TreeView.Style>
+                                    <!-- Toolbar with Delete Button -->
+                                    <Border Grid.Row="0" Background="#F5F5F5" Padding="5" BorderBrush="LightGray" BorderThickness="0,0,0,1">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ui:Button
+                                                      Command="{Binding DeleteActionCommand}"
+                                                      Icon="{ui:SymbolIcon Delete20}"
+                                                      Appearance="Danger"
+                                                      Margin="0,0,5,0"
+                                                      ToolTip="Delete selected action (Delete key)"/>
+                                        </StackPanel>
+                                    </Border>
 
-                <!-- Action Templates -->
-                <TreeView.ItemTemplate>
-                    <HierarchicalDataTemplate ItemsSource="{Binding ChildActions, Mode=OneWay, FallbackValue={x:Null}}">
-                        <StackPanel Orientation="Horizontal" Margin="2">
-                            <!-- Status Icon (changes based on ActionState) -->
-                            <TextBlock Text="{Binding State, Converter={StaticResource ActionStateToIconConverter}}"
-                                       Foreground="{Binding State, Converter={StaticResource ActionStateToColorConverter}}"
-                                       FontFamily="Segoe UI Symbol"
-                                       FontWeight="Bold"
-                                       Margin="0,0,8,0"
-                                       VerticalAlignment="Center"
-                                       FontSize="16"
-                                       RenderTransformOrigin="0.5,0.5">
-                                <TextBlock.RenderTransform>
-                                    <ScaleTransform x:Name="StatusIconScale" ScaleX="1" ScaleY="1"/>
-                                </TextBlock.RenderTransform>
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Style.Triggers>
-                                            <!-- Pulsing animation for Running state -->
-                                            <DataTrigger Binding="{Binding State}" Value="Running">
-                                                <DataTrigger.EnterActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard RepeatBehavior="Forever">
-                                                            <!-- Scale animation -->
-                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                                           From="1.0" To="1.4" Duration="0:0:0.8"
-                                                                           AutoReverse="True"
-                                                                           EasingFunction="{StaticResource SineEase}"/>
-                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
-                                                                           From="1.0" To="1.4" Duration="0:0:0.8"
-                                                                           AutoReverse="True"
-                                                                           EasingFunction="{StaticResource SineEase}"/>
-                                                            <!-- Opacity animation for breathing effect -->
-                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                           From="1.0" To="0.4" Duration="0:0:0.8"
-                                                                           AutoReverse="True"
-                                                                           EasingFunction="{StaticResource SineEase}"/>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.EnterActions>
-                                                <DataTrigger.ExitActions>
-                                                    <BeginStoryboard>
-                                                        <Storyboard>
-                                                            <!-- Reset to normal state -->
-                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
-                                                                           To="1.0" Duration="0:0:0.2"/>
-                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
-                                                                           To="1.0" Duration="0:0:0.2"/>
-                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
-                                                                           To="1.0" Duration="0:0:0.2"/>
-                                                        </Storyboard>
-                                                    </BeginStoryboard>
-                                                </DataTrigger.ExitActions>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                                    <!-- Actions TreeView -->
+                                    <TreeView Grid.Row="1" Name="TestFlowActionsTreeView"
+                                             ItemsSource="{Binding SelectedTestFlow.Actions, Mode=OneWay}"
+                                             SelectedItemChanged="TestFlowActionsTreeView_SelectedItemChanged"
+                                             KeyDown="TestFlowActionsTreeView_KeyDown"
+                                             PreviewMouseDown="TestFlowActionsTreeView_PreviewMouseDown"
+                                             MouseDoubleClick="TestFlowActionsTreeView_MouseDoubleClick">
+                                        <TreeView.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Execute Step"
+                                                         Command="{Binding ExecuteStepCommand}"
+                                                         InputGestureText="F9"/>
+                                                <Separator/>
+                                                <MenuItem Header="Add Else Block"
+                                                         Command="{Binding ToggleElseBlockCommand}"
+                                                         InputGestureText="Ctrl+E"/>
+                                                <Separator/>
+                                                <MenuItem Header="Delete Action"
+                                                         Command="{Binding DeleteActionCommand}"
+                                                         InputGestureText="Del"/>
+                                            </ContextMenu>
+                                        </TreeView.ContextMenu>
+                                        <TreeView.Style>
+                                            <Style TargetType="TreeView">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedTestFlow}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TreeView.Style>
 
-                            <!-- Action Type Icon -->
-                            <TextBlock Text="{Binding Converter={StaticResource ActionTypeToIconConverter}}"
-                                       FontSize="14"
-                                       Margin="0,0,5,0"
-                                       VerticalAlignment="Center"/>
-                            <!-- Action Info -->
-                            <StackPanel>
-                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11"/>
-                                <TextBlock Text="{Binding Description}" FontSize="10" Foreground="Gray" TextWrapping="Wrap" MaxWidth="300"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                    <TextBlock Text="State: " FontSize="9" Foreground="Gray"/>
-                                    <TextBlock Text="{Binding State}" FontSize="9" Foreground="Blue"/>
-                                    <TextBlock Text=" | Enabled: " FontSize="9" Foreground="Gray" Margin="10,0,0,0"/>
-                                    <TextBlock Text="{Binding IsEnabled}" FontSize="9" Foreground="Green"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </HierarchicalDataTemplate>
-                </TreeView.ItemTemplate>
-            </TreeView>
-            
-            <!-- No Selection Message -->
-            <TextBlock Grid.Row="2" Text="Select a TestFlow to view its structure"
-                      HorizontalAlignment="Center" VerticalAlignment="Center"
-                      Foreground="Gray" FontStyle="Italic">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedTestFlow}" Value="{x:Null}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
-        </Grid>
+                                        <!-- Action Templates -->
+                                        <TreeView.ItemTemplate>
+                                            <HierarchicalDataTemplate ItemsSource="{Binding ChildActions, Mode=OneWay, FallbackValue={x:Null}}">
+                                                <StackPanel Orientation="Horizontal" Margin="2">
+                                                    <!-- Status Icon (changes based on ActionState) -->
+                                                    <TextBlock Text="{Binding State, Converter={StaticResource ActionStateToIconConverter}}"
+                                                               Foreground="{Binding State, Converter={StaticResource ActionStateToColorConverter}}"
+                                                               FontFamily="Segoe UI Symbol"
+                                                               FontWeight="Bold"
+                                                               Margin="0,0,8,0"
+                                                               VerticalAlignment="Center"
+                                                               FontSize="16"
+                                                               RenderTransformOrigin="0.5,0.5">
+                                                        <TextBlock.RenderTransform>
+                                                            <ScaleTransform x:Name="StatusIconScale" ScaleX="1" ScaleY="1"/>
+                                                        </TextBlock.RenderTransform>
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Style.Triggers>
+                                                                    <!-- Pulsing animation for Running state -->
+                                                                    <DataTrigger Binding="{Binding State}" Value="Running">
+                                                                        <DataTrigger.EnterActions>
+                                                                            <BeginStoryboard>
+                                                                                <Storyboard RepeatBehavior="Forever">
+                                                                                    <!-- Scale animation -->
+                                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
+                                                                                                   From="1.0" To="1.4" Duration="0:0:0.8"
+                                                                                                   AutoReverse="True"
+                                                                                                   EasingFunction="{StaticResource SineEase}"/>
+                                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
+                                                                                                   From="1.0" To="1.4" Duration="0:0:0.8"
+                                                                                                   AutoReverse="True"
+                                                                                                   EasingFunction="{StaticResource SineEase}"/>
+                                                                                    <!-- Opacity animation for breathing effect -->
+                                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                                   From="1.0" To="0.4" Duration="0:0:0.8"
+                                                                                                   AutoReverse="True"
+                                                                                                   EasingFunction="{StaticResource SineEase}"/>
+                                                                                </Storyboard>
+                                                                            </BeginStoryboard>
+                                                                        </DataTrigger.EnterActions>
+                                                                        <DataTrigger.ExitActions>
+                                                                            <BeginStoryboard>
+                                                                                <Storyboard>
+                                                                                    <!-- Reset to normal state -->
+                                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
+                                                                                                   To="1.0" Duration="0:0:0.2"/>
+                                                                                    <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
+                                                                                                   To="1.0" Duration="0:0:0.2"/>
+                                                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                                                   To="1.0" Duration="0:0:0.2"/>
+                                                                                </Storyboard>
+                                                                            </BeginStoryboard>
+                                                                        </DataTrigger.ExitActions>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
 
-        <!-- GridSplitter for Output View -->
-        <GridSplitter Grid.Row="3" Grid.ColumnSpan="5" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Background="LightGray"/>
+                                                    <!-- Action Type Icon -->
+                                                    <TextBlock Text="{Binding Converter={StaticResource ActionTypeToIconConverter}}"
+                                                               FontSize="14"
+                                                               Margin="0,0,5,0"
+                                                               VerticalAlignment="Center"/>
+                                                    <!-- Action Info -->
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11"/>
+                                                        <TextBlock Text="{Binding Description}" FontSize="10" Foreground="Gray" TextWrapping="Wrap" MaxWidth="300"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                            <TextBlock Text="State: " FontSize="9" Foreground="Gray"/>
+                                                            <TextBlock Text="{Binding State}" FontSize="9" Foreground="Blue"/>
+                                                            <TextBlock Text=" | Enabled: " FontSize="9" Foreground="Gray" Margin="10,0,0,0"/>
+                                                            <TextBlock Text="{Binding IsEnabled}" FontSize="9" Foreground="Green"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </HierarchicalDataTemplate>
+                                        </TreeView.ItemTemplate>
+                                    </TreeView>
 
-        <!-- Output View -->
-        <view:OutputView Grid.Row="4" Grid.ColumnSpan="5"/>
+                                    <!-- No Selection Message -->
+                                    <TextBlock Grid.Row="1" Text="Select a TestFlow to view its structure"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Foreground="Gray" FontStyle="Italic">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedTestFlow}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+                            </avalonDock:LayoutDocument>
+                        </avalonDock:LayoutDocumentPane>
+
+                        <!-- Bottom: Output View -->
+                        <avalonDock:LayoutAnchorablePane DockHeight="200">
+                            <avalonDock:LayoutAnchorable Title="📝 Output" CanClose="False">
+                                <view:OutputView/>
+                            </avalonDock:LayoutAnchorable>
+                        </avalonDock:LayoutAnchorablePane>
+                    </avalonDock:LayoutPanel>
+
+                </avalonDock:LayoutPanel>
+            </avalonDock:LayoutRoot>
+        </avalonDock:DockingManager>
 
         <!-- Status Bar -->
-        <StatusBar Grid.Row="5" Grid.ColumnSpan="5">
+        <StatusBar Grid.Row="3">
             <StatusBarItem>
                 <TextBlock Text="{Binding CurrentProjectPath, Converter={StaticResource ProjectToStatusConverter}}" />
             </StatusBarItem>

@@ -15,7 +15,6 @@
         <!-- Toolbar -->
         <Border Grid.Row="0" Background="#F5F5F5" BorderBrush="#CCCCCC" BorderThickness="0,0,0,1" Padding="5">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="📝 Output" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
                 <Button Content="Clear" Click="ClearButton_Click" Margin="10,0,0,0" Padding="8,2" MinWidth="60"/>
                 <CheckBox x:Name="AutoScrollCheckBox" Content="Auto-scroll" IsChecked="True" VerticalAlignment="Center" Margin="10,0,0,0"/>
             </StackPanel>
