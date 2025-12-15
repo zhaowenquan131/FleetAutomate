@@ -22,6 +22,9 @@
         <converters:ActionStateToColorConverter x:Key="ActionStateToColorConverter"/>
         <converters:ActionStateToSymbolConverter x:Key="ActionStateToSymbolConverter"/>
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
+
+        <!-- Easing function for smooth pulsing animation -->
+        <SineEase x:Key="SineEase" EasingMode="EaseInOut"/>
     </ui:FluentWindow.Resources>
     <Grid>
         <Grid.RowDefinitions>
@@ -315,7 +318,54 @@
                                        FontWeight="Bold"
                                        Margin="0,0,8,0"
                                        VerticalAlignment="Center"
-                                       FontSize="16"/>
+                                       FontSize="16"
+                                       RenderTransformOrigin="0.5,0.5">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform x:Name="StatusIconScale" ScaleX="1" ScaleY="1"/>
+                                </TextBlock.RenderTransform>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <!-- Pulsing animation for Running state -->
+                                            <DataTrigger Binding="{Binding State}" Value="Running">
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard RepeatBehavior="Forever">
+                                                            <!-- Scale animation -->
+                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
+                                                                           From="1.0" To="1.4" Duration="0:0:0.8"
+                                                                           AutoReverse="True"
+                                                                           EasingFunction="{StaticResource SineEase}"/>
+                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
+                                                                           From="1.0" To="1.4" Duration="0:0:0.8"
+                                                                           AutoReverse="True"
+                                                                           EasingFunction="{StaticResource SineEase}"/>
+                                                            <!-- Opacity animation for breathing effect -->
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                           From="1.0" To="0.4" Duration="0:0:0.8"
+                                                                           AutoReverse="True"
+                                                                           EasingFunction="{StaticResource SineEase}"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <!-- Reset to normal state -->
+                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleX"
+                                                                           To="1.0" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.ScaleY"
+                                                                           To="1.0" Duration="0:0:0.2"/>
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                           To="1.0" Duration="0:0:0.2"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
                             <!-- Action Type Icon -->
                             <TextBlock Text="{Binding Converter={StaticResource ActionTypeToIconConverter}}"

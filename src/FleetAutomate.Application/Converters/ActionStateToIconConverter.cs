@@ -18,7 +18,7 @@ namespace FleetAutomate.Converters
                 return state switch
                 {
                     ActionState.Ready => "●",          // Circle for ready/idle (gray)
-                    ActionState.Running => "▶",         // Play arrow for running/executing (green)
+                    ActionState.Running => "●",         // Circle for running/executing (will be animated)
                     ActionState.Paused => "⏸",          // Pause for paused (orange)
                     ActionState.Completed => "✓",       // Checkmark for success (green)
                     ActionState.Failed => "✗",          // X mark for failed (red)
