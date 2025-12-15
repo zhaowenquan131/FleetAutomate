@@ -64,6 +64,18 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public bool ClearExistingText { get; set; } = true;
 
         /// <summary>
+        /// Number of times to retry if the action fails (0 means no retry, just one attempt)
+        /// </summary>
+        [DataMember]
+        public int RetryTimes { get; set; } = 3;
+
+        /// <summary>
+        /// Delay in milliseconds between retry attempts
+        /// </summary>
+        [DataMember]
+        public int RetryDelayMilliseconds { get; set; } = 500;
+
+        /// <summary>
         /// The automation instance (not serialized)
         /// </summary>
         [IgnoreDataMember]
@@ -88,110 +100,171 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             State = ActionState.Running;
-            global::System.Diagnostics.Debug.WriteLine($"[SetText] Starting - IdentifierType: {IdentifierType}, Identifier: {ElementIdentifier}, TextToSet: {TextToSet}");
+            global::System.Diagnostics.Debug.WriteLine($"[SetText] Starting - IdentifierType: {IdentifierType}, Identifier: {ElementIdentifier}, TextToSet: {TextToSet}, RetryTimes: {RetryTimes}");
 
-            try
+            if (string.IsNullOrWhiteSpace(ElementIdentifier))
             {
-                if (string.IsNullOrWhiteSpace(ElementIdentifier))
+                global::System.Diagnostics.Debug.WriteLine("[SetText] ERROR: Element identifier is empty");
+                State = ActionState.Failed;
+                return false;
+            }
+
+            int maxAttempts = RetryTimes + 1; // RetryTimes = 3 means 4 total attempts (1 initial + 3 retries)
+            Exception? lastException = null;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
                 {
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] ERROR: Element identifier is empty");
-                    throw new InvalidOperationException("Element identifier cannot be empty");
-                }
+                    global::System.Diagnostics.Debug.WriteLine($"[SetText] Attempt {attempt}/{maxAttempts}");
 
-                // Initialize automation (UIA3)
-                global::System.Diagnostics.Debug.WriteLine("[SetText] Initializing UIA3 automation...");
-                _automation = new UIA3Automation();
-                var desktop = _automation.GetDesktop();
-                global::System.Diagnostics.Debug.WriteLine("[SetText] Desktop obtained successfully");
+                    // Initialize automation (UIA3)
+                    global::System.Diagnostics.Debug.WriteLine("[SetText] Initializing UIA3 automation...");
+                    _automation = new UIA3Automation();
+                    var desktop = _automation.GetDesktop();
+                    global::System.Diagnostics.Debug.WriteLine("[SetText] Desktop obtained successfully");
 
-                // Try to find the element
-                global::System.Diagnostics.Debug.WriteLine("[SetText] Searching for element...");
-                var element = UIAutomationHelper.FindElement(desktop, IdentifierType, ElementIdentifier, "SetText");
-                if (element == null)
-                {
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] ERROR: Element not found");
-                    State = ActionState.Failed;
-                    return false;  // Element not found
-                }
-
-                global::System.Diagnostics.Debug.WriteLine($"[SetText] Element found: {element.Name}");
-
-                // Try to set text using Value pattern (most reliable for input fields)
-                if (element.Patterns.Value.IsSupported)
-                {
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] Value pattern is supported, using it...");
-                    var valuePattern = element.Patterns.Value.Pattern;
-
-                    if (ClearExistingText || string.IsNullOrEmpty(valuePattern.Value.ValueOrDefault))
+                    // Try to find the element
+                    global::System.Diagnostics.Debug.WriteLine("[SetText] Searching for element...");
+                    var element = UIAutomationHelper.FindElement(desktop, IdentifierType, ElementIdentifier, "SetText");
+                    if (element == null)
                     {
-                        global::System.Diagnostics.Debug.WriteLine("[SetText] Setting text directly...");
-                        valuePattern.SetValue(TextToSet);
+                        global::System.Diagnostics.Debug.WriteLine($"[SetText] Element not found on attempt {attempt}/{maxAttempts}");
+
+                        // Cleanup before retry
+                        try
+                        {
+                            _automation?.Dispose();
+                        }
+                        catch
+                        {
+                            // Ignore
+                        }
+
+                        // If this is not the last attempt, wait and retry
+                        if (attempt < maxAttempts)
+                        {
+                            global::System.Diagnostics.Debug.WriteLine($"[SetText] Waiting {RetryDelayMilliseconds}ms before retry...");
+                            await Task.Delay(RetryDelayMilliseconds, cancellationToken);
+                            continue;
+                        }
+                        else
+                        {
+                            global::System.Diagnostics.Debug.WriteLine($"[SetText] ERROR: Element not found after {maxAttempts} attempts");
+                            State = ActionState.Failed;
+                            return false;
+                        }
+                    }
+
+                    global::System.Diagnostics.Debug.WriteLine($"[SetText] Element found: {element.Name}");
+
+                    // Try to set text using Value pattern (most reliable for input fields)
+                    if (element.Patterns.Value.IsSupported)
+                    {
+                        global::System.Diagnostics.Debug.WriteLine("[SetText] Value pattern is supported, using it...");
+                        var valuePattern = element.Patterns.Value.Pattern;
+
+                        if (ClearExistingText || string.IsNullOrEmpty(valuePattern.Value.ValueOrDefault))
+                        {
+                            global::System.Diagnostics.Debug.WriteLine("[SetText] Setting text directly...");
+                            valuePattern.SetValue(TextToSet);
+                        }
+                        else
+                        {
+                            global::System.Diagnostics.Debug.WriteLine("[SetText] Appending text to existing value...");
+                            var currentValue = valuePattern.Value.ValueOrDefault ?? string.Empty;
+                            valuePattern.SetValue(currentValue + TextToSet);
+                        }
+
+                        global::System.Diagnostics.Debug.WriteLine("[SetText] Text set successfully using Value pattern");
+                    }
+                    // Fallback to direct text input via keyboard
+                    else
+                    {
+                        global::System.Diagnostics.Debug.WriteLine("[SetText] Value pattern not supported, using keyboard simulation...");
+
+                        // Focus the element
+                        element.Focus();
+
+                        // Wait a bit for focus to take effect
+                        await Task.Delay(100, cancellationToken);
+
+                        // Clear if requested
+                        if (ClearExistingText)
+                        {
+                            global::System.Diagnostics.Debug.WriteLine("[SetText] Simulating Ctrl+A to select all...");
+                            FlaUI.Core.Input.Keyboard.TypeSimultaneously(FlaUI.Core.WindowsAPI.VirtualKeyShort.CONTROL, FlaUI.Core.WindowsAPI.VirtualKeyShort.KEY_A);
+                            await Task.Delay(50, cancellationToken);
+                        }
+
+                        // Type the text
+                        global::System.Diagnostics.Debug.WriteLine("[SetText] Typing text via keyboard...");
+                        FlaUI.Core.Input.Keyboard.Type(TextToSet);
+
+                        global::System.Diagnostics.Debug.WriteLine("[SetText] Text set successfully using keyboard simulation");
+                    }
+
+                    global::System.Diagnostics.Debug.WriteLine($"[SetText] Text operation completed successfully on attempt {attempt}/{maxAttempts}");
+                    State = ActionState.Completed;
+                    return true;
+                }
+                catch (OperationCanceledException)
+                {
+                    global::System.Diagnostics.Debug.WriteLine("[SetText] Operation cancelled");
+                    State = ActionState.Failed;
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    lastException = ex;
+                    global::System.Diagnostics.Debug.WriteLine($"[SetText] EXCEPTION on attempt {attempt}/{maxAttempts}: {ex.GetType().Name} - {ex.Message}");
+
+                    // Cleanup before retry
+                    try
+                    {
+                        _automation?.Dispose();
+                    }
+                    catch
+                    {
+                        // Ignore
+                    }
+
+                    // If this is not the last attempt, wait and retry
+                    if (attempt < maxAttempts)
+                    {
+                        global::System.Diagnostics.Debug.WriteLine($"[SetText] Waiting {RetryDelayMilliseconds}ms before retry...");
+                        await Task.Delay(RetryDelayMilliseconds, cancellationToken);
+                        continue;
                     }
                     else
                     {
-                        global::System.Diagnostics.Debug.WriteLine("[SetText] Appending text to existing value...");
-                        var currentValue = valuePattern.Value.ValueOrDefault ?? string.Empty;
-                        valuePattern.SetValue(currentValue + TextToSet);
+                        global::System.Diagnostics.Debug.WriteLine($"[SetText] All {maxAttempts} attempts failed");
+                        global::System.Diagnostics.Debug.WriteLine($"[SetText] Last exception stack trace: {ex.StackTrace}");
+                        State = ActionState.Failed;
+                        return false;
                     }
-
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] Text set successfully using Value pattern");
                 }
-                // Fallback to direct text input via keyboard
-                else
+                finally
                 {
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] Value pattern not supported, using keyboard simulation...");
-
-                    // Focus the element
-                    element.Focus();
-
-                    // Wait a bit for focus to take effect
-                    await Task.Delay(100, cancellationToken);
-
-                    // Clear if requested
-                    if (ClearExistingText)
+                    // Cleanup automation (will be called on success or after last failed attempt)
+                    if (attempt == maxAttempts || State == ActionState.Completed)
                     {
-                        global::System.Diagnostics.Debug.WriteLine("[SetText] Simulating Ctrl+A to select all...");
-                        FlaUI.Core.Input.Keyboard.TypeSimultaneously(FlaUI.Core.WindowsAPI.VirtualKeyShort.CONTROL, FlaUI.Core.WindowsAPI.VirtualKeyShort.KEY_A);
-                        await Task.Delay(50, cancellationToken);
+                        try
+                        {
+                            _automation?.Dispose();
+                            global::System.Diagnostics.Debug.WriteLine("[SetText] Automation disposed");
+                        }
+                        catch
+                        {
+                            // Ignore
+                        }
                     }
-
-                    // Type the text
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] Typing text via keyboard...");
-                    FlaUI.Core.Input.Keyboard.Type(TextToSet);
-
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] Text set successfully using keyboard simulation");
-                }
-
-                global::System.Diagnostics.Debug.WriteLine("[SetText] Text operation completed successfully");
-                State = ActionState.Completed;
-                return true;
-            }
-            catch (OperationCanceledException)
-            {
-                global::System.Diagnostics.Debug.WriteLine("[SetText] Operation cancelled");
-                State = ActionState.Failed;
-                return false;
-            }
-            catch (Exception ex)
-            {
-                global::System.Diagnostics.Debug.WriteLine($"[SetText] EXCEPTION: {ex.GetType().Name} - {ex.Message}");
-                global::System.Diagnostics.Debug.WriteLine($"[SetText] Stack trace: {ex.StackTrace}");
-                State = ActionState.Failed;
-                return false;
-            }
-            finally
-            {
-                // Cleanup automation
-                try
-                {
-                    _automation?.Dispose();
-                    global::System.Diagnostics.Debug.WriteLine("[SetText] Automation disposed");
-                }
-                catch
-                {
-                    // Ignore
                 }
             }
+
+            // Should not reach here, but just in case
+            State = ActionState.Failed;
+            return false;
         }
     }
 }

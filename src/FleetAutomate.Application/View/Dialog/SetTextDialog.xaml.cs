@@ -29,6 +29,16 @@ namespace FleetAutomate.View.Dialog
         /// </summary>
         public bool ClearExistingText { get; private set; } = true;
 
+        /// <summary>
+        /// Gets the number of times to retry if the action fails.
+        /// </summary>
+        public int RetryTimes { get; private set; } = 3;
+
+        /// <summary>
+        /// Gets the delay in milliseconds between retry attempts.
+        /// </summary>
+        public int RetryDelayMilliseconds { get; private set; } = 500;
+
         public SetTextDialog()
         {
             InitializeComponent();
@@ -36,12 +46,14 @@ namespace FleetAutomate.View.Dialog
             ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
             TextToSetTextBox.TextChanged += TextToSetTextBox_TextChanged;
             UpdateOkButtonState();
+            // Set button text for creating
+            OkButton.Content = "Create";
         }
 
         /// <summary>
         /// Constructor for editing an existing SetTextAction with pre-populated values.
         /// </summary>
-        public SetTextDialog(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText)
+        public SetTextDialog(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds)
         {
             InitializeComponent();
 
@@ -50,11 +62,15 @@ namespace FleetAutomate.View.Dialog
             IdentifierTypeComboBox.SelectedIndex = GetIndexFromIdentifierType(identifierType);
             TextToSetTextBox.Text = textToSet;
             ClearExistingTextCheckBox.IsChecked = clearExistingText;
+            RetryTimesTextBox.Text = retryTimes.ToString();
+            RetryDelayTextBox.Text = retryDelayMilliseconds.ToString();
 
             ElementIdentifierTextBox.Focus();
             ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
             TextToSetTextBox.TextChanged += TextToSetTextBox_TextChanged;
             UpdateOkButtonState();
+            // Set button text for editing
+            OkButton.Content = "OK";
         }
 
         private void ElementIdentifierTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -93,11 +109,29 @@ namespace FleetAutomate.View.Dialog
                 return;
             }
 
+            // Validate retry times
+            if (!int.TryParse(RetryTimesTextBox.Text?.Trim(), out int retryTimes) || retryTimes < 0)
+            {
+                System.Windows.MessageBox.Show("Retry times must be a non-negative integer (0 or greater).", "Invalid Input", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                RetryTimesTextBox.Focus();
+                return;
+            }
+
+            // Validate retry delay
+            if (!int.TryParse(RetryDelayTextBox.Text?.Trim(), out int retryDelay) || retryDelay < 0)
+            {
+                System.Windows.MessageBox.Show("Retry delay must be a non-negative integer (0 or greater).", "Invalid Input", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                RetryDelayTextBox.Focus();
+                return;
+            }
+
             // Set results
             ElementIdentifier = identifier;
             IdentifierType = GetIdentifierTypeFromIndex(IdentifierTypeComboBox.SelectedIndex);
             TextToSet = text;
             ClearExistingText = ClearExistingTextCheckBox.IsChecked ?? true;
+            RetryTimes = retryTimes;
+            RetryDelayMilliseconds = retryDelay;
 
             // Close with success
             DialogResult = true;

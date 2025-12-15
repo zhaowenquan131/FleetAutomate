@@ -169,7 +169,7 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Set Text" dialog.
         /// Should return the element identifier, text to set, and clear flag, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText)?>? OnPromptSetText;
+        public event Func<(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds)?>? OnPromptSetText;
 
         /// <summary>
         /// Event fired when UI needs to show an "If Window Contains Text" dialog.
@@ -866,7 +866,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateSetTextAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.textToSet, result.Value.clearExistingText);
+                    action = CreateSetTextAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.textToSet, result.Value.clearExistingText, result.Value.retryTimes, result.Value.retryDelayMilliseconds);
                 }
                 // Special handling for IfWindowContainsTextAction - prompt user for window and text search parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction))
@@ -1133,7 +1133,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a SetTextAction with the given parameters.
         /// </summary>
-        private IAction? CreateSetTextAction(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText)
+        private IAction? CreateSetTextAction(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds)
         {
             try
             {
@@ -1143,7 +1143,9 @@ namespace FleetAutomate.ViewModel
                     IdentifierType = identifierType,
                     TextToSet = textToSet,
                     ClearExistingText = clearExistingText,
-                    Description = $"Set text '{textToSet}' to element: {identifierType}={elementIdentifier}{(clearExistingText ? " (clear first)" : "")}"
+                    RetryTimes = retryTimes,
+                    RetryDelayMilliseconds = retryDelayMilliseconds,
+                    Description = $"Set text '{textToSet}' to element: {identifierType}={elementIdentifier}{(clearExistingText ? " (clear first)" : "")} (retry:{retryTimes}x)"
                 };
 
                 return action;

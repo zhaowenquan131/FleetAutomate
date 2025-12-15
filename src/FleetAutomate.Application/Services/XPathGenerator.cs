@@ -21,26 +21,55 @@ namespace FleetAutomate.Services
                 var pathParts = new List<string>();
                 var current = element;
 
-                // Build path from element up to window
+                // Build path from element up to desktop, including all parent windows
                 while (current != null)
                 {
-                    var part = GenerateElementPredicate(current);
-                    if (!string.IsNullOrEmpty(part))
-                    {
-                        pathParts.Insert(0, part);
-                    }
-
-                    current = current.Parent;
-
-                    // Stop at window level
-                    if (current != null && IsWindow(current))
+                    // Check if current element is a window
+                    if (IsWindow(current))
                     {
                         var windowPart = GenerateWindowPredicate(current);
                         if (!string.IsNullOrEmpty(windowPart))
                         {
                             pathParts.Insert(0, windowPart);
                         }
+                    }
+                    else
+                    {
+                        // Regular element
+                        var part = GenerateElementPredicate(current);
+                        if (!string.IsNullOrEmpty(part))
+                        {
+                            pathParts.Insert(0, part);
+                        }
+                    }
+
+                    // Move to parent
+                    try
+                    {
+                        current = current.Parent;
+                    }
+                    catch
+                    {
+                        // If we can't get parent, we've reached the top
                         break;
+                    }
+
+                    // Stop at desktop level (desktop has no parent or is root)
+                    if (current != null)
+                    {
+                        try
+                        {
+                            var controlType = current.Properties.ControlType.ValueOrDefault.ToString() ?? "";
+                            // Stop if we reach desktop or pane at root level
+                            if (controlType.Equals("Desktop", StringComparison.OrdinalIgnoreCase))
+                            {
+                                break;
+                            }
+                        }
+                        catch
+                        {
+                            // Continue if we can't determine control type
+                        }
                     }
                 }
 

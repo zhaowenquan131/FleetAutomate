@@ -149,7 +149,7 @@ namespace FleetAutomate
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TextToSet, dialog.ClearExistingText);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TextToSet, dialog.ClearExistingText, dialog.RetryTimes, dialog.RetryDelayMilliseconds);
                 }
 
                 return null; // User cancelled
@@ -403,6 +403,11 @@ namespace FleetAutomate
                         {
                             EditClickElementAction(clickAction);
                         }
+                        // Special handling for SetTextAction - use SetTextDialog for editing
+                        else if (action is FleetAutomate.Model.Actions.UIAutomation.SetTextAction setTextAction)
+                        {
+                            EditSetTextAction(setTextAction);
+                        }
                         // Special handling for IfWindowContainsTextAction - use IfWindowContainsTextDialog for editing
                         else if (action is FleetAutomate.Model.Actions.UIAutomation.IfWindowContainsTextAction windowTextAction)
                         {
@@ -517,6 +522,40 @@ namespace FleetAutomate
                 clickAction.RetryTimes = dialog.RetryTimes;
                 clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
                 clickAction.Description = $"Click {(dialog.IsDoubleClick ? "(double) " : "")}{(dialog.UseInvoke ? "(invoke) " : "")}element: {dialog.IdentifierType}={dialog.ElementIdentifier} (retry:{dialog.RetryTimes}x)";
+
+                // Force refresh
+                var currentTestFlow = ViewModel.SelectedTestFlow;
+                ViewModel.SelectedTestFlow = null;
+                ViewModel.SelectedTestFlow = currentTestFlow;
+            }
+        }
+
+        private void EditSetTextAction(FleetAutomate.Model.Actions.UIAutomation.SetTextAction setTextAction)
+        {
+            // Extract current values from the SetTextAction
+            string elementIdentifier = setTextAction.ElementIdentifier;
+            string identifierType = setTextAction.IdentifierType;
+            string textToSet = setTextAction.TextToSet;
+            bool clearExistingText = setTextAction.ClearExistingText;
+            int retryTimes = setTextAction.RetryTimes;
+            int retryDelayMilliseconds = setTextAction.RetryDelayMilliseconds;
+
+            // Create and show the SetTextDialog with pre-populated values
+            var dialog = new FleetAutomate.View.Dialog.SetTextDialog(elementIdentifier, identifierType, textToSet, clearExistingText, retryTimes, retryDelayMilliseconds)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                // Update the SetTextAction with new values
+                setTextAction.ElementIdentifier = dialog.ElementIdentifier;
+                setTextAction.IdentifierType = dialog.IdentifierType;
+                setTextAction.TextToSet = dialog.TextToSet;
+                setTextAction.ClearExistingText = dialog.ClearExistingText;
+                setTextAction.RetryTimes = dialog.RetryTimes;
+                setTextAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
+                setTextAction.Description = $"Set text '{dialog.TextToSet}' to element: {dialog.IdentifierType}={dialog.ElementIdentifier}{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Force refresh
                 var currentTestFlow = ViewModel.SelectedTestFlow;
