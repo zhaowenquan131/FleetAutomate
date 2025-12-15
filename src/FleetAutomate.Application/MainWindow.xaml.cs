@@ -133,7 +133,7 @@ namespace FleetAutomate
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.RetryTimes, dialog.RetryDelayMilliseconds);
                 }
 
                 return null; // User cancelled
@@ -498,9 +498,11 @@ namespace FleetAutomate
             string identifierType = clickAction.IdentifierType;
             bool isDoubleClick = clickAction.IsDoubleClick;
             bool useInvoke = clickAction.UseInvoke;
+            int retryTimes = clickAction.RetryTimes;
+            int retryDelayMilliseconds = clickAction.RetryDelayMilliseconds;
 
             // Create and show the ClickElementDialog with pre-populated values
-            var dialog = new FleetAutomate.View.Dialog.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke)
+            var dialog = new FleetAutomate.View.Dialog.ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke, retryTimes, retryDelayMilliseconds)
             {
                 Owner = this
             };
@@ -512,7 +514,9 @@ namespace FleetAutomate
                 clickAction.IdentifierType = dialog.IdentifierType;
                 clickAction.IsDoubleClick = dialog.IsDoubleClick;
                 clickAction.UseInvoke = dialog.UseInvoke;
-                clickAction.Description = $"Click {(dialog.IsDoubleClick ? "(double) " : "")}{(dialog.UseInvoke ? "(invoke) " : "")}element: {dialog.IdentifierType}={dialog.ElementIdentifier}";
+                clickAction.RetryTimes = dialog.RetryTimes;
+                clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
+                clickAction.Description = $"Click {(dialog.IsDoubleClick ? "(double) " : "")}{(dialog.UseInvoke ? "(invoke) " : "")}element: {dialog.IdentifierType}={dialog.ElementIdentifier} (retry:{dialog.RetryTimes}x)";
 
                 // Force refresh
                 var currentTestFlow = ViewModel.SelectedTestFlow;

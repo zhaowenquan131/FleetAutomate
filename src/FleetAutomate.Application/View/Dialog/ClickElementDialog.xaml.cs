@@ -29,6 +29,16 @@ namespace FleetAutomate.View.Dialog
         /// </summary>
         public bool UseInvoke { get; private set; } = false;
 
+        /// <summary>
+        /// Gets the number of times to retry if the action fails.
+        /// </summary>
+        public int RetryTimes { get; private set; } = 3;
+
+        /// <summary>
+        /// Gets the delay in milliseconds between retry attempts.
+        /// </summary>
+        public int RetryDelayMilliseconds { get; private set; } = 500;
+
         public ClickElementDialog()
         {
             InitializeComponent();
@@ -40,7 +50,7 @@ namespace FleetAutomate.View.Dialog
         /// <summary>
         /// Constructor for editing an existing ClickElementAction with pre-populated values.
         /// </summary>
-        public ClickElementDialog(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke)
+        public ClickElementDialog(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds)
         {
             InitializeComponent();
 
@@ -49,6 +59,8 @@ namespace FleetAutomate.View.Dialog
             IdentifierTypeComboBox.SelectedIndex = GetIndexFromIdentifierType(identifierType);
             DoubleClickCheckBox.IsChecked = isDoubleClick;
             UseInvokeCheckBox.IsChecked = useInvoke;
+            RetryTimesTextBox.Text = retryTimes.ToString();
+            RetryDelayTextBox.Text = retryDelayMilliseconds.ToString();
 
             ElementIdentifierTextBox.Focus();
             ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
@@ -77,11 +89,29 @@ namespace FleetAutomate.View.Dialog
                 return;
             }
 
+            // Validate retry times
+            if (!int.TryParse(RetryTimesTextBox.Text?.Trim(), out int retryTimes) || retryTimes < 0)
+            {
+                System.Windows.MessageBox.Show("Retry times must be a non-negative integer (0 or greater).", "Invalid Input", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                RetryTimesTextBox.Focus();
+                return;
+            }
+
+            // Validate retry delay
+            if (!int.TryParse(RetryDelayTextBox.Text?.Trim(), out int retryDelay) || retryDelay < 0)
+            {
+                System.Windows.MessageBox.Show("Retry delay must be a non-negative integer (0 or greater).", "Invalid Input", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                RetryDelayTextBox.Focus();
+                return;
+            }
+
             // Set results
             ElementIdentifier = identifier;
             IdentifierType = GetIdentifierTypeFromIndex(IdentifierTypeComboBox.SelectedIndex);
             IsDoubleClick = DoubleClickCheckBox.IsChecked ?? false;
             UseInvoke = UseInvokeCheckBox.IsChecked ?? false;
+            RetryTimes = retryTimes;
+            RetryDelayMilliseconds = retryDelay;
 
             // Close with success
             DialogResult = true;

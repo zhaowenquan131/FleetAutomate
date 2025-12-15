@@ -6,7 +6,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="Click Element"
-        Height="400"
+        Height="550"
         Width="550"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
@@ -60,6 +60,29 @@
                          Content="Use Invoke Pattern"
                          Margin="0,0,0,15"
                          ToolTip="Use Invoke pattern instead of mouse click (useful when element is behind another element)"/>
+
+                <!-- Retry Times -->
+                <TextBlock Text="Retry Times" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="RetryTimesTextBox"
+                        Padding="8"
+                        Margin="0,0,0,5"
+                        Height="32"
+                        Text="3"
+                        ToolTip="Number of times to retry if action fails (0 = no retry)"/>
+                <TextBlock Text="Number of retry attempts if the action fails (0 = no retry, 1 attempt only)"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,15"/>
+
+                <!-- Retry Delay -->
+                <TextBlock Text="Retry Delay (ms)" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="RetryDelayTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="32"
+                        Text="500"
+                        ToolTip="Delay in milliseconds between retry attempts"/>
 
                 <!-- Hint Text -->
                 <TextBlock Text="XPath Example: //Button[@Name='Login']"

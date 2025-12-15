@@ -163,7 +163,7 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Click Element" dialog.
         /// Should return the element click parameters, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke)?>? OnPromptClickElement;
+        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds)?>? OnPromptClickElement;
 
         /// <summary>
         /// Event fired when UI needs to show a "Set Text" dialog.
@@ -854,7 +854,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke);
+                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.retryTimes, result.Value.retryDelayMilliseconds);
                 }
                 // Special handling for SetTextAction - prompt user for element and text parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.SetTextAction))
@@ -1106,7 +1106,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a ClickElementAction with the given parameters.
         /// </summary>
-        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke)
+        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds)
         {
             try
             {
@@ -1116,7 +1116,9 @@ namespace FleetAutomate.ViewModel
                     IdentifierType = identifierType,
                     IsDoubleClick = isDoubleClick,
                     UseInvoke = useInvoke,
-                    Description = $"Click {(isDoubleClick ? "(double) " : "")}{(useInvoke ? "(invoke) " : "")}element: {identifierType}={elementIdentifier}"
+                    RetryTimes = retryTimes,
+                    RetryDelayMilliseconds = retryDelayMilliseconds,
+                    Description = $"Click {(isDoubleClick ? "(double) " : "")}{(useInvoke ? "(invoke) " : "")}element: {identifierType}={elementIdentifier} (retry:{retryTimes}x)"
                 };
 
                 return action;
