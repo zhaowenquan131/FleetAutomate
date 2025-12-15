@@ -100,6 +100,8 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             State = ActionState.Running;
+            // Yield to allow UI to update the action state immediately
+            await Task.Yield();
             global::System.Diagnostics.Debug.WriteLine($"[SetText] Starting - IdentifierType: {IdentifierType}, Identifier: {ElementIdentifier}, TextToSet: {TextToSet}, RetryTimes: {RetryTimes}");
 
             if (string.IsNullOrWhiteSpace(ElementIdentifier))

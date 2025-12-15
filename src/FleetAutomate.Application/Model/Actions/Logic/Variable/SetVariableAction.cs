@@ -67,20 +67,22 @@ namespace FleetAutomate.Model.Actions.Logic
             throw new NotImplementedException();
         }
 
-        public Task<bool> ExecuteAsync(CancellationToken cancellationToken)
+        public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             State = ActionState.Running;
-            
+            // Yield to allow UI to update the action state immediately
+            await Task.Yield();
+
             try
             {
                 Environment.Variables.Add(Variable);
                 State = ActionState.Completed;
-                return Task.FromResult(true);
+                return true;
             }
             catch
             {
                 State = ActionState.Failed;
-                return Task.FromResult(false);
+                return false;
             }
         }
     }

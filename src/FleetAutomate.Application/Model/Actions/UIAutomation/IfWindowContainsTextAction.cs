@@ -104,6 +104,8 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
             State = ActionState.Running;
+            // Yield to allow UI to update the action state immediately
+            await Task.Yield();
             Result = false;
 
             global::System.Diagnostics.Debug.WriteLine($"[IfWindowContainsText] Starting - Window: {WindowIdentifier}, SearchText: '{SearchText}', CaseSensitive: {CaseSensitive}");

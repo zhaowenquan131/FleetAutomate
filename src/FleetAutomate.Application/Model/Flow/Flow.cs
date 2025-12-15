@@ -102,11 +102,22 @@ namespace FleetAutomate.Model.Flow
             {
                 leftActions = [.. Actions.SkipWhile(a => a != CurrentAction)];
             }
+            else
+            {
+                // Reset all action states to Ready when starting a fresh execution
+                ResetAllActionStates();
+            }
 
             State = ActionState.Running;
+            // Yield to allow UI to update the TestFlow state
+            await Task.Yield();
+
             foreach (var action in leftActions)
             {
                 CurrentAction = action;
+                // Yield to allow UI to update CurrentAction indicator
+                await Task.Yield();
+
                 try
                 {
                     if (CurrentAction is ILogicAction logicAction)
@@ -118,19 +129,25 @@ namespace FleetAutomate.Model.Flow
                     {
                         return false;
                     }
+
+                    // Yield after each action to allow UI to update action states
+                    await Task.Yield();
                 }
                 catch (OperationCanceledException ex)
                 {
                     State = ActionState.Paused;
+                    await Task.Yield();
                     return true;
                 }
                 catch (Exception ex)
                 {
                     State = ActionState.Failed;
+                    await Task.Yield();
                     return false;
                 }
             }
             State = ActionState.Completed;
+            await Task.Yield();
             return true;
         }
 
@@ -145,6 +162,64 @@ namespace FleetAutomate.Model.Flow
             }
             State = ActionState.Ready;
             CurrentAction = null!;
+
+            // Reset all action states to Ready when project is opened
+            ResetAllActionStates();
+        }
+
+        /// <summary>
+        /// Recursively resets all action states to Ready, including nested composite actions.
+        /// </summary>
+        private void ResetAllActionStates()
+        {
+            foreach (var action in Actions)
+            {
+                ResetActionState(action);
+            }
+        }
+
+        /// <summary>
+        /// Recursively resets an action's state to Ready, including all child actions if it's a composite action.
+        /// </summary>
+        /// <param name="action">The action to reset.</param>
+        private void ResetActionState(IAction action)
+        {
+            action.State = ActionState.Ready;
+
+            // Handle composite actions (actions with child actions)
+            if (action is ICompositeAction compositeAction)
+            {
+                var childActions = compositeAction.GetChildActions();
+                if (childActions != null)
+                {
+                    foreach (var childAction in childActions)
+                    {
+                        ResetActionState(childAction);
+                    }
+                }
+            }
+
+            // Handle IfAction specifically since it has multiple blocks
+            if (action is Actions.Logic.IfAction ifAction)
+            {
+                // Reset IfBlock actions
+                foreach (var ifBlockAction in ifAction.IfBlock)
+                {
+                    ResetActionState(ifBlockAction);
+                }
+
+                // Reset ElseBlock actions
+                foreach (var elseBlockAction in ifAction.ElseBlock)
+                {
+                    ResetActionState(elseBlockAction);
+                }
+
+                // Reset ElseIf actions (which are themselves IfActions)
+                foreach (var elseIfAction in ifAction.ElseIfs)
+                {
+                    ResetActionState(elseIfAction);
+                }
+            }
         }
 
         /// <summary>
