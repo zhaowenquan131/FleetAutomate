@@ -72,9 +72,60 @@ namespace FleetAutomate.ViewModel
                 {
                     // Update command states
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                 }
             }
         }
+
+        private bool _isTestFlowRunning;
+        /// <summary>
+        /// Gets whether a TestFlow is currently running.
+        /// </summary>
+        public bool IsTestFlowRunning
+        {
+            get => _isTestFlowRunning;
+            set
+            {
+                if (SetProperty(ref _isTestFlowRunning, value))
+                {
+                    OnPropertyChanged(nameof(IsTestFlowNotRunning));
+                    ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets whether a TestFlow is NOT currently running (inverse of IsTestFlowRunning).
+        /// </summary>
+        public bool IsTestFlowNotRunning => !IsTestFlowRunning;
+
+        private bool _isTestFlowPaused;
+        /// <summary>
+        /// Gets whether a TestFlow is currently paused.
+        /// </summary>
+        public bool IsTestFlowPaused
+        {
+            get => _isTestFlowPaused;
+            set
+            {
+                if (SetProperty(ref _isTestFlowPaused, value))
+                {
+                    OnPropertyChanged(nameof(IsTestFlowNotPaused));
+                    ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets whether a TestFlow is NOT currently paused (inverse of IsTestFlowPaused).
+        /// </summary>
+        public bool IsTestFlowNotPaused => !IsTestFlowPaused;
 
         private IAction? _selectedAction;
         /// <summary>
@@ -219,6 +270,21 @@ namespace FleetAutomate.ViewModel
         public ICommand RunTestFlowCommand { get; }
 
         /// <summary>
+        /// Command to pause the currently running TestFlow.
+        /// </summary>
+        public ICommand PauseTestFlowCommand { get; }
+
+        /// <summary>
+        /// Command to continue a paused TestFlow.
+        /// </summary>
+        public ICommand ContinueTestFlowCommand { get; }
+
+        /// <summary>
+        /// Command to stop the currently running TestFlow.
+        /// </summary>
+        public ICommand StopTestFlowCommand { get; }
+
+        /// <summary>
         /// Command to execute only the selected action.
         /// </summary>
         public ICommand ExecuteStepCommand { get; }
@@ -248,7 +314,10 @@ namespace FleetAutomate.ViewModel
             CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectLoaded);
             DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && SelectedTestFlow != null);
             ToggleElseBlockCommand = new RelayCommand(ToggleElseBlock, CanToggleElseBlock);
-            RunTestFlowCommand = new RelayCommand(RunTestFlow, () => SelectedTestFlow != null);
+            RunTestFlowCommand = new RelayCommand(RunTestFlow, () => SelectedTestFlow != null && !IsTestFlowRunning);
+            PauseTestFlowCommand = new RelayCommand(PauseTestFlow, () => IsTestFlowRunning && !IsTestFlowPaused);
+            ContinueTestFlowCommand = new RelayCommand(ContinueTestFlow, () => IsTestFlowPaused);
+            StopTestFlowCommand = new RelayCommand(StopTestFlow, () => IsTestFlowRunning);
             ExecuteStepCommand = new RelayCommand(ExecuteStep, () => SelectedAction != null);
             ExecuteFromThisStepCommand = new RelayCommand(ExecuteFromThisStep, () => SelectedAction != null && SelectedTestFlow != null);
             AddExistingTestFlowCommand = new RelayCommand(AddExistingTestFlow, () => IsProjectLoaded);
@@ -1335,21 +1404,139 @@ namespace FleetAutomate.ViewModel
 
             try
             {
+                // Set running state
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = false;
+
                 // Sync the observable flow to the model before execution
                 SelectedTestFlow.SyncToModel();
 
                 // Execute the test flow
                 var result = await SelectedTestFlow.Model.ExecuteAsync(CancellationToken.None);
 
-                if (!result)
+                // Update state based on TestFlow state
+                if (SelectedTestFlow.Model.State == ActionState.Paused)
                 {
-                    OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                    // TestFlow was paused - keep running flag true, set paused flag true
+                    IsTestFlowPaused = true;
+                    // Don't show error message for pause
                 }
-                // Success - no message shown
+                else
+                {
+                    // TestFlow completed, failed, or stopped - reset both flags
+                    IsTestFlowRunning = false;
+                    IsTestFlowPaused = false;
+
+                    if (!result)
+                    {
+                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                    }
+                    // Success - no message shown
+                }
             }
             catch (Exception ex)
             {
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
                 OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Pauses the currently running TestFlow.
+        /// </summary>
+        private void PauseTestFlow()
+        {
+            if (SelectedTestFlow == null || !IsTestFlowRunning)
+            {
+                return;
+            }
+
+            try
+            {
+                // Request cancellation to pause
+                SelectedTestFlow.Model.Cancel();
+                IsTestFlowPaused = true;
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Pause Error", $"An error occurred while pausing the TestFlow: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Continues a paused TestFlow.
+        /// </summary>
+        private async void ContinueTestFlow()
+        {
+            if (SelectedTestFlow == null || !IsTestFlowPaused)
+            {
+                return;
+            }
+
+            try
+            {
+                // Reset paused state and continue execution
+                IsTestFlowPaused = false;
+
+                // DON'T sync to model here - we want to preserve the paused state and CurrentAction
+                // Syncing would reset the state from Paused to Ready and lose our position
+
+                // Execute the test flow from where it was paused
+                var result = await SelectedTestFlow.Model.ExecuteAsync(CancellationToken.None);
+
+                // Update state based on TestFlow state
+                if (SelectedTestFlow.Model.State == ActionState.Paused)
+                {
+                    // TestFlow was paused again - keep running flag true, set paused flag true
+                    IsTestFlowPaused = true;
+                    // Don't show error message for pause
+                }
+                else
+                {
+                    // TestFlow completed, failed, or stopped - reset both flags
+                    IsTestFlowRunning = false;
+                    IsTestFlowPaused = false;
+
+                    if (!result)
+                    {
+                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                    }
+                    // Success - no message shown
+                }
+            }
+            catch (Exception ex)
+            {
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
+                OnShowError?.Invoke("Continue Error", $"An error occurred while continuing the TestFlow: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Stops the currently running TestFlow.
+        /// </summary>
+        private void StopTestFlow()
+        {
+            if (SelectedTestFlow == null || !IsTestFlowRunning)
+            {
+                return;
+            }
+
+            try
+            {
+                // Request cancellation to stop
+                SelectedTestFlow.Model.Cancel();
+
+                // Reset the TestFlow state to Ready so it doesn't try to resume
+                SelectedTestFlow.Model.State = ActionState.Ready;
+
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Stop Error", $"An error occurred while stopping the TestFlow: {ex.Message}");
             }
         }
 
@@ -1406,20 +1593,40 @@ namespace FleetAutomate.ViewModel
 
             try
             {
+                // Set running state
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = false;
+
                 // Sync the observable flow to the model before execution
                 SelectedTestFlow.SyncToModel();
 
                 // Execute the test flow starting from the selected action
                 var result = await SelectedTestFlow.Model.ExecuteFromAction(SelectedAction, CancellationToken.None);
 
-                if (!result)
+                // Update state based on TestFlow state
+                if (SelectedTestFlow.Model.State == ActionState.Paused)
                 {
-                    OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                    // TestFlow was paused - keep running flag true, set paused flag true
+                    IsTestFlowPaused = true;
+                    // Don't show error message for pause
                 }
-                // Success - no message shown
+                else
+                {
+                    // TestFlow completed, failed, or stopped - reset both flags
+                    IsTestFlowRunning = false;
+                    IsTestFlowPaused = false;
+
+                    if (!result)
+                    {
+                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                    }
+                    // Success - no message shown
+                }
             }
             catch (Exception ex)
             {
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
                 OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
             }
         }

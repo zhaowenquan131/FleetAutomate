@@ -92,11 +92,27 @@ namespace FleetAutomate.Model.Flow
 
         public void Cancel()
         {
-            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource?.Cancel();
+        }
+
+        /// <summary>
+        /// Prepares for execution by ensuring we have a valid CancellationTokenSource.
+        /// </summary>
+        private void PrepareForExecution()
+        {
+            // If the CancellationTokenSource is cancelled or disposed, create a new one
+            if (_cancellationTokenSource == null || _cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource?.Dispose();
+                _cancellationTokenSource = new CancellationTokenSource();
+            }
         }
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
+            // Prepare for execution (recreate CancellationTokenSource if needed)
+            PrepareForExecution();
+
             var leftActions = Actions;
             if (State == ActionState.Paused || State == ActionState.Failed)
             {
@@ -124,9 +140,20 @@ namespace FleetAutomate.Model.Flow
                     {
                         logicAction.Environment = Environment;
                     }
-                    var rst = await CurrentAction.ExecuteAsync(cancellationToken);
+                    // Use our own CancellationToken so we can cancel and resume
+                    var rst = await CurrentAction.ExecuteAsync(_cancellationTokenSource.Token);
                     if (!rst)
                     {
+                        // Check if cancellation was requested (user clicked Pause)
+                        if (_cancellationTokenSource.IsCancellationRequested)
+                        {
+                            State = ActionState.Paused;
+                            await Task.Yield();
+                            return true;
+                        }
+                        // Otherwise, it's a real failure
+                        State = ActionState.Failed;
+                        await Task.Yield();
                         return false;
                     }
 
@@ -164,6 +191,9 @@ namespace FleetAutomate.Model.Flow
             {
                 throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
             }
+
+            // Prepare for execution (recreate CancellationTokenSource if needed)
+            PrepareForExecution();
 
             // Set the current action and state to Paused so ExecuteAsync will use SkipWhile logic
             CurrentAction = startAction;

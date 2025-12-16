@@ -116,6 +116,14 @@ namespace FleetAutomate.Model.Actions.UIAutomation
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                // Check for cancellation before each attempt
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    global::System.Diagnostics.Debug.WriteLine("[SetText] Cancellation requested");
+                    State = ActionState.Failed;
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
                 try
                 {
                     global::System.Diagnostics.Debug.WriteLine($"[SetText] Attempt {attempt}/{maxAttempts}");

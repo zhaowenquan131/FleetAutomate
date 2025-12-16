@@ -74,9 +74,69 @@
                         Command="{Binding SaveProjectCommand}"
                         IsEnabled="{Binding IsProjectLoaded}"
                         ToolTip="Save Project (Ctrl+S)"/>
+            <!-- Execute button - visible when not running -->
             <ui:MenuItem Header="Execute" Icon="{ui:SymbolIcon Play20}"
                         Command="{Binding RunTestFlowCommand}"
-                        ToolTip="Execute TestFlow (F5)"/>
+                        ToolTip="Execute TestFlow (F5)">
+                <ui:MenuItem.Style>
+                    <Style TargetType="ui:MenuItem">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsTestFlowRunning}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:MenuItem.Style>
+            </ui:MenuItem>
+            <!-- Pause button - visible when running and not paused -->
+            <ui:MenuItem Header="Pause" Icon="{ui:SymbolIcon Pause20}"
+                        Command="{Binding PauseTestFlowCommand}"
+                        ToolTip="Pause TestFlow">
+                <ui:MenuItem.Style>
+                    <Style TargetType="ui:MenuItem">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsTestFlowRunning}" Value="True"/>
+                                    <Condition Binding="{Binding IsTestFlowNotPaused}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:MenuItem.Style>
+            </ui:MenuItem>
+            <!-- Continue button - visible when paused -->
+            <ui:MenuItem Header="Continue" Icon="{ui:SymbolIcon Play20}"
+                        Command="{Binding ContinueTestFlowCommand}"
+                        ToolTip="Continue TestFlow">
+                <ui:MenuItem.Style>
+                    <Style TargetType="ui:MenuItem">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsTestFlowPaused}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:MenuItem.Style>
+            </ui:MenuItem>
+            <!-- Stop button - visible when running -->
+            <ui:MenuItem Header="Stop" Icon="{ui:SymbolIcon Stop20}"
+                        Command="{Binding StopTestFlowCommand}"
+                        ToolTip="Stop TestFlow">
+                <ui:MenuItem.Style>
+                    <Style TargetType="ui:MenuItem">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsTestFlowRunning}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:MenuItem.Style>
+            </ui:MenuItem>
             <ui:MenuItem Header="Edit" Icon="{ui:SymbolIcon DocumentEdit20}">
                 <MenuItem Header="Undo" InputGestureText="Ctrl+Z" IsEnabled="False"/>
                 <MenuItem Header="Redo" InputGestureText="Ctrl+Y" IsEnabled="False"/>
