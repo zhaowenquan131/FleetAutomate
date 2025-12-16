@@ -59,16 +59,22 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public string? CurrentProjectPath => ProjectManager?.CurrentProjectFilePath;
 
-        private ObservableFlow? _selectedTestFlow;
         /// <summary>
-        /// Gets or sets the currently selected TestFlow.
+        /// Collection of currently open TestFlows (tabs).
         /// </summary>
-        public ObservableFlow? SelectedTestFlow
+        [ObservableProperty]
+        private ObservableCollection<ObservableFlow> _openTestFlows = new();
+
+        private ObservableFlow? _activeTestFlow;
+        /// <summary>
+        /// Gets or sets the currently active TestFlow (active tab).
+        /// </summary>
+        public ObservableFlow? ActiveTestFlow
         {
-            get => _selectedTestFlow;
+            get => _activeTestFlow;
             set
             {
-                if (SetProperty(ref _selectedTestFlow, value))
+                if (SetProperty(ref _activeTestFlow, value))
                 {
                     // Update command states
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
@@ -299,6 +305,16 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public ICommand AddExistingTestFlowCommand { get; }
 
+        /// <summary>
+        /// Command to open a TestFlow in a new tab (or activate if already open).
+        /// </summary>
+        public ICommand OpenTestFlowInTabCommand { get; }
+
+        /// <summary>
+        /// Command to close a TestFlow tab.
+        /// </summary>
+        public ICommand CloseTestFlowTabCommand { get; }
+
         public MainViewModel()
         {
             _projectManager = new TestProjectManager();
@@ -312,15 +328,17 @@ namespace FleetAutomate.ViewModel
             SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded);
             SaveProjectAsCommand = new RelayCommand(SaveProjectAs, () => IsProjectLoaded);
             CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectLoaded);
-            DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && SelectedTestFlow != null);
+            DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && ActiveTestFlow != null);
             ToggleElseBlockCommand = new RelayCommand(ToggleElseBlock, CanToggleElseBlock);
-            RunTestFlowCommand = new RelayCommand(RunTestFlow, () => SelectedTestFlow != null && !IsTestFlowRunning);
+            RunTestFlowCommand = new RelayCommand(RunTestFlow, () => ActiveTestFlow != null && !IsTestFlowRunning);
             PauseTestFlowCommand = new RelayCommand(PauseTestFlow, () => IsTestFlowRunning && !IsTestFlowPaused);
             ContinueTestFlowCommand = new RelayCommand(ContinueTestFlow, () => IsTestFlowPaused);
             StopTestFlowCommand = new RelayCommand(StopTestFlow, () => IsTestFlowRunning);
             ExecuteStepCommand = new RelayCommand(ExecuteStep, () => SelectedAction != null);
-            ExecuteFromThisStepCommand = new RelayCommand(ExecuteFromThisStep, () => SelectedAction != null && SelectedTestFlow != null);
+            ExecuteFromThisStepCommand = new RelayCommand(ExecuteFromThisStep, () => SelectedAction != null && ActiveTestFlow != null);
             AddExistingTestFlowCommand = new RelayCommand(AddExistingTestFlow, () => IsProjectLoaded);
+            OpenTestFlowInTabCommand = new RelayCommand<ObservableFlow>(OpenTestFlowInTab);
+            CloseTestFlowTabCommand = new RelayCommand<ObservableFlow>(CloseTestFlowTab);
 
             // Initialize action categories for toolbox
             InitializeActionCategories();
@@ -336,6 +354,10 @@ namespace FleetAutomate.ViewModel
         {
             ProjectManager.OnProjectChanged += (project) =>
             {
+                // Clear all open tabs when project changes
+                OpenTestFlows.Clear();
+                ActiveTestFlow = null;
+
                 OnPropertyChanged(nameof(ActiveProject));
                 OnPropertyChanged(nameof(IsProjectLoaded));
 
@@ -861,7 +883,7 @@ namespace FleetAutomate.ViewModel
         /// <param name="actionTemplate">The action template to create an instance from.</param>
         public void AddActionFromTemplate(ActionTemplate actionTemplate)
         {
-            if (SelectedTestFlow == null)
+            if (ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No TestFlow Selected", "Please select a TestFlow before adding actions.");
                 return;
@@ -989,7 +1011,7 @@ namespace FleetAutomate.ViewModel
                     else
                     {
                         // Add to the root TestFlow Actions collection
-                        SelectedTestFlow.Actions.Add(action);
+                        ActiveTestFlow.Actions.Add(action);
                     }
 
                     // Select the newly added action
@@ -1056,7 +1078,7 @@ namespace FleetAutomate.ViewModel
                 // Create and return SetVariableAction<object>
                 var action = new SetVariableAction<object>(variableName, parsedValue)
                 {
-                    Environment = SelectedTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment(),
+                    Environment = ActiveTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment(),
                     Variable = variable
                 };
 
@@ -1115,7 +1137,7 @@ namespace FleetAutomate.ViewModel
                 var action = new IfAction
                 {
                     Condition = condition,
-                    Environment = SelectedTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment(),
+                    Environment = ActiveTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment(),
                     Description = description
                 };
 
@@ -1310,7 +1332,7 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void DeleteSelectedAction()
         {
-            if (SelectedAction == null || SelectedTestFlow == null)
+            if (SelectedAction == null || ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No Action Selected", "Please select an action to delete.");
                 return;
@@ -1319,12 +1341,12 @@ namespace FleetAutomate.ViewModel
             try
             {
                 // Try to remove from root first
-                var removed = SelectedTestFlow.RemoveAction(SelectedAction);
+                var removed = ActiveTestFlow.RemoveAction(SelectedAction);
 
                 if (!removed)
                 {
                     // If not found in root, search in nested collections (composite actions)
-                    removed = RemoveActionFromNested(SelectedTestFlow.Actions, SelectedAction);
+                    removed = RemoveActionFromNested(ActiveTestFlow.Actions, SelectedAction);
                 }
 
                 if (removed)
@@ -1392,11 +1414,57 @@ namespace FleetAutomate.ViewModel
         }
 
         /// <summary>
+        /// Opens a TestFlow in a new tab, or activates it if already open.
+        /// </summary>
+        /// <param name="flow">The TestFlow to open.</param>
+        private void OpenTestFlowInTab(ObservableFlow? flow)
+        {
+            if (flow == null)
+                return;
+
+            // Check if already open
+            if (OpenTestFlows.Contains(flow))
+            {
+                // Activate existing tab
+                ActiveTestFlow = flow;
+                return;
+            }
+
+            // Add to open tabs
+            OpenTestFlows.Add(flow);
+
+            // Make it active
+            ActiveTestFlow = flow;
+        }
+
+        /// <summary>
+        /// Closes a TestFlow tab.
+        /// </summary>
+        /// <param name="flow">The TestFlow to close.</param>
+        private void CloseTestFlowTab(ObservableFlow? flow)
+        {
+            if (flow == null)
+                return;
+
+            // Future: Check for unsaved changes
+            // if (flow.HasUnsavedChanges) { ... prompt ... }
+
+            // Remove from open tabs
+            OpenTestFlows.Remove(flow);
+
+            // If closing active tab, switch to another
+            if (ActiveTestFlow == flow)
+            {
+                ActiveTestFlow = OpenTestFlows.LastOrDefault();
+            }
+        }
+
+        /// <summary>
         /// Executes the currently selected TestFlow.
         /// </summary>
         private async void RunTestFlow()
         {
-            if (SelectedTestFlow == null)
+            if (ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No TestFlow Selected", "Please select a TestFlow to execute.");
                 return;
@@ -1409,13 +1477,13 @@ namespace FleetAutomate.ViewModel
                 IsTestFlowPaused = false;
 
                 // Sync the observable flow to the model before execution
-                SelectedTestFlow.SyncToModel();
+                ActiveTestFlow.SyncToModel();
 
                 // Execute the test flow
-                var result = await SelectedTestFlow.Model.ExecuteAsync(CancellationToken.None);
+                var result = await ActiveTestFlow.Model.ExecuteAsync(CancellationToken.None);
 
                 // Update state based on TestFlow state
-                if (SelectedTestFlow.Model.State == ActionState.Paused)
+                if (ActiveTestFlow.Model.State == ActionState.Paused)
                 {
                     // TestFlow was paused - keep running flag true, set paused flag true
                     IsTestFlowPaused = true;
@@ -1429,7 +1497,7 @@ namespace FleetAutomate.ViewModel
 
                     if (!result)
                     {
-                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
                     }
                     // Success - no message shown
                 }
@@ -1447,7 +1515,7 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void PauseTestFlow()
         {
-            if (SelectedTestFlow == null || !IsTestFlowRunning)
+            if (ActiveTestFlow == null || !IsTestFlowRunning)
             {
                 return;
             }
@@ -1455,7 +1523,7 @@ namespace FleetAutomate.ViewModel
             try
             {
                 // Request cancellation to pause
-                SelectedTestFlow.Model.Cancel();
+                ActiveTestFlow.Model.Cancel();
                 IsTestFlowPaused = true;
             }
             catch (Exception ex)
@@ -1469,7 +1537,7 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private async void ContinueTestFlow()
         {
-            if (SelectedTestFlow == null || !IsTestFlowPaused)
+            if (ActiveTestFlow == null || !IsTestFlowPaused)
             {
                 return;
             }
@@ -1483,10 +1551,10 @@ namespace FleetAutomate.ViewModel
                 // Syncing would reset the state from Paused to Ready and lose our position
 
                 // Execute the test flow from where it was paused
-                var result = await SelectedTestFlow.Model.ExecuteAsync(CancellationToken.None);
+                var result = await ActiveTestFlow.Model.ExecuteAsync(CancellationToken.None);
 
                 // Update state based on TestFlow state
-                if (SelectedTestFlow.Model.State == ActionState.Paused)
+                if (ActiveTestFlow.Model.State == ActionState.Paused)
                 {
                     // TestFlow was paused again - keep running flag true, set paused flag true
                     IsTestFlowPaused = true;
@@ -1500,7 +1568,7 @@ namespace FleetAutomate.ViewModel
 
                     if (!result)
                     {
-                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
                     }
                     // Success - no message shown
                 }
@@ -1518,7 +1586,7 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void StopTestFlow()
         {
-            if (SelectedTestFlow == null || !IsTestFlowRunning)
+            if (ActiveTestFlow == null || !IsTestFlowRunning)
             {
                 return;
             }
@@ -1526,10 +1594,10 @@ namespace FleetAutomate.ViewModel
             try
             {
                 // Request cancellation to stop
-                SelectedTestFlow.Model.Cancel();
+                ActiveTestFlow.Model.Cancel();
 
                 // Reset the TestFlow state to Ready so it doesn't try to resume
-                SelectedTestFlow.Model.State = ActionState.Ready;
+                ActiveTestFlow.Model.State = ActionState.Ready;
 
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
@@ -1554,9 +1622,9 @@ namespace FleetAutomate.ViewModel
             try
             {
                 // For ILogicAction, ensure it has an environment
-                if (SelectedAction is ILogicAction logicAction && SelectedTestFlow != null)
+                if (SelectedAction is ILogicAction logicAction && ActiveTestFlow != null)
                 {
-                    logicAction.Environment = SelectedTestFlow.Model.Environment;
+                    logicAction.Environment = ActiveTestFlow.Model.Environment;
                 }
 
                 // Execute the action
@@ -1585,7 +1653,7 @@ namespace FleetAutomate.ViewModel
                 return;
             }
 
-            if (SelectedTestFlow == null)
+            if (ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No TestFlow Selected", "Please select a TestFlow.");
                 return;
@@ -1598,13 +1666,13 @@ namespace FleetAutomate.ViewModel
                 IsTestFlowPaused = false;
 
                 // Sync the observable flow to the model before execution
-                SelectedTestFlow.SyncToModel();
+                ActiveTestFlow.SyncToModel();
 
                 // Execute the test flow starting from the selected action
-                var result = await SelectedTestFlow.Model.ExecuteFromAction(SelectedAction, CancellationToken.None);
+                var result = await ActiveTestFlow.Model.ExecuteFromAction(SelectedAction, CancellationToken.None);
 
                 // Update state based on TestFlow state
-                if (SelectedTestFlow.Model.State == ActionState.Paused)
+                if (ActiveTestFlow.Model.State == ActionState.Paused)
                 {
                     // TestFlow was paused - keep running flag true, set paused flag true
                     IsTestFlowPaused = true;
@@ -1618,7 +1686,7 @@ namespace FleetAutomate.ViewModel
 
                     if (!result)
                     {
-                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{SelectedTestFlow.Name}' execution failed or was cancelled.");
+                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
                     }
                     // Success - no message shown
                 }

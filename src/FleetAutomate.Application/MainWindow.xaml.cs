@@ -288,6 +288,16 @@ namespace FleetAutomate
             }
         }
 
+        private void TestFlowsListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Open the double-clicked TestFlow in a tab
+            if (sender is System.Windows.Controls.ListView listView && listView.SelectedItem is ObservableFlow flow)
+            {
+                ViewModel.OpenTestFlowInTabCommand.Execute(flow);
+                e.Handled = true;
+            }
+        }
+
         private void ActionsToolBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // TreeView implementation - differentiate between category and action
@@ -351,7 +361,10 @@ namespace FleetAutomate
         private void TestFlowActionsTreeView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             // Check if we clicked on empty space in the TreeView
-            var hitTestResult = VisualTreeHelper.HitTest(TestFlowActionsTreeView, e.GetPosition(TestFlowActionsTreeView));
+            var treeView = sender as System.Windows.Controls.TreeView;
+            if (treeView == null) return;
+
+            var hitTestResult = VisualTreeHelper.HitTest(treeView, e.GetPosition(treeView));
 
             // If the hit test returns no visual, or the visual is the TreeView itself (not a TreeViewItem),
             // then empty space was clicked
@@ -381,7 +394,10 @@ namespace FleetAutomate
         private void TestFlowActionsTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             // Find the TreeViewItem that was right-clicked
-            var hitTestResult = VisualTreeHelper.HitTest(TestFlowActionsTreeView, e.GetPosition(TestFlowActionsTreeView));
+            var treeView = sender as System.Windows.Controls.TreeView;
+            if (treeView == null) return;
+
+            var hitTestResult = VisualTreeHelper.HitTest(treeView, e.GetPosition(treeView));
             if (hitTestResult?.VisualHit == null) return;
 
             // Walk up the visual tree to find the TreeViewItem
@@ -403,7 +419,10 @@ namespace FleetAutomate
         private void TestFlowActionsTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Check if we double-clicked on a TreeViewItem
-            var hitTestResult = VisualTreeHelper.HitTest(TestFlowActionsTreeView, e.GetPosition(TestFlowActionsTreeView));
+            var treeView = sender as System.Windows.Controls.TreeView;
+            if (treeView == null) return;
+
+            var hitTestResult = VisualTreeHelper.HitTest(treeView, e.GetPosition(treeView));
             if (hitTestResult?.VisualHit == null) return;
 
             // Walk up the visual tree to find the TreeViewItem
@@ -445,10 +464,10 @@ namespace FleetAutomate
 
                             if (dialog.ShowDialog() == true || dialog.DialogResultOk)
                             {
-                                // Properties were saved, force refresh by clearing and re-setting the selected test flow
-                                var currentTestFlow = ViewModel.SelectedTestFlow;
-                                ViewModel.SelectedTestFlow = null;
-                                ViewModel.SelectedTestFlow = currentTestFlow;
+                                // Properties were saved, force refresh by clearing and re-setting the active test flow
+                                var currentTestFlow = ViewModel.ActiveTestFlow;
+                                ViewModel.ActiveTestFlow = null;
+                                ViewModel.ActiveTestFlow = currentTestFlow;
                             }
                         }
 
@@ -546,9 +565,9 @@ namespace FleetAutomate
                 }
 
                 // Force refresh
-                var currentTestFlow = ViewModel.SelectedTestFlow;
-                ViewModel.SelectedTestFlow = null;
-                ViewModel.SelectedTestFlow = currentTestFlow;
+                var currentTestFlow = ViewModel.ActiveTestFlow;
+                ViewModel.ActiveTestFlow = null;
+                ViewModel.ActiveTestFlow = currentTestFlow;
             }
         }
 
@@ -580,9 +599,9 @@ namespace FleetAutomate
                 clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? " (invoke)" : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Force refresh
-                var currentTestFlow = ViewModel.SelectedTestFlow;
-                ViewModel.SelectedTestFlow = null;
-                ViewModel.SelectedTestFlow = currentTestFlow;
+                var currentTestFlow = ViewModel.ActiveTestFlow;
+                ViewModel.ActiveTestFlow = null;
+                ViewModel.ActiveTestFlow = currentTestFlow;
             }
         }
 
@@ -614,9 +633,9 @@ namespace FleetAutomate
                 setTextAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Force refresh
-                var currentTestFlow = ViewModel.SelectedTestFlow;
-                ViewModel.SelectedTestFlow = null;
-                ViewModel.SelectedTestFlow = currentTestFlow;
+                var currentTestFlow = ViewModel.ActiveTestFlow;
+                ViewModel.ActiveTestFlow = null;
+                ViewModel.ActiveTestFlow = currentTestFlow;
             }
         }
 
@@ -646,9 +665,9 @@ namespace FleetAutomate
                 windowTextAction.Description = $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}";
 
                 // Force refresh
-                var currentTestFlow = ViewModel.SelectedTestFlow;
-                ViewModel.SelectedTestFlow = null;
-                ViewModel.SelectedTestFlow = currentTestFlow;
+                var currentTestFlow = ViewModel.ActiveTestFlow;
+                ViewModel.ActiveTestFlow = null;
+                ViewModel.ActiveTestFlow = currentTestFlow;
             }
         }
 
