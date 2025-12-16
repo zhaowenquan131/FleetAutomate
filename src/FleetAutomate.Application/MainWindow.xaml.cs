@@ -1,6 +1,9 @@
 ﻿using FleetAutomate.View.Dialog;
 using FleetAutomate.ViewModel;
 
+using System.Collections.Generic;
+using System.Linq;
+using System.Collections.Specialized;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -25,6 +28,10 @@ namespace FleetAutomate
     public partial class MainWindow : FluentWindow
     {
         public MainViewModel ViewModel { get; set; }
+
+        // Dictionary to map LayoutDocuments to their corresponding ObservableFlows
+        private readonly Dictionary<AvalonDock.Layout.LayoutDocument, ObservableFlow> _documentFlowMap = new();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -35,6 +42,9 @@ namespace FleetAutomate
 
             // Set up Open Recent menu
             Loaded += (s, e) => SetupOpenRecentMenu();
+
+            // Set up AvalonDock document management
+            Loaded += (s, e) => SetupDocumentManagement();
         }
 
         private void SetupUIEventHandlers()
@@ -731,6 +741,329 @@ namespace FleetAutomate
                 };
                 openRecentMenu.Items.Add(clearRecentItem);
             }
+        }
+
+        /// <summary>
+        /// Sets up AvalonDock document management - dynamically creates/removes LayoutDocument instances
+        /// </summary>
+        private void SetupDocumentManagement()
+        {
+            // Subscribe to OpenTestFlows collection changes
+            ViewModel.OpenTestFlows.CollectionChanged += OpenTestFlows_CollectionChanged;
+
+            // Subscribe to ActiveTestFlow changes to sync with AvalonDock
+            ViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ViewModel.ActiveTestFlow))
+                {
+                    SyncActiveDocumentWithViewModel();
+                }
+            };
+
+            // Handle document closing
+            var dockingManager = FindDockingManager();
+            if (dockingManager != null)
+            {
+                dockingManager.DocumentClosing += DockingManager_DocumentClosing;
+            }
+        }
+
+        /// <summary>
+        /// Handles changes to the OpenTestFlows collection
+        /// </summary>
+        private void OpenTestFlows_CollectionChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && e.NewItems != null)
+            {
+                // TestFlow added - create a LayoutDocument for it
+                foreach (ObservableFlow flow in e.NewItems)
+                {
+                    CreateDocumentForTestFlow(flow);
+                }
+
+                // Hide placeholder if this is the first document
+                if (ViewModel.OpenTestFlows.Count > 0 && PlaceholderDocument != null)
+                {
+                    DocumentPane.Children.Remove(PlaceholderDocument);
+                }
+            }
+            else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && e.OldItems != null)
+            {
+                // TestFlow removed - remove its LayoutDocument
+                foreach (ObservableFlow flow in e.OldItems)
+                {
+                    RemoveDocumentForTestFlow(flow);
+                }
+
+                // Show placeholder if no documents left
+                if (ViewModel.OpenTestFlows.Count == 0 && PlaceholderDocument != null && !DocumentPane.Children.Contains(PlaceholderDocument))
+                {
+                    DocumentPane.Children.Add(PlaceholderDocument);
+                }
+            }
+            else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+            {
+                // Clear all documents
+                var docsToRemove = DocumentPane.Children.OfType<AvalonDock.Layout.LayoutDocument>()
+                    .Where(d => d != PlaceholderDocument)
+                    .ToList();
+                foreach (var doc in docsToRemove)
+                {
+                    DocumentPane.Children.Remove(doc);
+                }
+
+                // Show placeholder
+                if (PlaceholderDocument != null && !DocumentPane.Children.Contains(PlaceholderDocument))
+                {
+                    DocumentPane.Children.Add(PlaceholderDocument);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates a LayoutDocument for the given TestFlow
+        /// </summary>
+        private void CreateDocumentForTestFlow(ObservableFlow flow)
+        {
+            // Create the content (Grid with toolbar + TreeView)
+            var grid = new Grid();
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            // Toolbar
+            var toolbar = new Border
+            {
+                Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(245, 245, 245)),
+                Padding = new Thickness(5),
+                BorderBrush = System.Windows.Media.Brushes.LightGray,
+                BorderThickness = new Thickness(0, 0, 0, 1)
+            };
+            var toolbarStack = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+            var deleteButton = new Wpf.Ui.Controls.Button
+            {
+                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Delete20 },
+                Appearance = Wpf.Ui.Controls.ControlAppearance.Danger,
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Delete selected action (Delete key)",
+                Command = ViewModel.DeleteActionCommand
+            };
+            toolbarStack.Children.Add(deleteButton);
+            toolbar.Child = toolbarStack;
+            Grid.SetRow(toolbar, 0);
+            grid.Children.Add(toolbar);
+
+            // TreeView
+            var treeView = new System.Windows.Controls.TreeView
+            {
+                DataContext = flow
+            };
+            treeView.SetBinding(System.Windows.Controls.TreeView.ItemsSourceProperty, new System.Windows.Data.Binding("Actions") { Mode = System.Windows.Data.BindingMode.OneWay });
+            treeView.SelectedItemChanged += TestFlowActionsTreeView_SelectedItemChanged;
+            treeView.KeyDown += TestFlowActionsTreeView_KeyDown;
+            treeView.PreviewMouseDown += TestFlowActionsTreeView_PreviewMouseDown;
+            treeView.PreviewMouseRightButtonDown += TestFlowActionsTreeView_PreviewMouseRightButtonDown;
+            treeView.MouseDoubleClick += TestFlowActionsTreeView_MouseDoubleClick;
+
+            // Context menu
+            var contextMenu = new System.Windows.Controls.ContextMenu();
+            contextMenu.Items.Add(new System.Windows.Controls.MenuItem
+            {
+                Header = "Execute Step",
+                Command = ViewModel.ExecuteStepCommand,
+                InputGestureText = "F9"
+            });
+            contextMenu.Items.Add(new System.Windows.Controls.MenuItem
+            {
+                Header = "Execute from this step",
+                Command = ViewModel.ExecuteFromThisStepCommand
+            });
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new System.Windows.Controls.MenuItem
+            {
+                Header = "Add Else Block",
+                Command = ViewModel.ToggleElseBlockCommand,
+                InputGestureText = "Ctrl+E"
+            });
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new System.Windows.Controls.MenuItem
+            {
+                Header = "Delete Action",
+                Command = ViewModel.DeleteActionCommand,
+                InputGestureText = "Del"
+            });
+            treeView.ContextMenu = contextMenu;
+
+            // Set ItemTemplate - create hierarchical template for actions
+            var factory = new FrameworkElementFactory(typeof(StackPanel));
+            factory.SetValue(StackPanel.OrientationProperty, System.Windows.Controls.Orientation.Horizontal);
+            factory.SetValue(StackPanel.MarginProperty, new Thickness(2));
+
+            // Status icon
+            var statusIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            statusIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("State") { Converter = (IValueConverter)this.FindResource("ActionStateToIconConverter") });
+            statusIcon.SetBinding(System.Windows.Controls.TextBlock.ForegroundProperty, new System.Windows.Data.Binding("State") { Converter = (IValueConverter)this.FindResource("ActionStateToColorConverter") });
+            statusIcon.SetValue(System.Windows.Controls.TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily("Segoe UI Symbol"));
+            statusIcon.SetValue(System.Windows.Controls.TextBlock.FontWeightProperty, FontWeights.Bold);
+            statusIcon.SetValue(System.Windows.Controls.TextBlock.MarginProperty, new Thickness(0, 0, 8, 0));
+            statusIcon.SetValue(System.Windows.Controls.TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+            statusIcon.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 16.0);
+            factory.AppendChild(statusIcon);
+
+            // Action type icon
+            var typeIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            typeIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding { Converter = (IValueConverter)this.FindResource("ActionTypeToIconConverter") });
+            typeIcon.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 14.0);
+            typeIcon.SetValue(System.Windows.Controls.TextBlock.MarginProperty, new Thickness(0, 0, 5, 0));
+            typeIcon.SetValue(System.Windows.Controls.TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+            factory.AppendChild(typeIcon);
+
+            // Action info stack
+            var infoStack = new FrameworkElementFactory(typeof(StackPanel));
+
+            var nameText = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            nameText.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
+            nameText.SetValue(System.Windows.Controls.TextBlock.FontWeightProperty, FontWeights.Bold);
+            nameText.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 11.0);
+            infoStack.AppendChild(nameText);
+
+            var descText = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            descText.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("Description"));
+            descText.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 10.0);
+            descText.SetValue(System.Windows.Controls.TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Gray);
+            descText.SetValue(System.Windows.Controls.TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+            descText.SetValue(System.Windows.Controls.TextBlock.MaxWidthProperty, 300.0);
+            infoStack.AppendChild(descText);
+
+            var stateStack = new FrameworkElementFactory(typeof(StackPanel));
+            stateStack.SetValue(StackPanel.OrientationProperty, System.Windows.Controls.Orientation.Horizontal);
+            stateStack.SetValue(StackPanel.MarginProperty, new Thickness(0, 2, 0, 0));
+
+            var stateLabel = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            stateLabel.SetValue(System.Windows.Controls.TextBlock.TextProperty, "State: ");
+            stateLabel.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 9.0);
+            stateLabel.SetValue(System.Windows.Controls.TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Gray);
+            stateStack.AppendChild(stateLabel);
+
+            var stateValue = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            stateValue.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("State"));
+            stateValue.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 9.0);
+            stateValue.SetValue(System.Windows.Controls.TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Blue);
+            stateStack.AppendChild(stateValue);
+
+            var enabledLabel = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            enabledLabel.SetValue(System.Windows.Controls.TextBlock.TextProperty, " | Enabled: ");
+            enabledLabel.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 9.0);
+            enabledLabel.SetValue(System.Windows.Controls.TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Gray);
+            enabledLabel.SetValue(System.Windows.Controls.TextBlock.MarginProperty, new Thickness(10, 0, 0, 0));
+            stateStack.AppendChild(enabledLabel);
+
+            var enabledValue = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
+            enabledValue.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("IsEnabled"));
+            enabledValue.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 9.0);
+            enabledValue.SetValue(System.Windows.Controls.TextBlock.ForegroundProperty, System.Windows.Media.Brushes.Green);
+            stateStack.AppendChild(enabledValue);
+
+            infoStack.AppendChild(stateStack);
+            factory.AppendChild(infoStack);
+
+            var template = new HierarchicalDataTemplate
+            {
+                VisualTree = factory
+            };
+            template.ItemsSource = new System.Windows.Data.Binding("ChildActions") { Mode = System.Windows.Data.BindingMode.OneWay };
+            treeView.ItemTemplate = template;
+
+            Grid.SetRow(treeView, 1);
+            grid.Children.Add(treeView);
+
+            // Create LayoutDocument
+            var document = new AvalonDock.Layout.LayoutDocument
+            {
+                Title = flow.Name,
+                Content = grid,
+                CanClose = true
+            };
+
+            // Store mapping from document to flow
+            _documentFlowMap[document] = flow;
+
+            DocumentPane.Children.Add(document);
+
+            // Make it active
+            document.IsActive = true;
+        }
+
+        /// <summary>
+        /// Removes the LayoutDocument for the given TestFlow
+        /// </summary>
+        private void RemoveDocumentForTestFlow(ObservableFlow flow)
+        {
+            var docToRemove = _documentFlowMap.FirstOrDefault(kvp => kvp.Value == flow).Key;
+
+            if (docToRemove != null)
+            {
+                DocumentPane.Children.Remove(docToRemove);
+                _documentFlowMap.Remove(docToRemove);
+            }
+        }
+
+        /// <summary>
+        /// Syncs the active document in AvalonDock with the ViewModel's ActiveTestFlow
+        /// </summary>
+        private void SyncActiveDocumentWithViewModel()
+        {
+            if (ViewModel.ActiveTestFlow == null) return;
+
+            var doc = _documentFlowMap.FirstOrDefault(kvp => kvp.Value == ViewModel.ActiveTestFlow).Key;
+
+            if (doc != null && !doc.IsActive)
+            {
+                doc.IsActive = true;
+            }
+        }
+
+        /// <summary>
+        /// Handles document closing in AvalonDock
+        /// </summary>
+        private void DockingManager_DocumentClosing(object? sender, AvalonDock.DocumentClosingEventArgs e)
+        {
+            if (_documentFlowMap.TryGetValue(e.Document, out var flow))
+            {
+                // Close the TestFlow via ViewModel command
+                ViewModel.CloseTestFlowTabCommand.Execute(flow);
+            }
+        }
+
+        /// <summary>
+        /// Finds the DockingManager in the visual tree
+        /// </summary>
+        private AvalonDock.DockingManager? FindDockingManager()
+        {
+            return FindVisualChild<AvalonDock.DockingManager>(this);
+        }
+
+        /// <summary>
+        /// Helper to find a child of a specific type in the visual tree
+        /// </summary>
+        private T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+        {
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+
+                if (child is T typedChild)
+                {
+                    return typedChild;
+                }
+
+                var result = FindVisualChild<T>(child);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
         }
     }
 }
