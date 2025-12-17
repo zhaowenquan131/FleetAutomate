@@ -58,17 +58,21 @@ namespace FleetAutomate.Model.Actions.Logic
             IfBlock.CollectionChanged += _ifBlockCollectionChangedHandler;
         }
 
-        [DataMember]
-        public object Condition { get; set; }
+        [ObservableProperty]
+        [DataMember(Name = "Condition")]
+        private object _condition;
 
-        [DataMember]
-        public Environment Environment { get; set; }
+        [ObservableProperty]
+        [DataMember(Name = "Environment")]
+        private Environment _environment;
 
-        [DataMember]
-        public string Name { get; set; } = "If Action";
+        [ObservableProperty]
+        [DataMember(Name = "Name")]
+        private string _name = "If Action";
 
-        [DataMember]
-        public string Description { get; set; } = "Execute Actions in one of two given blocks by condition";
+        [ObservableProperty]
+        [DataMember(Name = "Description")]
+        private string _description = "Execute Actions in one of two given blocks by condition";
 
         [ObservableProperty]
         [DataMember(Name = "IsEnabled")]
@@ -80,8 +84,9 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public ObservableCollection<IAction> ElseBlock { get; set; } = [];
 
-        [DataMember]
-        public ActionState State { get; set; }
+        [ObservableProperty]
+        [DataMember(Name = "State")]
+        private ActionState _state;
 
         /// <summary>
         /// Tracks whether the ElseBlock is visible as a pseudo-node in the TreeView.

@@ -17,7 +17,19 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public string Name => "Set Text";
 
         [DataMember]
-        public string Description { get; set; } = "Set text in an input element";
+        private string _description = "Set text in an input element";
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
         private ActionState _state = ActionState.Ready;
@@ -43,37 +55,109 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// The identifier to search for (XPath, AutomationId, Name, or ClassName)
         /// </summary>
         [DataMember]
-        public string ElementIdentifier { get; set; } = string.Empty;
+        private string _elementIdentifier = string.Empty;
+        public string ElementIdentifier
+        {
+            get => _elementIdentifier;
+            set
+            {
+                if (_elementIdentifier != value)
+                {
+                    _elementIdentifier = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElementIdentifier)));
+                }
+            }
+        }
 
         /// <summary>
         /// The type of identifier: "XPath", "AutomationId", "Name", "ClassName"
         /// </summary>
         [DataMember]
-        public string IdentifierType { get; set; } = "XPath";
+        private string _identifierType = "XPath";
+        public string IdentifierType
+        {
+            get => _identifierType;
+            set
+            {
+                if (_identifierType != value)
+                {
+                    _identifierType = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IdentifierType)));
+                }
+            }
+        }
 
         /// <summary>
         /// The text to set in the input element
         /// </summary>
         [DataMember]
-        public string TextToSet { get; set; } = string.Empty;
+        private string _textToSet = string.Empty;
+        public string TextToSet
+        {
+            get => _textToSet;
+            set
+            {
+                if (_textToSet != value)
+                {
+                    _textToSet = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextToSet)));
+                }
+            }
+        }
 
         /// <summary>
         /// Whether to clear existing text before setting new text
         /// </summary>
         [DataMember]
-        public bool ClearExistingText { get; set; } = true;
+        private bool _clearExistingText = true;
+        public bool ClearExistingText
+        {
+            get => _clearExistingText;
+            set
+            {
+                if (_clearExistingText != value)
+                {
+                    _clearExistingText = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ClearExistingText)));
+                }
+            }
+        }
 
         /// <summary>
         /// Number of times to retry if the action fails (0 means no retry, just one attempt)
         /// </summary>
         [DataMember]
-        public int RetryTimes { get; set; } = 3;
+        private int _retryTimes = 3;
+        public int RetryTimes
+        {
+            get => _retryTimes;
+            set
+            {
+                if (_retryTimes != value)
+                {
+                    _retryTimes = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RetryTimes)));
+                }
+            }
+        }
 
         /// <summary>
         /// Delay in milliseconds between retry attempts
         /// </summary>
         [DataMember]
-        public int RetryDelayMilliseconds { get; set; } = 500;
+        private int _retryDelayMilliseconds = 500;
+        public int RetryDelayMilliseconds
+        {
+            get => _retryDelayMilliseconds;
+            set
+            {
+                if (_retryDelayMilliseconds != value)
+                {
+                    _retryDelayMilliseconds = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RetryDelayMilliseconds)));
+                }
+            }
+        }
 
         /// <summary>
         /// The automation instance (not serialized)

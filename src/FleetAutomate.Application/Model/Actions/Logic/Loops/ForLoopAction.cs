@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
+using System.ComponentModel;
 
 
 namespace FleetAutomate.Model.Actions.Logic.Loops
@@ -23,35 +24,131 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
     [KnownType(typeof(System.LaunchApplicationAction))]
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]
-    public class ForLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction
+    public class ForLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction, INotifyPropertyChanged
     {
-        [DataMember]
-        public Environment Environment { get; set; }
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         [DataMember]
-        public string Name => throw new NotImplementedException();
+        private Environment _environment;
+        public Environment Environment
+        {
+            get => _environment;
+            set
+            {
+                if (_environment != value)
+                {
+                    _environment = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Environment)));
+                }
+            }
+        }
 
         [DataMember]
-        public string Description => throw new NotImplementedException();
+        private string _name = "For Loop";
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name != value)
+                {
+                    _name = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+                }
+            }
+        }
 
         [DataMember]
-        public bool IsEnabled => throw new NotImplementedException();
+        private string _description = "For loop with initialization, condition, and increment";
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
-        public object Initialization { get; set; }
-
+        private bool _isEnabled = true;
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (_isEnabled != value)
+                {
+                    _isEnabled = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEnabled)));
+                }
+            }
+        }
 
         [DataMember]
-        public object Condition { get; set; }
-
+        private object _initialization;
+        public object Initialization
+        {
+            get => _initialization;
+            set
+            {
+                if (_initialization != value)
+                {
+                    _initialization = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Initialization)));
+                }
+            }
+        }
 
         [DataMember]
-        public object Increment { get; set; }
+        private object _condition;
+        public object Condition
+        {
+            get => _condition;
+            set
+            {
+                if (_condition != value)
+                {
+                    _condition = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Condition)));
+                }
+            }
+        }
+
+        [DataMember]
+        private object _increment;
+        public object Increment
+        {
+            get => _increment;
+            set
+            {
+                if (_increment != value)
+                {
+                    _increment = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Increment)));
+                }
+            }
+        }
 
         public ObservableCollection<IAction> Body { get; } = [];
-        
+
         [DataMember]
-        public ActionState State { get; set; }
+        private ActionState _state;
+        public ActionState State
+        {
+            get => _state;
+            set
+            {
+                if (_state != value)
+                {
+                    _state = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(State)));
+                }
+            }
+        }
 
         /// <summary>
         /// XML serialization property for Body collection.

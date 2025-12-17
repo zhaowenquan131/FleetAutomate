@@ -14,7 +14,19 @@ namespace FleetAutomate.Model.Actions.System
         public string Name => "Launch Application";
 
         [DataMember]
-        public string Description { get; set; } = "Launch an application or execute a command";
+        private string _description = "Launch an application or execute a command";
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
         private ActionState _state = ActionState.Ready;
@@ -40,31 +52,91 @@ namespace FleetAutomate.Model.Actions.System
         /// The executable path or command to run (e.g., "notepad.exe", "C:\Program Files\App\app.exe", "cmd /c dir")
         /// </summary>
         [DataMember]
-        public string ExecutablePath { get; set; } = string.Empty;
+        private string _executablePath = string.Empty;
+        public string ExecutablePath
+        {
+            get => _executablePath;
+            set
+            {
+                if (_executablePath != value)
+                {
+                    _executablePath = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ExecutablePath)));
+                }
+            }
+        }
 
         /// <summary>
         /// Command-line arguments to pass to the executable
         /// </summary>
         [DataMember]
-        public string Arguments { get; set; } = string.Empty;
+        private string _arguments = string.Empty;
+        public string Arguments
+        {
+            get => _arguments;
+            set
+            {
+                if (_arguments != value)
+                {
+                    _arguments = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Arguments)));
+                }
+            }
+        }
 
         /// <summary>
         /// Working directory for the process (optional)
         /// </summary>
         [DataMember]
-        public string WorkingDirectory { get; set; } = string.Empty;
+        private string _workingDirectory = string.Empty;
+        public string WorkingDirectory
+        {
+            get => _workingDirectory;
+            set
+            {
+                if (_workingDirectory != value)
+                {
+                    _workingDirectory = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WorkingDirectory)));
+                }
+            }
+        }
 
         /// <summary>
         /// Whether to wait for the application to exit before completing the action
         /// </summary>
         [DataMember]
-        public bool WaitForCompletion { get; set; } = false;
+        private bool _waitForCompletion = false;
+        public bool WaitForCompletion
+        {
+            get => _waitForCompletion;
+            set
+            {
+                if (_waitForCompletion != value)
+                {
+                    _waitForCompletion = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WaitForCompletion)));
+                }
+            }
+        }
 
         /// <summary>
         /// Maximum time in milliseconds to wait for the application to exit (if WaitForCompletion is true)
         /// </summary>
         [DataMember]
-        public int TimeoutMilliseconds { get; set; } = 30000;
+        private int _timeoutMilliseconds = 30000;
+        public int TimeoutMilliseconds
+        {
+            get => _timeoutMilliseconds;
+            set
+            {
+                if (_timeoutMilliseconds != value)
+                {
+                    _timeoutMilliseconds = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TimeoutMilliseconds)));
+                }
+            }
+        }
 
         /// <summary>
         /// The process that was launched (not serialized)

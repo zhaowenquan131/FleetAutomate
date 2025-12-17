@@ -979,7 +979,7 @@ namespace FleetAutomate
             // Create LayoutDocument
             var document = new AvalonDock.Layout.LayoutDocument
             {
-                Title = flow.Name,
+                Title = GetDocumentTitle(flow),
                 Content = grid,
                 CanClose = true
             };
@@ -987,10 +987,27 @@ namespace FleetAutomate
             // Store mapping from document to flow
             _documentFlowMap[document] = flow;
 
+            // Subscribe to flow property changes to update title when Name or HasUnsavedChanges changes
+            flow.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ObservableFlow.Name) || e.PropertyName == nameof(ObservableFlow.HasUnsavedChanges))
+                {
+                    document.Title = GetDocumentTitle(flow);
+                }
+            };
+
             DocumentPane.Children.Add(document);
 
             // Make it active
             document.IsActive = true;
+        }
+
+        /// <summary>
+        /// Gets the document title for a TestFlow, appending "*" if it has unsaved changes.
+        /// </summary>
+        private string GetDocumentTitle(ObservableFlow flow)
+        {
+            return flow.HasUnsavedChanges ? $"{flow.Name}*" : flow.Name;
         }
 
         /// <summary>

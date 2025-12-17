@@ -54,7 +54,6 @@
                 </MenuItem>
                 <Separator />
                 <MenuItem Header="Save" Command="{Binding SaveProjectCommand}"
-                         IsEnabled="{Binding IsProjectLoaded}"
                          InputGestureText="Ctrl+S"/>
                 <MenuItem Header="Save As..." Command="{Binding SaveProjectAsCommand}"
                          IsEnabled="{Binding IsProjectLoaded}"
@@ -72,7 +71,6 @@
                         ToolTip="Open Project (Ctrl+O)"/>
             <ui:MenuItem Header="Save" Icon="{ui:SymbolIcon Save20}"
                         Command="{Binding SaveProjectCommand}"
-                        IsEnabled="{Binding IsProjectLoaded}"
                         ToolTip="Save Project (Ctrl+S)"/>
             <!-- Execute button - visible when not running -->
             <ui:MenuItem Header="Execute" Icon="{ui:SymbolIcon Play20}"

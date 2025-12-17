@@ -18,7 +18,19 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public string Name => "Wait for Element";
 
         [DataMember]
-        public string Description { get; set; } = "Wait until a UI element exists";
+        private string _description = "Wait until a UI element exists";
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
         private ActionState _state = ActionState.Ready;
@@ -44,25 +56,73 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// The identifier to search for (XPath, AutomationId, Name, or ClassName)
         /// </summary>
         [DataMember]
-        public string ElementIdentifier { get; set; } = string.Empty;
+        private string _elementIdentifier = string.Empty;
+        public string ElementIdentifier
+        {
+            get => _elementIdentifier;
+            set
+            {
+                if (_elementIdentifier != value)
+                {
+                    _elementIdentifier = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElementIdentifier)));
+                }
+            }
+        }
 
         /// <summary>
         /// The type of identifier: "XPath", "AutomationId", "Name", "ClassName"
         /// </summary>
         [DataMember]
-        public string IdentifierType { get; set; } = "XPath";
+        private string _identifierType = "XPath";
+        public string IdentifierType
+        {
+            get => _identifierType;
+            set
+            {
+                if (_identifierType != value)
+                {
+                    _identifierType = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IdentifierType)));
+                }
+            }
+        }
 
         /// <summary>
         /// Maximum time in milliseconds to wait for the element
         /// </summary>
         [DataMember]
-        public int TimeoutMilliseconds { get; set; } = 30000;
+        private int _timeoutMilliseconds = 30000;
+        public int TimeoutMilliseconds
+        {
+            get => _timeoutMilliseconds;
+            set
+            {
+                if (_timeoutMilliseconds != value)
+                {
+                    _timeoutMilliseconds = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TimeoutMilliseconds)));
+                }
+            }
+        }
 
         /// <summary>
         /// How often to check for the element (in milliseconds)
         /// </summary>
         [DataMember]
-        public int PollingIntervalMilliseconds { get; set; } = 100;
+        private int _pollingIntervalMilliseconds = 100;
+        public int PollingIntervalMilliseconds
+        {
+            get => _pollingIntervalMilliseconds;
+            set
+            {
+                if (_pollingIntervalMilliseconds != value)
+                {
+                    _pollingIntervalMilliseconds = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PollingIntervalMilliseconds)));
+                }
+            }
+        }
 
         /// <summary>
         /// The automation instance (not serialized)

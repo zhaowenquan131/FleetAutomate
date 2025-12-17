@@ -22,7 +22,19 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public string Name => "If Window Contains Text";
 
         [DataMember]
-        public string Description { get; set; } = "Check if window contains text";
+        private string _description = "Check if window contains text";
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
         private ActionState _state = ActionState.Ready;
@@ -48,37 +60,109 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// The window identifier (window name/title)
         /// </summary>
         [DataMember]
-        public string WindowIdentifier { get; set; } = string.Empty;
+        private string _windowIdentifier = string.Empty;
+        public string WindowIdentifier
+        {
+            get => _windowIdentifier;
+            set
+            {
+                if (_windowIdentifier != value)
+                {
+                    _windowIdentifier = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(WindowIdentifier)));
+                }
+            }
+        }
 
         /// <summary>
         /// The type of window identifier: "Name" or "AutomationId"
         /// </summary>
         [DataMember]
-        public string IdentifierType { get; set; } = "Name";
+        private string _identifierType = "Name";
+        public string IdentifierType
+        {
+            get => _identifierType;
+            set
+            {
+                if (_identifierType != value)
+                {
+                    _identifierType = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IdentifierType)));
+                }
+            }
+        }
 
         /// <summary>
         /// The text to search for in the window
         /// </summary>
         [DataMember]
-        public string SearchText { get; set; } = string.Empty;
+        private string _searchText = string.Empty;
+        public string SearchText
+        {
+            get => _searchText;
+            set
+            {
+                if (_searchText != value)
+                {
+                    _searchText = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchText)));
+                }
+            }
+        }
 
         /// <summary>
         /// Whether the search should be case sensitive
         /// </summary>
         [DataMember]
-        public bool CaseSensitive { get; set; } = false;
+        private bool _caseSensitive = false;
+        public bool CaseSensitive
+        {
+            get => _caseSensitive;
+            set
+            {
+                if (_caseSensitive != value)
+                {
+                    _caseSensitive = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CaseSensitive)));
+                }
+            }
+        }
 
         /// <summary>
         /// Whether to search in all descendant elements (deep search)
         /// </summary>
         [DataMember]
-        public bool DeepSearch { get; set; } = true;
+        private bool _deepSearch = true;
+        public bool DeepSearch
+        {
+            get => _deepSearch;
+            set
+            {
+                if (_deepSearch != value)
+                {
+                    _deepSearch = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DeepSearch)));
+                }
+            }
+        }
 
         /// <summary>
         /// The result of the check (true if text found, false otherwise)
         /// </summary>
         [DataMember]
-        public bool Result { get; set; } = false;
+        private bool _result = false;
+        public bool Result
+        {
+            get => _result;
+            set
+            {
+                if (_result != value)
+                {
+                    _result = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Result)));
+                }
+            }
+        }
 
         /// <summary>
         /// The automation instance (not serialized)

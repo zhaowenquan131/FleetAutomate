@@ -19,6 +19,7 @@ namespace FleetAutomate.ViewModel
         private readonly TestFlow _model;
         private readonly int _instanceId; // Track instance for debugging
         private static int _instanceCounter = 0;
+        private bool _isRefreshingFromModel = false; // Flag to suppress change tracking during model refresh
 
         // Maps IfAction -> (pseudo-node, parent-collection)
         private readonly Dictionary<IfAction, (ActionBlock pseudoNode, ObservableCollection<IAction> parentCollection)> _elseBlockNodes = new();
@@ -26,6 +27,8 @@ namespace FleetAutomate.ViewModel
         private readonly HashSet<ObservableCollection<IAction>> _setupCollections = new();
         // Tracks which IfActions we've already subscribed to (to avoid duplicate PropertyChanged subscriptions)
         private readonly HashSet<IfAction> _subscribedIfActions = new();
+        // Tracks which actions we've subscribed to for general property change tracking
+        private readonly HashSet<IAction> _subscribedActions = new();
         // Maps collection -> event handler so we can unregister handlers when clearing
         private readonly Dictionary<ObservableCollection<IAction>, NotifyCollectionChangedEventHandler> _collectionHandlers = new();
         // Re-entrancy guard: tracks which IfActions are currently being processed for ShowElseBlock changes
@@ -63,6 +66,9 @@ namespace FleetAutomate.ViewModel
         [ObservableProperty]
         private bool _isEnabled = true;
 
+        [ObservableProperty]
+        private bool _hasUnsavedChanges = false;
+
         public ObservableCollection<IAction> Actions { get; }
 
         /// <summary>
@@ -78,6 +84,12 @@ namespace FleetAutomate.ViewModel
         private void Actions_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             Debug.WriteLine($"[ELSE_BLOCK] Actions_CollectionChanged: Action={e.Action}");
+
+            // Mark as having unsaved changes when actions are added or removed (but not during model refresh)
+            if (!_isRefreshingFromModel && (e.Action == NotifyCollectionChangedAction.Add || e.Action == NotifyCollectionChangedAction.Remove))
+            {
+                HasUnsavedChanges = true;
+            }
 
             if (e.NewItems != null)
             {
@@ -104,6 +116,9 @@ namespace FleetAutomate.ViewModel
                             _model.Actions.Add(action);
                             Debug.WriteLine($"  → Synced action to model: {action.Name}");
                         }
+
+                        // Subscribe to general property changes on this action
+                        SubscribeToActionPropertyChanges(action);
                     }
 
                     if (item is IfAction ifAction)
@@ -148,6 +163,9 @@ namespace FleetAutomate.ViewModel
                     {
                         _model.Actions.Remove(action);
                         Debug.WriteLine($"  → Removed action from model: {action.Name}");
+
+                        // Unsubscribe from general property changes
+                        UnsubscribeFromActionPropertyChanges(action);
                     }
 
                     if (item is IfAction ifAction)
@@ -202,6 +220,15 @@ namespace FleetAutomate.ViewModel
             collection.CollectionChanged += handler;
             Debug.WriteLine($"  → Registered NEW CollectionChanged handler for collection id={collectionId}");
 
+            // Subscribe to existing actions in the collection (all types)
+            foreach (var action in collection)
+            {
+                if (action is not ActionBlock)
+                {
+                    SubscribeToActionPropertyChanges(action);
+                }
+            }
+
             // Subscribe to existing IfActions in the collection
             foreach (var action in collection.OfType<IfAction>())
             {
@@ -246,6 +273,12 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (var item in e.NewItems)
                 {
+                    // Subscribe to all actions in nested collections
+                    if (item is IAction action && action is not ActionBlock)
+                    {
+                        SubscribeToActionPropertyChanges(action);
+                    }
+
                     if (item is IfAction ifAction)
                     {
                         int ifActionId = ifAction.GetHashCode();
@@ -284,6 +317,12 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (var item in e.OldItems)
                 {
+                    // Unsubscribe from all actions in nested collections
+                    if (item is IAction action && action is not ActionBlock)
+                    {
+                        UnsubscribeFromActionPropertyChanges(action);
+                    }
+
                     if (item is IfAction ifAction)
                     {
                         int ifActionId = ifAction.GetHashCode();
@@ -365,6 +404,49 @@ namespace FleetAutomate.ViewModel
                     // Always remove from processing set when done
                     _processingShowElseBlock.Remove(ifAction);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to PropertyChanged events on an action to track modifications.
+        /// </summary>
+        private void SubscribeToActionPropertyChanges(IAction action)
+        {
+            if (action is INotifyPropertyChanged notifyAction)
+            {
+                if (!_subscribedActions.Contains(action))
+                {
+                    _subscribedActions.Add(action);
+                    notifyAction.PropertyChanged -= Action_PropertyChanged; // Ensure no duplicates
+                    notifyAction.PropertyChanged += Action_PropertyChanged;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Unsubscribes from PropertyChanged events on an action.
+        /// </summary>
+        private void UnsubscribeFromActionPropertyChanges(IAction action)
+        {
+            if (action is INotifyPropertyChanged notifyAction)
+            {
+                if (_subscribedActions.Contains(action))
+                {
+                    _subscribedActions.Remove(action);
+                    notifyAction.PropertyChanged -= Action_PropertyChanged;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Handles property changes on any action to mark the flow as having unsaved changes.
+        /// </summary>
+        private void Action_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            // Don't mark as changed during model refresh
+            if (!_isRefreshingFromModel)
+            {
+                HasUnsavedChanges = true;
             }
         }
 
@@ -490,6 +572,7 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public void RefreshFromModel()
         {
+            _isRefreshingFromModel = true;
             Debug.WriteLine($"[ELSE_BLOCK] ***** RefreshFromModel START: instanceId={_instanceId} *****");
             CurrentAction = _model.CurrentAction;
             Name = _model.Name ?? string.Empty;
@@ -504,6 +587,17 @@ namespace FleetAutomate.ViewModel
                 ((INotifyPropertyChanged)ifAction).PropertyChanged -= IfAction_PropertyChanged;
             }
             _subscribedIfActions.Clear();
+
+            // Unsubscribe from all action property changes
+            foreach (var action in _subscribedActions.ToList())
+            {
+                if (action is INotifyPropertyChanged notifyAction)
+                {
+                    notifyAction.PropertyChanged -= Action_PropertyChanged;
+                }
+            }
+            _subscribedActions.Clear();
+
             _elseBlockNodes.Clear();
 
             // Unregister all collection handlers before clearing _setupCollections
@@ -539,11 +633,16 @@ namespace FleetAutomate.ViewModel
             {
                 Actions.Add(action);
             }
+
+            _isRefreshingFromModel = false;
+            // Reset HasUnsavedChanges after refresh since we just loaded from model
+            HasUnsavedChanges = false;
         }
 
         /// <summary>
         /// Synchronizes changes back to the model.
         /// Filters out Else Block pseudo-nodes so only real actions are saved.
+        /// Resets the HasUnsavedChanges flag after syncing.
         /// </summary>
         public void SyncToModel()
         {
@@ -563,6 +662,9 @@ namespace FleetAutomate.ViewModel
                     _model.Actions.Add(action);
                 }
             }
+
+            // Reset unsaved changes flag after syncing to model
+            HasUnsavedChanges = false;
         }
 
         /// <summary>
@@ -676,6 +778,17 @@ namespace FleetAutomate.ViewModel
                 ((INotifyPropertyChanged)ifAction).PropertyChanged -= IfAction_PropertyChanged;
             }
             _subscribedIfActions.Clear();
+
+            // Unsubscribe from all action property changes
+            foreach (var action in _subscribedActions.ToList())
+            {
+                if (action is INotifyPropertyChanged notifyAction)
+                {
+                    notifyAction.PropertyChanged -= Action_PropertyChanged;
+                }
+            }
+            _subscribedActions.Clear();
+
             _elseBlockNodes.Clear();
 
             // Unregister all collection handlers before clearing _setupCollections
@@ -765,6 +878,10 @@ namespace FleetAutomate.ViewModel
             if (_model.Name != value)
             {
                 _model.Name = value;
+                if (!_isRefreshingFromModel)
+                {
+                    HasUnsavedChanges = true;
+                }
             }
         }
 
@@ -773,6 +890,10 @@ namespace FleetAutomate.ViewModel
             if (_model.Description != value)
             {
                 _model.Description = value;
+                if (!_isRefreshingFromModel)
+                {
+                    HasUnsavedChanges = true;
+                }
             }
         }
 
@@ -797,6 +918,10 @@ namespace FleetAutomate.ViewModel
             if (_model.IsEnabled != value)
             {
                 _model.IsEnabled = value;
+                if (!_isRefreshingFromModel)
+                {
+                    HasUnsavedChanges = true;
+                }
             }
         }
     }

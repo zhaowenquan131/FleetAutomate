@@ -4,6 +4,7 @@ using System.Runtime.Serialization;
 using System.Collections.ObjectModel;
 using System.Linq;
 using FleetAutomate.Model.Flow;
+using System.ComponentModel;
 
 namespace FleetAutomate.Model.Actions.Logic.Loops
 {
@@ -16,26 +17,99 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
     [KnownType(typeof(System.LaunchApplicationAction))]
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]
-    public class WhileLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction
+    public class WhileLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction, INotifyPropertyChanged
     {
-        [DataMember]
-        public Environment Environment { get; set; }
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         [DataMember]
-        public string Name { get; set; }
+        private Environment _environment;
+        public Environment Environment
+        {
+            get => _environment;
+            set
+            {
+                if (_environment != value)
+                {
+                    _environment = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Environment)));
+                }
+            }
+        }
 
         [DataMember]
-        public string Description { get; set; }
+        private string _name;
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                if (_name != value)
+                {
+                    _name = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+                }
+            }
+        }
 
         [DataMember]
-        public bool IsEnabled { get; set; }
+        private string _description;
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
-        public object Condition { get; set; }
-
+        private bool _isEnabled;
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            set
+            {
+                if (_isEnabled != value)
+                {
+                    _isEnabled = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsEnabled)));
+                }
+            }
+        }
 
         [DataMember]
-        public ActionState State { get; set; }
+        private object _condition;
+        public object Condition
+        {
+            get => _condition;
+            set
+            {
+                if (_condition != value)
+                {
+                    _condition = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Condition)));
+                }
+            }
+        }
+
+        [DataMember]
+        private ActionState _state;
+        public ActionState State
+        {
+            get => _state;
+            set
+            {
+                if (_state != value)
+                {
+                    _state = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(State)));
+                }
+            }
+        }
 
         public ObservableCollection<IAction> Body { get; } = [];
 

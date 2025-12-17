@@ -74,13 +74,26 @@ namespace FleetAutomate.ViewModel
             get => _activeTestFlow;
             set
             {
+                // Unsubscribe from old ActiveTestFlow's property changes
+                if (_activeTestFlow != null)
+                {
+                    _activeTestFlow.PropertyChanged -= ActiveTestFlow_PropertyChanged;
+                }
+
                 if (SetProperty(ref _activeTestFlow, value))
                 {
+                    // Subscribe to new ActiveTestFlow's property changes
+                    if (_activeTestFlow != null)
+                    {
+                        _activeTestFlow.PropertyChanged += ActiveTestFlow_PropertyChanged;
+                    }
+
                     // Update command states
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
                 }
             }
         }
@@ -325,7 +338,7 @@ namespace FleetAutomate.ViewModel
             // Initialize commands
             CreateNewProjectCommand = new RelayCommand(CreateNewProject);
             OpenProjectCommand = new RelayCommand<string>(OpenProject);
-            SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded);
+            SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded && ActiveTestFlow?.HasUnsavedChanges == true);
             SaveProjectAsCommand = new RelayCommand(SaveProjectAs, () => IsProjectLoaded);
             CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectLoaded);
             DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && ActiveTestFlow != null);
@@ -1696,6 +1709,18 @@ namespace FleetAutomate.ViewModel
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
                 OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Handles property changes on the ActiveTestFlow.
+        /// Updates SaveProjectCommand when HasUnsavedChanges changes.
+        /// </summary>
+        private void ActiveTestFlow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ObservableFlow.HasUnsavedChanges))
+            {
+                ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
             }
         }
     }

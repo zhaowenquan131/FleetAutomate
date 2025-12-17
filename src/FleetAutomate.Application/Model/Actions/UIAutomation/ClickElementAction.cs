@@ -20,7 +20,19 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         public string Name => "Click Element";
 
         [DataMember]
-        public string Description { get; set; } = "Click on a UI element";
+        private string _description = "Click on a UI element";
+        public string Description
+        {
+            get => _description;
+            set
+            {
+                if (_description != value)
+                {
+                    _description = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Description)));
+                }
+            }
+        }
 
         [DataMember]
         private ActionState _state = ActionState.Ready;
@@ -46,38 +58,110 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// The identifier to search for (XPath, AutomationId, Name, or ClassName)
         /// </summary>
         [DataMember]
-        public string ElementIdentifier { get; set; } = string.Empty;
+        private string _elementIdentifier = string.Empty;
+        public string ElementIdentifier
+        {
+            get => _elementIdentifier;
+            set
+            {
+                if (_elementIdentifier != value)
+                {
+                    _elementIdentifier = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElementIdentifier)));
+                }
+            }
+        }
 
         /// <summary>
         /// The type of identifier: "XPath", "AutomationId", "Name", "ClassName"
         /// </summary>
         [DataMember]
-        public string IdentifierType { get; set; } = "XPath";
+        private string _identifierType = "XPath";
+        public string IdentifierType
+        {
+            get => _identifierType;
+            set
+            {
+                if (_identifierType != value)
+                {
+                    _identifierType = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IdentifierType)));
+                }
+            }
+        }
 
         /// <summary>
         /// Whether to perform a double-click instead of single-click
         /// </summary>
         [DataMember]
-        public bool IsDoubleClick { get; set; } = false;
+        private bool _isDoubleClick = false;
+        public bool IsDoubleClick
+        {
+            get => _isDoubleClick;
+            set
+            {
+                if (_isDoubleClick != value)
+                {
+                    _isDoubleClick = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsDoubleClick)));
+                }
+            }
+        }
 
         /// <summary>
         /// Whether to use Invoke pattern instead of actual mouse clicking.
         /// Useful when element is behind another element or not directly clickable.
         /// </summary>
         [DataMember]
-        public bool UseInvoke { get; set; } = false;
+        private bool _useInvoke = false;
+        public bool UseInvoke
+        {
+            get => _useInvoke;
+            set
+            {
+                if (_useInvoke != value)
+                {
+                    _useInvoke = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UseInvoke)));
+                }
+            }
+        }
 
         /// <summary>
         /// Number of times to retry if the action fails (0 means no retry, just one attempt)
         /// </summary>
         [DataMember]
-        public int RetryTimes { get; set; } = 3;
+        private int _retryTimes = 3;
+        public int RetryTimes
+        {
+            get => _retryTimes;
+            set
+            {
+                if (_retryTimes != value)
+                {
+                    _retryTimes = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RetryTimes)));
+                }
+            }
+        }
 
         /// <summary>
         /// Delay in milliseconds between retry attempts
         /// </summary>
         [DataMember]
-        public int RetryDelayMilliseconds { get; set; } = 500;
+        private int _retryDelayMilliseconds = 500;
+        public int RetryDelayMilliseconds
+        {
+            get => _retryDelayMilliseconds;
+            set
+            {
+                if (_retryDelayMilliseconds != value)
+                {
+                    _retryDelayMilliseconds = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(RetryDelayMilliseconds)));
+                }
+            }
+        }
 
         /// <summary>
         /// The automation instance (not serialized)
