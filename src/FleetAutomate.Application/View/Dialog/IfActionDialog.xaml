@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:controls="clr-namespace:FleetAutomate.View.Controls"
         mc:Ignorable="d"
         Title="Create If Action"
         Height="500"
@@ -60,14 +61,9 @@
                 </ComboBox>
 
                 <TextBlock Text="Element Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
-                <TextBox Name="ElementIdentifierTextBox"
-                        Padding="8"
-                        Margin="0,0,0,10"
-                        Height="60"
-                        TextWrapping="Wrap"
-                        AcceptsReturn="True"
-                        VerticalScrollBarVisibility="Auto"
-                        ToolTip="Enter the element identifier (e.g., XPath, AutomationId, Name, or ClassName)"/>
+                <controls:XPathInput x:Name="ElementIdentifierInput"
+                                    Margin="0,0,0,10"
+                                    ToolTip="Enter the element identifier or click 'Capture Element' to select from UI"/>
                 <TextBlock Text="Example: //Window[@Name=&quot;MyWindow&quot;]//Button[@Name=&quot;Close&quot;]"
                           FontSize="10"
                           Foreground="Gray"

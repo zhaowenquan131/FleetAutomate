@@ -731,21 +731,45 @@ namespace FleetAutomate.Services
         }
 
         private AutomationElement? FindDeepestElementAtPoint(AutomationElement element, System.Drawing.Point point)
-{
+        {
             try
             {
-                // Use FindAllDescendants instead of FindAllChildren to search deeper in the tree
-                // This is critical for finding actual controls inside complex window hierarchies
+                // Use FindAllDescendants with timeout to prevent hanging on complex hierarchies
                 AutomationElement[]? descendants = null;
 
                 try
                 {
-                    descendants = element.FindAllDescendants();
-                    System.Diagnostics.Debug.WriteLine($"[ElementCaptureService] FindAllDescendants returned {descendants?.Length ?? 0} descendants");
+                    // Use Task.Run with timeout to prevent indefinite hangs
+                    var findTask = Task.Run(() =>
+                    {
+                        try
+                        {
+                            // Use FindAllChildren instead of FindAllDescendants to limit depth
+                            // This prevents hangs on deeply nested or infinite hierarchies
+                            return element.FindAllChildren();
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"[ElementCaptureService] FindAllChildren failed: {ex.Message}");
+                            return null;
+                        }
+                    });
+
+                    // Wait with timeout - if it takes more than 500ms, it's likely hung
+                    if (findTask.Wait(500))
+                    {
+                        descendants = findTask.Result;
+                        System.Diagnostics.Debug.WriteLine($"[ElementCaptureService] FindAllChildren returned {descendants?.Length ?? 0} children");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[ElementCaptureService] FindAllChildren timed out after 500ms - skipping this element");
+                        return null;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[ElementCaptureService] FindAllDescendants failed: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[ElementCaptureService] FindAllChildren failed: {ex.Message}");
                 }
 
                 if (descendants == null || descendants.Length == 0)

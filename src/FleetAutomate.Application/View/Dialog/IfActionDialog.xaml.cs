@@ -39,7 +39,13 @@ namespace FleetAutomate.View.Dialog
             InitializeComponent();
             ConditionTextBox.Focus();
             ConditionTextBox.TextChanged += ConditionTextBox_TextChanged;
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
+
+            // Subscribe to property change for ElementIdentifierInput
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
+
             UpdateOkButtonState();
         }
 
@@ -57,7 +63,7 @@ namespace FleetAutomate.View.Dialog
                 ConditionTypeComboBox.SelectedIndex = 1;
 
                 // Pre-populate values
-                ElementIdentifierTextBox.Text = elementIdentifier;
+                ElementIdentifierInput.XPath = elementIdentifier;
                 RetryTimesTextBox.Text = retryTimes.ToString();
 
                 // Select identifier type
@@ -70,8 +76,6 @@ namespace FleetAutomate.View.Dialog
                         break;
                     }
                 }
-
-                ElementIdentifierTextBox.Focus();
             }
             else
             {
@@ -82,7 +86,13 @@ namespace FleetAutomate.View.Dialog
             }
 
             ConditionTextBox.TextChanged += ConditionTextBox_TextChanged;
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
+
+            // Subscribe to property change for ElementIdentifierInput
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
+
             UpdateOkButtonState();
         }
 
@@ -109,7 +119,6 @@ namespace FleetAutomate.View.Dialog
                 {
                     ExpressionPanel.Visibility = Visibility.Collapsed;
                     UIElementPanel.Visibility = Visibility.Visible;
-                    ElementIdentifierTextBox?.Focus();
                 }
 
                 UpdateOkButtonState();
@@ -117,11 +126,6 @@ namespace FleetAutomate.View.Dialog
         }
 
         private void ConditionTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            UpdateOkButtonState();
-        }
-
-        private void ElementIdentifierTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             UpdateOkButtonState();
         }
@@ -139,7 +143,7 @@ namespace FleetAutomate.View.Dialog
                 }
                 else if (conditionType == "UIElementExists")
                 {
-                    var identifier = ElementIdentifierTextBox?.Text?.Trim();
+                    var identifier = ElementIdentifierInput.XPath?.Trim();
                     OkButton.IsEnabled = !string.IsNullOrWhiteSpace(identifier);
                 }
             }
@@ -203,7 +207,7 @@ namespace FleetAutomate.View.Dialog
 
         private bool ValidateAndSetUIElementCondition()
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
 
             // Validate identifier
             if (string.IsNullOrWhiteSpace(identifier))

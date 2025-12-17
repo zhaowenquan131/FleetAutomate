@@ -54,7 +54,7 @@ namespace FleetAutomate.View.Dialog
                 .Cast<System.Windows.Controls.ComboBoxItem>()
                 .FirstOrDefault(item => item.Content.ToString() == action.IdentifierType);
 
-            ElementIdentifierTextBox.Text = action.ElementIdentifier;
+            ElementIdentifierInput.XPath = action.ElementIdentifier;
             TimeoutTextBox.Text = action.TimeoutMilliseconds.ToString();
             PollingIntervalTextBox.Text = action.PollingIntervalMilliseconds.ToString();
         }
@@ -68,7 +68,7 @@ namespace FleetAutomate.View.Dialog
                 .Cast<System.Windows.Controls.ComboBoxItem>()
                 .FirstOrDefault(item => item.Content.ToString() == action.IdentifierType);
 
-            ElementIdentifierTextBox.Text = action.ElementIdentifier;
+            ElementIdentifierInput.XPath = action.ElementIdentifier;
             IsDoubleClickCheckBox.IsChecked = action.IsDoubleClick;
         }
 
@@ -135,7 +135,7 @@ namespace FleetAutomate.View.Dialog
                 action.IdentifierType = selectedItem.Content.ToString() ?? "XPath";
             }
 
-            action.ElementIdentifier = ElementIdentifierTextBox.Text;
+            action.ElementIdentifier = ElementIdentifierInput.XPath;
 
             if (int.TryParse(TimeoutTextBox.Text, out int timeout))
             {
@@ -171,7 +171,7 @@ namespace FleetAutomate.View.Dialog
                 action.IdentifierType = selectedItem.Content.ToString() ?? "XPath";
             }
 
-            action.ElementIdentifier = ElementIdentifierTextBox.Text;
+            action.ElementIdentifier = ElementIdentifierInput.XPath;
             action.IsDoubleClick = IsDoubleClickCheckBox.IsChecked ?? false;
 
             return true;

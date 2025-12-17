@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:controls="clr-namespace:FleetAutomate.View.Controls"
         mc:Ignorable="d"
         Title="Wait for Element"
         Height="450"
@@ -41,13 +42,9 @@
 
                 <!-- Element Identifier -->
                 <TextBlock Text="Element Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
-                <TextBox Name="ElementIdentifierTextBox"
-                        Padding="8"
-                        Margin="0,0,0,15"
-                        Height="60"
-                        TextWrapping="Wrap"
-                        AcceptsReturn="True"
-                        ToolTip="Enter the element identifier (XPath, AutomationId, Name, or ClassName)"/>
+                <controls:XPathInput x:Name="ElementIdentifierInput"
+                                    Margin="0,0,0,15"
+                                    ToolTip="Enter the element identifier or click 'Capture Element' to select from UI"/>
 
                 <!-- Timeout -->
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,15">

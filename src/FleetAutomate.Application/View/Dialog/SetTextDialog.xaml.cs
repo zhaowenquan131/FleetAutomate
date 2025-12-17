@@ -42,8 +42,14 @@ namespace FleetAutomate.View.Dialog
         public SetTextDialog()
         {
             InitializeComponent();
-            ElementIdentifierTextBox.Focus();
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
+            ElementIdentifierInput.XPath = string.Empty;
+
+            // Subscribe to property change to enable/disable OK button
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
+
             TextToSetTextBox.TextChanged += TextToSetTextBox_TextChanged;
             UpdateOkButtonState();
             // Set button text for creating
@@ -58,24 +64,23 @@ namespace FleetAutomate.View.Dialog
             InitializeComponent();
 
             // Pre-populate the form fields
-            ElementIdentifierTextBox.Text = elementIdentifier;
+            ElementIdentifierInput.XPath = elementIdentifier;
             IdentifierTypeComboBox.SelectedIndex = GetIndexFromIdentifierType(identifierType);
             TextToSetTextBox.Text = textToSet;
             ClearExistingTextCheckBox.IsChecked = clearExistingText;
             RetryTimesTextBox.Text = retryTimes.ToString();
             RetryDelayTextBox.Text = retryDelayMilliseconds.ToString();
 
-            ElementIdentifierTextBox.Focus();
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
+            // Subscribe to property change to enable/disable OK button
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
+
             TextToSetTextBox.TextChanged += TextToSetTextBox_TextChanged;
             UpdateOkButtonState();
             // Set button text for editing
             OkButton.Content = "OK";
-        }
-
-        private void ElementIdentifierTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            UpdateOkButtonState();
         }
 
         private void TextToSetTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -85,14 +90,14 @@ namespace FleetAutomate.View.Dialog
 
         private void UpdateOkButtonState()
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
             var text = TextToSetTextBox.Text?.Trim();
             OkButton.IsEnabled = !string.IsNullOrWhiteSpace(identifier) && !string.IsNullOrWhiteSpace(text);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
             var text = TextToSetTextBox.Text?.Trim();
 
             // Validate element identifier

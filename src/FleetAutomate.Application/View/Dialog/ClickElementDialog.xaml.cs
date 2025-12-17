@@ -42,8 +42,14 @@ namespace FleetAutomate.View.Dialog
         public ClickElementDialog()
         {
             InitializeComponent();
-            ElementIdentifierTextBox.Focus();
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
+            ElementIdentifierInput.XPath = string.Empty;
+
+            // Subscribe to property change to enable/disable OK button
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
+
             UpdateOkButtonState();
         }
 
@@ -55,32 +61,31 @@ namespace FleetAutomate.View.Dialog
             InitializeComponent();
 
             // Pre-populate the form fields
-            ElementIdentifierTextBox.Text = elementIdentifier;
+            ElementIdentifierInput.XPath = elementIdentifier;
             IdentifierTypeComboBox.SelectedIndex = GetIndexFromIdentifierType(identifierType);
             DoubleClickCheckBox.IsChecked = isDoubleClick;
             UseInvokeCheckBox.IsChecked = useInvoke;
             RetryTimesTextBox.Text = retryTimes.ToString();
             RetryDelayTextBox.Text = retryDelayMilliseconds.ToString();
 
-            ElementIdentifierTextBox.Focus();
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
-            UpdateOkButtonState();
-        }
+            // Subscribe to property change to enable/disable OK button
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
 
-        private void ElementIdentifierTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
             UpdateOkButtonState();
         }
 
         private void UpdateOkButtonState()
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
             OkButton.IsEnabled = !string.IsNullOrWhiteSpace(identifier);
         }
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
 
             // Validate element identifier
             if (string.IsNullOrWhiteSpace(identifier))

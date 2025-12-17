@@ -32,16 +32,17 @@ namespace FleetAutomate.View.Dialog
         public WaitForElementDialog()
         {
             InitializeComponent();
-            ElementIdentifierTextBox.Focus();
-            ElementIdentifierTextBox.TextChanged += ElementIdentifierTextBox_TextChanged;
+            ElementIdentifierInput.XPath = string.Empty;
+
+            // Subscribe to property change to enable/disable OK button
+            var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
+                View.Controls.XPathInput.XPathProperty,
+                typeof(View.Controls.XPathInput));
+            xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
+
             IdentifierTypeComboBox.SelectionChanged += IdentifierTypeComboBox_SelectionChanged;
             UpdateOkButtonState();
             UpdateHintText();
-        }
-
-        private void ElementIdentifierTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
-        {
-            UpdateOkButtonState();
         }
 
         private void IdentifierTypeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -51,7 +52,7 @@ namespace FleetAutomate.View.Dialog
 
         private void UpdateOkButtonState()
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
             OkButton.IsEnabled = !string.IsNullOrWhiteSpace(identifier);
         }
 
@@ -63,7 +64,7 @@ namespace FleetAutomate.View.Dialog
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
-            var identifier = ElementIdentifierTextBox.Text?.Trim();
+            var identifier = ElementIdentifierInput.XPath?.Trim();
 
             // Validate element identifier
             if (string.IsNullOrWhiteSpace(identifier))
