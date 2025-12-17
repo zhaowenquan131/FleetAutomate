@@ -43,6 +43,31 @@ namespace FleetAutomate.View.Dialog
             UpdateOkButtonState();
         }
 
+        /// <summary>
+        /// Constructor for editing an existing LaunchApplicationAction.
+        /// </summary>
+        /// <param name="executablePath">Current executable path</param>
+        /// <param name="arguments">Current arguments</param>
+        /// <param name="workingDirectory">Current working directory</param>
+        /// <param name="waitForCompletion">Current wait for completion setting</param>
+        /// <param name="timeoutMilliseconds">Current timeout value</param>
+        public LaunchApplicationDialog(string executablePath, string arguments, string workingDirectory, bool waitForCompletion, int timeoutMilliseconds)
+            : this()
+        {
+            // Pre-populate fields with existing values
+            ExecutablePathTextBox.Text = executablePath ?? string.Empty;
+            ArgumentsTextBox.Text = arguments ?? string.Empty;
+            WorkingDirectoryTextBox.Text = workingDirectory ?? string.Empty;
+            WaitForCompletionCheckBox.IsChecked = waitForCompletion;
+            TimeoutTextBox.Text = timeoutMilliseconds.ToString();
+
+            // Update button text for editing
+            OkButton.Content = "Save";
+
+            // Update window title for editing
+            Title = "Edit Launch Application";
+        }
+
         private void ExecutablePathTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             UpdateOkButtonState();

@@ -464,6 +464,11 @@ namespace FleetAutomate
                         {
                             EditIfWindowContainsTextAction(windowTextAction);
                         }
+                        // Special handling for LaunchApplicationAction - use LaunchApplicationDialog for editing
+                        else if (action is Model.Actions.System.LaunchApplicationAction launchAction)
+                        {
+                            EditLaunchApplicationAction(launchAction);
+                        }
                         else
                         {
                             // Open the standard properties dialog
@@ -673,6 +678,49 @@ namespace FleetAutomate
                 windowTextAction.CaseSensitive = dialog.CaseSensitive;
                 windowTextAction.DeepSearch = dialog.DeepSearch;
                 windowTextAction.Description = $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}";
+
+                // Force refresh
+                var currentTestFlow = ViewModel.ActiveTestFlow;
+                ViewModel.ActiveTestFlow = null;
+                ViewModel.ActiveTestFlow = currentTestFlow;
+            }
+        }
+
+        private void EditLaunchApplicationAction(Model.Actions.System.LaunchApplicationAction launchAction)
+        {
+            // Extract current values from the LaunchApplicationAction
+            string executablePath = launchAction.ExecutablePath;
+            string arguments = launchAction.Arguments;
+            string workingDirectory = launchAction.WorkingDirectory;
+            bool waitForCompletion = launchAction.WaitForCompletion;
+            int timeoutMilliseconds = launchAction.TimeoutMilliseconds;
+
+            // Create and show the LaunchApplicationDialog with pre-populated values
+            var dialog = new LaunchApplicationDialog(executablePath, arguments, workingDirectory, waitForCompletion, timeoutMilliseconds)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                // Update the LaunchApplicationAction with new values
+                launchAction.ExecutablePath = dialog.ExecutablePath;
+                launchAction.Arguments = dialog.Arguments;
+                launchAction.WorkingDirectory = dialog.WorkingDirectory;
+                launchAction.WaitForCompletion = dialog.WaitForCompletion;
+                launchAction.TimeoutMilliseconds = dialog.TimeoutMilliseconds;
+
+                // Update description with relevant details
+                string description = $"Launch: {dialog.ExecutablePath}";
+                if (!string.IsNullOrWhiteSpace(dialog.Arguments))
+                {
+                    description += $" with args: {dialog.Arguments}";
+                }
+                if (dialog.WaitForCompletion)
+                {
+                    description += $" (wait {dialog.TimeoutMilliseconds}ms)";
+                }
+                launchAction.Description = description;
 
                 // Force refresh
                 var currentTestFlow = ViewModel.ActiveTestFlow;

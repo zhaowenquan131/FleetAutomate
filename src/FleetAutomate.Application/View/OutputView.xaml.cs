@@ -1,5 +1,6 @@
 using FleetAutomate.Services;
 using System.Collections.Specialized;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -14,25 +15,60 @@ namespace FleetAutomate.View
         {
             InitializeComponent();
 
-            // Bind to the UILogTarget's log entries
-            DataContext = UILogTarget.LogEntries;
-
-            // Subscribe to collection changes for auto-scroll
+            // Subscribe to collection changes to update text
             UILogTarget.LogEntries.CollectionChanged += LogEntries_CollectionChanged;
+
+            // Initialize with existing log entries
+            RefreshLogText();
         }
 
         private void LogEntries_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            // Auto-scroll to bottom when new items are added
-            if (AutoScrollCheckBox.IsChecked == true && e.Action == NotifyCollectionChangedAction.Add)
+            Dispatcher.InvokeAsync(() =>
             {
-                Dispatcher.InvokeAsync(() =>
+                if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
                 {
-                    if (LogListBox.Items.Count > 0)
+                    // Append new log entries
+                    foreach (LogEntry entry in e.NewItems)
                     {
-                        LogListBox.ScrollIntoView(LogListBox.Items[LogListBox.Items.Count - 1]);
+                        if (LogTextBox.Text.Length > 0)
+                        {
+                            LogTextBox.AppendText(System.Environment.NewLine);
+                        }
+                        LogTextBox.AppendText(entry.ToString());
                     }
-                });
+
+                    // Auto-scroll to bottom
+                    if (AutoScrollCheckBox.IsChecked == true)
+                    {
+                        LogTextBox.ScrollToEnd();
+                    }
+                }
+                else
+                {
+                    // For other actions (Clear, Reset, etc.), rebuild entire text
+                    RefreshLogText();
+                }
+            });
+        }
+
+        private void RefreshLogText()
+        {
+            var sb = new StringBuilder();
+            foreach (var entry in UILogTarget.LogEntries)
+            {
+                if (sb.Length > 0)
+                {
+                    sb.AppendLine();
+                }
+                sb.Append(entry.ToString());
+            }
+            LogTextBox.Text = sb.ToString();
+
+            // Auto-scroll to bottom
+            if (AutoScrollCheckBox.IsChecked == true)
+            {
+                LogTextBox.ScrollToEnd();
             }
         }
 
