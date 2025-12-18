@@ -15,7 +15,22 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     [DataContract]
     public class WaitForElementAction : IAction, INotifyPropertyChanged
     {
-        public string Name => "Wait for Element";
+        public string Name
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(ElementIdentifier))
+                {
+                    return "Wait for Element";
+                }
+
+                // Extract element description from identifier
+                string elementDesc = Helpers.ElementDescriptionHelper.ExtractElementDescription(ElementIdentifier, IdentifierType);
+
+                // Format: "Wait for [ControlType] '[identifier]'"
+                return $"Wait for {elementDesc}";
+            }
+        }
 
         [DataMember]
         private string _description = "Wait until a UI element exists";
@@ -66,6 +81,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 {
                     _elementIdentifier = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElementIdentifier)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
                 }
             }
         }
@@ -84,6 +100,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 {
                     _identifierType = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IdentifierType)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
                 }
             }
         }

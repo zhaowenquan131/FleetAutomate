@@ -62,13 +62,53 @@ namespace FleetAutomate.Model.Actions.Logic
         [DataMember(Name = "Condition")]
         private object _condition;
 
+        partial void OnConditionChanged(object value)
+        {
+            OnPropertyChanged(nameof(Name));
+        }
+
         [ObservableProperty]
         [DataMember(Name = "Environment")]
         private Environment _environment;
 
-        [ObservableProperty]
-        [DataMember(Name = "Name")]
-        private string _name = "If Action";
+        public string Name
+        {
+            get
+            {
+                if (Condition == null)
+                {
+                    return "If Action";
+                }
+
+                // Handle UIElementExistsExpression
+                if (Condition is Expression.UIElementExistsExpression uiElementExpr)
+                {
+                    string elementDesc = Helpers.ElementDescriptionHelper.ExtractElementDescription(uiElementExpr.ElementIdentifier, uiElementExpr.IdentifierType);
+                    return $"If {elementDesc} exists";
+                }
+
+                // Handle boolean expressions with RawText
+                if (Condition is ExpressionBase<bool> boolExpr && !string.IsNullOrWhiteSpace(boolExpr.RawText))
+                {
+                    string expr = boolExpr.RawText.Trim();
+                    // Limit expression length for display
+                    if (expr.Length > 50)
+                    {
+                        expr = expr.Substring(0, 47) + "...";
+                    }
+                    return $"If {expr}";
+                }
+
+                // Handle literal boolean values
+                if (Condition is bool boolVal)
+                {
+                    return $"If {boolVal.ToString().ToLower()}";
+                }
+
+                // Fallback
+                return "If Action";
+            }
+        }
 
         [ObservableProperty]
         [DataMember(Name = "Description")]
@@ -232,6 +272,7 @@ namespace FleetAutomate.Model.Actions.Logic
             IfBlock.CollectionChanged -= (s, e) => RefreshChildActions();
             IfBlock.CollectionChanged += (s, e) => RefreshChildActions();
         }
+
 
         public void Cancel()
         {

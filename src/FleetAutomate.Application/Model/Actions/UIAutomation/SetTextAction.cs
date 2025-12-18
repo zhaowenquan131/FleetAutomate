@@ -65,6 +65,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 {
                     _elementIdentifier = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ElementIdentifier)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
                 }
             }
         }
@@ -83,6 +84,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 {
                     _identifierType = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IdentifierType)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
                 }
             }
         }
@@ -101,6 +103,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 {
                     _textToSet = value;
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TextToSet)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
                 }
             }
         }

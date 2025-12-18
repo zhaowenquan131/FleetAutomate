@@ -17,7 +17,8 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     public class ClickElementAction : IRetryableAction, INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-        public string Name => "Click Element";
+
+        public string Name => IsDoubleClick ? "Double-Click Element" : "Click Element";
 
         [DataMember]
         private string _description = "Click on a UI element";

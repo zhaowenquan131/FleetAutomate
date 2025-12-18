@@ -24,6 +24,7 @@
         <converters:ActionStateToColorConverter x:Key="ActionStateToColorConverter"/>
         <converters:ActionStateToSymbolConverter x:Key="ActionStateToSymbolConverter"/>
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
+        <converters:ActionToFormattedNameConverter x:Key="ActionToFormattedNameConverter"/>
 
         <!-- Easing function for smooth pulsing animation -->
         <SineEase x:Key="SineEase" EasingMode="EaseInOut"/>

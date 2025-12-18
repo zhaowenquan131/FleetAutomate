@@ -968,11 +968,13 @@ namespace FleetAutomate
             // Action info stack
             var infoStack = new FrameworkElementFactory(typeof(StackPanel));
 
-            var nameText = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
-            nameText.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("Name"));
-            nameText.SetValue(System.Windows.Controls.TextBlock.FontWeightProperty, FontWeights.Bold);
-            nameText.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 11.0);
-            infoStack.AppendChild(nameText);
+            // Use ContentPresenter with converter to display formatted name
+            var nameContent = new FrameworkElementFactory(typeof(ContentPresenter));
+            nameContent.SetBinding(ContentPresenter.ContentProperty, new System.Windows.Data.Binding
+            {
+                Converter = (IValueConverter)this.FindResource("ActionToFormattedNameConverter")
+            });
+            infoStack.AppendChild(nameContent);
 
             var descText = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
             descText.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("Description"));
