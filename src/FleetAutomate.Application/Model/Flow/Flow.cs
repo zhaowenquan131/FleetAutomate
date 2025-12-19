@@ -9,6 +9,7 @@ using FleetAutomate.Model.Flow;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 using NLog;
+using LogAction = FleetAutomate.Model.Actions.System.LogAction;
 
 namespace FleetAutomate.Model.Flow
 {
@@ -33,6 +34,7 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(SetTextAction))]
     [KnownType(typeof(IfWindowContainsTextAction))]
     [KnownType(typeof(NotImplementedAction))]
+    [KnownType(typeof(LogAction))]
     public partial class TestFlow : ILogicAction
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

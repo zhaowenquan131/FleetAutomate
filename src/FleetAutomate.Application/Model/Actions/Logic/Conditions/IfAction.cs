@@ -16,6 +16,7 @@ namespace FleetAutomate.Model.Actions.Logic
     [KnownType(typeof(IfAction))]
     [KnownType(typeof(TestFlow))]
     [KnownType(typeof(System.LaunchApplicationAction))]
+    [KnownType(typeof(System.LogAction))]
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]
     [KnownType(typeof(Expression.UIElementExistsExpression))]

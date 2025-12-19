@@ -249,6 +249,12 @@ namespace FleetAutomate.ViewModel
         public event Func<(string windowIdentifier, string identifierType, string searchText, bool caseSensitive, bool deepSearch)?>? OnPromptIfWindowContainsText;
 
         /// <summary>
+        /// Event fired when UI needs to show a "Log Message" dialog.
+        /// Should return the log level and message, or null if cancelled.
+        /// </summary>
+        public event Func<(Model.Actions.System.LogLevel logLevel, string message)?>? OnPromptLogAction;
+
+        /// <summary>
         /// Command to create a new project.
         /// </summary>
         public ICommand CreateNewProjectCommand { get; }
@@ -782,6 +788,8 @@ namespace FleetAutomate.ViewModel
             var system = new ActionCategory("System", "💻");
             system.Actions.Add(new ActionTemplate("Launch Application", "System", "🚀",
                 typeof(Model.Actions.System.LaunchApplicationAction), "Launch an application"));
+            system.Actions.Add(new ActionTemplate("Log", "System", "📝",
+                typeof(Model.Actions.System.LogAction), "Log a message to output"));
             system.Actions.Add(new ActionTemplate("If Process Exists", "System", "🔍",
                 typeof(NotImplementedAction), "Check if process is running"));
             system.Actions.Add(new ActionTemplate("Kill Process", "System", "❌",
@@ -991,6 +999,18 @@ namespace FleetAutomate.ViewModel
 
                     action = CreateIfWindowContainsTextAction(result.Value.windowIdentifier, result.Value.identifierType, result.Value.searchText, result.Value.caseSensitive, result.Value.deepSearch);
                 }
+                // Special handling for LogAction - prompt user for log level and message
+                else if (actionTemplate.ActionType == typeof(Model.Actions.System.LogAction))
+                {
+                    var result = OnPromptLogAction?.Invoke();
+                    if (result == null)
+                    {
+                        // User cancelled
+                        return;
+                    }
+
+                    action = CreateLogAction(result.Value.logLevel, result.Value.message);
+                }
                 // Special handling for NotImplementedAction - create placeholder with proper name
                 else if (actionTemplate.ActionType == typeof(NotImplementedAction))
                 {
@@ -1185,6 +1205,26 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Error", $"Failed to create launch application action: {ex.Message}");
+                return null;
+            }
+        }
+
+        private IAction? CreateLogAction(Model.Actions.System.LogLevel logLevel, string message)
+        {
+            try
+            {
+                var action = new Model.Actions.System.LogAction
+                {
+                    LogLevel = logLevel,
+                    Message = message,
+                    Description = $"Log [{logLevel}]: {(message.Length > 30 ? message.Substring(0, 27) + "..." : message)}"
+                };
+
+                return action;
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Error", $"Failed to create log action: {ex.Message}");
                 return null;
             }
         }

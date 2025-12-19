@@ -181,6 +181,22 @@ namespace FleetAutomate
                 return null; // User cancelled
             };
 
+            // Handle log action prompt
+            ViewModel.OnPromptLogAction += () =>
+            {
+                var dialog = new LogActionDialog
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    return (dialog.LogLevel, dialog.Message);
+                }
+
+                return null; // User cancelled
+            };
+
             // Handle error messages
             ViewModel.OnShowError += async (title, message) =>
             {
@@ -469,6 +485,11 @@ namespace FleetAutomate
                         {
                             EditLaunchApplicationAction(launchAction);
                         }
+                        // Special handling for LogAction - use LogActionDialog for editing
+                        else if (action is Model.Actions.System.LogAction logAction)
+                        {
+                            EditLogAction(logAction);
+                        }
                         else
                         {
                             // Open the standard properties dialog
@@ -726,6 +747,32 @@ namespace FleetAutomate
                     description += $" (wait {dialog.TimeoutMilliseconds}ms)";
                 }
                 launchAction.Description = description;
+
+                // Force refresh
+                var currentTestFlow = ViewModel.ActiveTestFlow;
+                ViewModel.ActiveTestFlow = null;
+                ViewModel.ActiveTestFlow = currentTestFlow;
+            }
+        }
+
+        private void EditLogAction(Model.Actions.System.LogAction logAction)
+        {
+            // Extract current values from the LogAction
+            var logLevel = logAction.LogLevel;
+            string message = logAction.Message;
+
+            // Create and show the LogActionDialog with pre-populated values
+            var dialog = new LogActionDialog(logLevel, message)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                // Update the LogAction with new values
+                logAction.LogLevel = dialog.LogLevel;
+                logAction.Message = dialog.Message;
+                logAction.Description = $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}";
 
                 // Force refresh
                 var currentTestFlow = ViewModel.ActiveTestFlow;

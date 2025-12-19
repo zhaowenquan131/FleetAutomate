@@ -1,0 +1,86 @@
+<ui:FluentWindow x:Class="FleetAutomate.View.Dialog.LogActionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Log Message"
+        Height="350"
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="Log Message"
+                    Icon="{ui:SymbolIcon DocumentText20}"/>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Margin="20" VerticalAlignment="Top">
+                <!-- Log Level -->
+                <TextBlock Text="Log Level" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <ComboBox Name="LogLevelComboBox"
+                         Height="32"
+                         Margin="0,0,0,15"
+                         SelectedIndex="2"
+                         ToolTip="Select the log level for this message">
+                    <ComboBoxItem Content="Trace"/>
+                    <ComboBoxItem Content="Debug"/>
+                    <ComboBoxItem Content="Info"/>
+                    <ComboBoxItem Content="Warn"/>
+                    <ComboBoxItem Content="Error"/>
+                    <ComboBoxItem Content="Fatal"/>
+                </ComboBox>
+
+                <!-- Message -->
+                <TextBlock Text="Message" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBox Name="MessageTextBox"
+                        Padding="8"
+                        Margin="0,0,0,15"
+                        Height="120"
+                        TextWrapping="Wrap"
+                        AcceptsReturn="True"
+                        VerticalScrollBarVisibility="Auto"
+                        ToolTip="Message to log. Use {variableName} to insert variable values."/>
+
+                <!-- Hint Text -->
+                <TextBlock Text="Tip: Use {variableName} to insert variable values in the message."
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,5"/>
+                <TextBlock Text="Example: Processing item {counter} of {total}"
+                          FontSize="10"
+                          Foreground="Gray"
+                          TextWrapping="Wrap"
+                          Margin="0,0,0,10"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="Create"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
