@@ -544,6 +544,11 @@ namespace FleetAutomate
                 identifierType = uiExpr.IdentifierType;
                 retryTimes = uiExpr.RetryTimes;
             }
+            else if (ifAction.Condition is Model.Actions.Logic.ExpressionBase<bool> boolExpr)
+            {
+                conditionType = "Expression";
+                conditionExpression = boolExpr.RawText ?? string.Empty;
+            }
             else
             {
                 conditionType = "Expression";
@@ -970,7 +975,7 @@ namespace FleetAutomate
 
             // Use ContentPresenter with converter to display formatted name
             var nameContent = new FrameworkElementFactory(typeof(ContentPresenter));
-            nameContent.SetBinding(ContentPresenter.ContentProperty, new System.Windows.Data.Binding
+            nameContent.SetBinding(ContentPresenter.ContentProperty, new System.Windows.Data.Binding(".")
             {
                 Converter = (IValueConverter)this.FindResource("ActionToFormattedNameConverter")
             });

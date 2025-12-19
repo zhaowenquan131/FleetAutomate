@@ -1,36 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace FleetAutomate.Model.Actions.Logic.Expression
 {
+    [DataContract]
     public class GreaterThanExpression : ExpressionBase<bool>
     {
-        public object OperandLeft { get; set; }
+        [DataMember]
+        public object OperandLeft
+        {
+            get;
+            set;
+        }
+        [DataMember]
         public object OperandRight { get; set; }
 
         public override void Evaluate()
         {
-            if (OperandLeft is IComparable comp1 && OperandRight is IComparable comp2)
+            // Resolve operands (variables or literals)
+            var left = ResolveOperand(OperandLeft);
+            var right = ResolveOperand(OperandRight);
+
+            if (left is IComparable comp1 && right is IComparable comp2)
             {
                 Result = comp1.CompareTo(comp2) > 0;
             }
-            else if (OperandLeft is ExpressionBase<int> exp1 && OperandRight is ExpressionBase<int> exp2)
+            else if (left is ExpressionBase<int> exp1 && right is ExpressionBase<int> exp2)
             {
                 exp1.Evaluate();
-                exp1.Evaluate();
+                exp2.Evaluate();
                 Result = exp1.Result > exp2.Result;
             }
-            else if (OperandLeft is ExpressionBase<double> expD1 && OperandRight is ExpressionBase<double> expD2)
+            else if (left is ExpressionBase<double> expD1 && right is ExpressionBase<double> expD2)
             {
                 expD1.Evaluate();
                 expD2.Evaluate();
                 Result = expD1.Result > expD2.Result;
             }
-            else if (OperandLeft is ExpressionBase<float> expF1 && OperandRight is ExpressionBase<float> expF2)
+            else if (left is ExpressionBase<float> expF1 && right is ExpressionBase<float> expF2)
             {
                 expF1.Evaluate();
                 expF2.Evaluate();
@@ -38,35 +50,60 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
             }
             else
             {
-                throw new InvalidOperationException("Operands must implement IComparable or be of type Expression<Numeric Type>");
+                throw new InvalidOperationException($"Operands must implement IComparable or be of type Expression<Numeric Type>. Got: {left?.GetType().Name} and {right?.GetType().Name}");
             }
+        }
+
+        /// <summary>
+        /// Resolves an operand - if it's a string variable name, looks it up in Environment.
+        /// Otherwise returns the operand as-is.
+        /// </summary>
+        private object ResolveOperand(object operand)
+        {
+            // If operand is a string, try to resolve it as a variable name
+            if (operand is string varName && Environment != null)
+            {
+                var variable = Environment.Variables.FirstOrDefault(v => v.Name == varName);
+                if (variable != null)
+                {
+                    return variable.Value ?? varName;
+                }
+            }
+            return operand;
         }
     }
 
+    [DataContract]
     public class GreaterThanOrEqualExpression : ExpressionBase<bool>
     {
+        [DataMember]
         public object OperandLeft { get; set; }
+        [DataMember]
         public object OperandRight { get; set; }
 
         public override void Evaluate()
         {
-            if (OperandLeft is IComparable comp1 && OperandRight is IComparable comp2)
+            // Resolve operands (variables or literals)
+            var left = ResolveOperand(OperandLeft);
+            var right = ResolveOperand(OperandRight);
+
+            if (left is IComparable comp1 && right is IComparable comp2)
             {
                 Result = comp1.CompareTo(comp2) >= 0;
             }
-            else if (OperandLeft is ExpressionBase<int> exp1 && OperandRight is ExpressionBase<int> exp2)
+            else if (left is ExpressionBase<int> exp1 && right is ExpressionBase<int> exp2)
             {
                 exp1.Evaluate();
-                exp1.Evaluate();
+                exp2.Evaluate();
                 Result = exp1.Result >= exp2.Result;
             }
-            else if (OperandLeft is ExpressionBase<double> expD1 && OperandRight is ExpressionBase<double> expD2)
+            else if (left is ExpressionBase<double> expD1 && right is ExpressionBase<double> expD2)
             {
                 expD1.Evaluate();
                 expD2.Evaluate();
                 Result = expD1.Result >= expD2.Result;
             }
-            else if (OperandLeft is ExpressionBase<float> expF1 && OperandRight is ExpressionBase<float> expF2)
+            else if (left is ExpressionBase<float> expF1 && right is ExpressionBase<float> expF2)
             {
                 expF1.Evaluate();
                 expF2.Evaluate();
@@ -74,35 +111,55 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
             }
             else
             {
-                throw new InvalidOperationException("Operands must implement IComparable or be of type Expression<Numeric Type>");
+                throw new InvalidOperationException($"Operands must implement IComparable or be of type Expression<Numeric Type>. Got: {left?.GetType().Name} and {right?.GetType().Name}");
             }
+        }
+
+        private object ResolveOperand(object operand)
+        {
+            if (operand is string varName && Environment != null)
+            {
+                var variable = Environment.Variables.FirstOrDefault(v => v.Name == varName);
+                if (variable != null)
+                {
+                    return variable.Value ?? varName;
+                }
+            }
+            return operand;
         }
     }
 
+    [DataContract]
     public class SmallerThanExpression : ExpressionBase<bool>
     {
+        [DataMember]
         public object OperandLeft { get; set; }
+        [DataMember]
         public object OperandRight { get; set; }
 
         public override void Evaluate()
         {
-            if (OperandLeft is IComparable comp1 && OperandRight is IComparable comp2)
+            // Resolve operands (variables or literals)
+            var left = ResolveOperand(OperandLeft);
+            var right = ResolveOperand(OperandRight);
+
+            if (left is IComparable comp1 && right is IComparable comp2)
             {
                 Result = comp1.CompareTo(comp2) < 0;
             }
-            else if (OperandLeft is ExpressionBase<int> exp1 && OperandRight is ExpressionBase<int> exp2)
+            else if (left is ExpressionBase<int> exp1 && right is ExpressionBase<int> exp2)
             {
                 exp1.Evaluate();
-                exp1.Evaluate();
+                exp2.Evaluate();
                 Result = exp1.Result < exp2.Result;
             }
-            else if (OperandLeft is ExpressionBase<double> expD1 && OperandRight is ExpressionBase<double> expD2)
+            else if (left is ExpressionBase<double> expD1 && right is ExpressionBase<double> expD2)
             {
                 expD1.Evaluate();
                 expD2.Evaluate();
                 Result = expD1.Result < expD2.Result;
             }
-            else if (OperandLeft is ExpressionBase<float> expF1 && OperandRight is ExpressionBase<float> expF2)
+            else if (left is ExpressionBase<float> expF1 && right is ExpressionBase<float> expF2)
             {
                 expF1.Evaluate();
                 expF2.Evaluate();
@@ -110,34 +167,54 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
             }
             else
             {
-                throw new InvalidOperationException("Operands must implement IComparable or be of type Expression<Numeric Type>");
+                throw new InvalidOperationException($"Operands must implement IComparable or be of type Expression<Numeric Type>. Got: {left?.GetType().Name} and {right?.GetType().Name}");
             }
         }
+
+        private object ResolveOperand(object operand)
+        {
+            if (operand is string varName && Environment != null)
+            {
+                var variable = Environment.Variables.FirstOrDefault(v => v.Name == varName);
+                if (variable != null)
+                {
+                    return variable.Value ?? varName;
+                }
+            }
+            return operand;
+        }
     }
+    [DataContract]
     public class SmallerThanOrEqualExpression : ExpressionBase<bool>
     {
+        [DataMember]
         public object OperandLeft { get; set; }
+        [DataMember]
         public object OperandRight { get; set; }
 
         public override void Evaluate()
         {
-            if (OperandLeft is IComparable comp1 && OperandRight is IComparable comp2)
+            // Resolve operands (variables or literals)
+            var left = ResolveOperand(OperandLeft);
+            var right = ResolveOperand(OperandRight);
+
+            if (left is IComparable comp1 && right is IComparable comp2)
             {
                 Result = comp1.CompareTo(comp2) <= 0;
             }
-            else if (OperandLeft is ExpressionBase<int> exp1 && OperandRight is ExpressionBase<int> exp2)
+            else if (left is ExpressionBase<int> exp1 && right is ExpressionBase<int> exp2)
             {
                 exp1.Evaluate();
-                exp1.Evaluate();
+                exp2.Evaluate();
                 Result = exp1.Result <= exp2.Result;
             }
-            else if (OperandLeft is ExpressionBase<double> expD1 && OperandRight is ExpressionBase<double> expD2)
+            else if (left is ExpressionBase<double> expD1 && right is ExpressionBase<double> expD2)
             {
                 expD1.Evaluate();
                 expD2.Evaluate();
                 Result = expD1.Result <= expD2.Result;
             }
-            else if (OperandLeft is ExpressionBase<float> expF1 && OperandRight is ExpressionBase<float> expF2)
+            else if (left is ExpressionBase<float> expF1 && right is ExpressionBase<float> expF2)
             {
                 expF1.Evaluate();
                 expF2.Evaluate();
@@ -145,8 +222,21 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
             }
             else
             {
-                throw new InvalidOperationException("Operands must implement IComparable or be of type Expression<Numeric Type>");
+                throw new InvalidOperationException($"Operands must implement IComparable or be of type Expression<Numeric Type>. Got: {left?.GetType().Name} and {right?.GetType().Name}");
             }
+        }
+
+        private object ResolveOperand(object operand)
+        {
+            if (operand is string varName && Environment != null)
+            {
+                var variable = Environment.Variables.FirstOrDefault(v => v.Name == varName);
+                if (variable != null)
+                {
+                    return variable.Value ?? varName;
+                }
+            }
+            return operand;
         }
     }
 

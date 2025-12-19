@@ -19,6 +19,14 @@ namespace FleetAutomate.Model.Actions.Logic
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]
     [KnownType(typeof(Expression.UIElementExistsExpression))]
+    [KnownType(typeof(Expression.GreaterThanExpression))]
+    [KnownType(typeof(Expression.GreaterThanOrEqualExpression))]
+    [KnownType(typeof(Expression.SmallerThanExpression))]
+    [KnownType(typeof(Expression.SmallerThanOrEqualExpression))]
+    [KnownType(typeof(Expression.LiteralExpression<bool>))]
+    [KnownType(typeof(Expression.LiteralExpression<int>))]
+    [KnownType(typeof(Expression.LiteralExpression<double>))]
+    [KnownType(typeof(Expression.LiteralExpression<string>))]
     public partial class IfAction : ILogicAction, ICompositeAction
     {
         public IfAction()
@@ -94,7 +102,7 @@ namespace FleetAutomate.Model.Actions.Logic
                     // Limit expression length for display
                     if (expr.Length > 50)
                     {
-                        expr = expr.Substring(0, 47) + "...";
+                        expr = string.Concat(expr.AsSpan(0, 47), "...");
                     }
                     return $"If {expr}";
                 }
@@ -286,6 +294,8 @@ namespace FleetAutomate.Model.Actions.Logic
 
             if (Condition is ExpressionBase<bool> boolExp)
             {
+                // Set Environment on expression so it can resolve variables
+                boolExp.Environment = Environment;
                 boolExp.Evaluate();
                 conditionResult = boolExp.Result;
                 // IMPORTANT: Don't replace Condition - keep expression for re-evaluation

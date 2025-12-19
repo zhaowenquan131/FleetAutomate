@@ -45,8 +45,7 @@ namespace FleetAutomate.Model.Actions.Logic
         [DataMember]
         public ActionState State { get; set; } = ActionState.Ready;
 
-        [DataMember]
-        public string Name => $"Set a {Variable.Type.Name} variable";
+        public string Name => $"Set {Variable.ShortTypeName} {Variable.Name} = {Variable.Value}";
 
         public TResult Result
         {

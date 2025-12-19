@@ -8,6 +8,7 @@ using FleetAutomate.Model.Flow;
 
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
+using NLog;
 
 namespace FleetAutomate.Model.Flow
 {
@@ -34,6 +35,8 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(NotImplementedAction))]
     public partial class TestFlow : ILogicAction
     {
+        private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+
         public TestFlow(CancellationTokenSource tokenSource)
         {
             Actions = [];
@@ -168,6 +171,7 @@ namespace FleetAutomate.Model.Flow
                 }
                 catch (Exception ex)
                 {
+                    Logger.Error(ex, $"[TestFlow] ERROR executing action '{CurrentAction?.Name}': {ex.GetType().Name} - {ex.Message}");
                     State = ActionState.Failed;
                     await Task.Yield();
                     return false;

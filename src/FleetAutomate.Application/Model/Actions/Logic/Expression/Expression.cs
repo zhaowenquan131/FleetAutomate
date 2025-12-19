@@ -16,6 +16,12 @@ namespace FleetAutomate.Model.Actions.Logic
         [DataMember]
         public TResult Result { get; set; }
 
+        /// <summary>
+        /// Environment for resolving variables. Not serialized.
+        /// </summary>
+        [IgnoreDataMember]
+        public Environment? Environment { get; set; }
+
         public abstract void Evaluate();
     }
 }

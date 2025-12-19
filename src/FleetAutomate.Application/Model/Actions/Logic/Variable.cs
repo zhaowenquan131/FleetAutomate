@@ -36,6 +36,8 @@ namespace FleetAutomate.Model.Actions.Logic
             }
         }
 
+        public string ShortTypeName => Type.Name;
+
         /// <summary>
         /// Parameterless constructor for serialization.
         /// </summary>
