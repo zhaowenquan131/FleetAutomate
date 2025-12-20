@@ -20,6 +20,7 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
     [KnownType(typeof(WhileLoopAction))]
     [KnownType(typeof(ForLoopAction))]
     [KnownType(typeof(IfAction))]
+    [KnownType(typeof(SubFlowAction))]
     [KnownType(typeof(TestFlow))]
     [KnownType(typeof(System.LaunchApplicationAction))]
     [KnownType(typeof(UIAutomation.WaitForElementAction))]

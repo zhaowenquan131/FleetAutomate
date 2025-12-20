@@ -197,6 +197,22 @@ namespace FleetAutomate
                 return null; // User cancelled
             };
 
+            // Handle sub flow prompt
+            ViewModel.OnPromptSubFlow += (availableFlows) =>
+            {
+                var dialog = new SubFlowDialog(availableFlows)
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    return dialog.SelectedFlowName;
+                }
+
+                return null; // User cancelled
+            };
+
             // Handle error messages
             ViewModel.OnShowError += async (title, message) =>
             {

@@ -255,6 +255,12 @@ namespace FleetAutomate.ViewModel
         public event Func<(Model.Actions.System.LogLevel logLevel, string message)?>? OnPromptLogAction;
 
         /// <summary>
+        /// Event fired when UI needs to show SubFlow dialog to select target flow.
+        /// Returns selected flow name, or null if cancelled.
+        /// </summary>
+        public event Func<IEnumerable<string>, string?>? OnPromptSubFlow;
+
+        /// <summary>
         /// Command to create a new project.
         /// </summary>
         public ICommand CreateNewProjectCommand { get; }
@@ -773,7 +779,7 @@ namespace FleetAutomate.ViewModel
         {
             ActionCategories.Clear();
 
-            // 1. Logic & Flow Category (4 actions)
+            // 1. Logic & Flow Category (5 actions)
             var logicAndFlow = new ActionCategory("Logic & Flow", "🔀");
             logicAndFlow.Actions.Add(new ActionTemplate("If", "LogicAndFlow", "🔀",
                 typeof(IfAction), "Conditional execution"));
@@ -783,6 +789,8 @@ namespace FleetAutomate.ViewModel
                 typeof(ForLoopAction), "Loop with counter"));
             logicAndFlow.Actions.Add(new ActionTemplate("Set Variable", "LogicAndFlow", "📝",
                 typeof(FleetAutomate.Model.Actions.Logic.SetVariableAction<object>), "Assign value to variable"));
+            logicAndFlow.Actions.Add(new ActionTemplate("SubFlow", "LogicAndFlow", "🔗",
+                typeof(FleetAutomate.Model.Actions.Logic.SubFlowAction), "Execute another flow as sub-flow"));
 
             // 2. System Category (6 actions)
             var system = new ActionCategory("System", "💻");
@@ -1011,6 +1019,20 @@ namespace FleetAutomate.ViewModel
 
                     action = CreateLogAction(result.Value.logLevel, result.Value.message);
                 }
+                // Special handling for SubFlowAction - prompt user for target flow
+                else if (actionTemplate.ActionType == typeof(FleetAutomate.Model.Actions.Logic.SubFlowAction))
+                {
+                    var availableFlows = GetAvailableFlowNames();
+                    var selectedFlowName = OnPromptSubFlow?.Invoke(availableFlows);
+
+                    if (selectedFlowName == null)
+                    {
+                        // User cancelled
+                        return;
+                    }
+
+                    action = CreateSubFlowAction(selectedFlowName);
+                }
                 // Special handling for NotImplementedAction - show warning and don't create
                 else if (actionTemplate.ActionType == typeof(NotImplementedAction))
                 {
@@ -1221,6 +1243,39 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Error", $"Failed to create log action: {ex.Message}");
+                return null;
+            }
+        }
+
+        private IEnumerable<string> GetAvailableFlowNames()
+        {
+            if (ActiveProject?.Model?.TestFlows == null)
+                return Enumerable.Empty<string>();
+
+            return ActiveProject.Model.TestFlows
+                .Where(f => f.IsEnabled && !string.IsNullOrWhiteSpace(f.Name))
+                .Select(f => f.Name);
+        }
+
+        private IAction? CreateSubFlowAction(string targetFlowName)
+        {
+            try
+            {
+                var action = new FleetAutomate.Model.Actions.Logic.SubFlowAction
+                {
+                    TargetFlowName = targetFlowName,
+                    Environment = ActiveTestFlow?.Model.Environment ?? new FleetAutomate.Model.Actions.Logic.Environment(),
+                    Description = $"Execute sub-flow: {targetFlowName}",
+                    State = ActionState.Ready,
+                    IsEnabled = true,
+                    TestProject = ActiveProject?.Model
+                };
+
+                return action;
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Error", $"Failed to create SubFlow action: {ex.Message}");
                 return null;
             }
         }

@@ -14,6 +14,7 @@ namespace FleetAutomate.Model.Actions.Logic
     [KnownType(typeof(Loops.WhileLoopAction))]
     [KnownType(typeof(Loops.ForLoopAction))]
     [KnownType(typeof(IfAction))]
+    [KnownType(typeof(SubFlowAction))]
     [KnownType(typeof(TestFlow))]
     [KnownType(typeof(System.LaunchApplicationAction))]
     [KnownType(typeof(System.LogAction))]

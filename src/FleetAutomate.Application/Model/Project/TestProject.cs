@@ -70,6 +70,7 @@ namespace FleetAutomate.Model.Project
                         if (loadedFlow != null)
                         {
                             loadedFlow.FileName = absolutePath;
+                            loadedFlow.ParentProject = this;
                             TestFlows.Add(loadedFlow);
                         }
                     }
@@ -81,7 +82,8 @@ namespace FleetAutomate.Model.Project
                         {
                             Name = $"[Error loading: {Path.GetFileNameWithoutExtension(relativeFilePath)}]",
                             FileName = absolutePath,
-                            IsEnabled = false
+                            IsEnabled = false,
+                            ParentProject = this
                         };
                         TestFlows.Add(placeholder);
                     }
@@ -93,7 +95,8 @@ namespace FleetAutomate.Model.Project
                     {
                         Name = $"[Missing: {Path.GetFileNameWithoutExtension(relativeFilePath)}]",
                         FileName = absolutePath,
-                        IsEnabled = false
+                        IsEnabled = false,
+                        ParentProject = this
                     };
                     TestFlows.Add(placeholder);
                 }

@@ -37,7 +37,9 @@ namespace FleetAutomate.Model.Flow
             {
                 Environment = flow.Environment,
                 CurrentPath = "Flow",
-                Options = options
+                Options = options,
+                TestProject = flow.ParentProject,
+                CurrentFlow = flow
             };
 
             // Validate the Flow itself

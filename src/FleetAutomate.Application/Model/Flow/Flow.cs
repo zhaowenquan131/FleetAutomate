@@ -28,6 +28,7 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(WhileLoopAction))]
     [KnownType(typeof(ForLoopAction))]
     [KnownType(typeof(IfAction))]
+    [KnownType(typeof(SubFlowAction))]
     [KnownType(typeof(LaunchApplicationAction))]
     [KnownType(typeof(WaitForElementAction))]
     [KnownType(typeof(ClickElementAction))]
@@ -94,6 +95,13 @@ namespace FleetAutomate.Model.Flow
 
         [DataMember] // Don't serialize file path, this is for runtime use
         public string FileName { get; set; }
+
+        /// <summary>
+        /// Reference to the parent TestProject (not serialized, set at runtime).
+        /// Used by SubFlowAction to look up target flows.
+        /// </summary>
+        [IgnoreDataMember]
+        public Project.TestProject ParentProject { get; set; }
 
         public void Cancel()
         {

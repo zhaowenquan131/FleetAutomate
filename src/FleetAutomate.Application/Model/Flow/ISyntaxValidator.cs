@@ -45,6 +45,16 @@ namespace FleetAutomate.Model.Flow
         public SyntaxValidationOptions Options { get; set; } = new SyntaxValidationOptions();
 
         /// <summary>
+        /// Gets or sets the TestProject containing all flows (for SubFlowAction validation).
+        /// </summary>
+        public Project.TestProject TestProject { get; set; }
+
+        /// <summary>
+        /// Gets or sets the current TestFlow being validated (for circular reference detection).
+        /// </summary>
+        public TestFlow CurrentFlow { get; set; }
+
+        /// <summary>
         /// Creates a child context for validating nested actions.
         /// </summary>
         /// <param name="childName">The name/identifier of the child action.</param>
@@ -57,7 +67,9 @@ namespace FleetAutomate.Model.Flow
                 Environment = Environment,
                 CurrentPath = string.IsNullOrEmpty(CurrentPath) ? childName : $"{CurrentPath}.{childName}",
                 Parent = parent,
-                Options = Options
+                Options = Options,
+                TestProject = TestProject,
+                CurrentFlow = CurrentFlow
             };
         }
     }

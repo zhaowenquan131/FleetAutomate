@@ -1,0 +1,67 @@
+<ui:FluentWindow x:Class="FleetAutomate.View.Dialog.SubFlowDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Select Sub-Flow"
+        Height="250"
+        Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title Bar -->
+        <ui:TitleBar Grid.Row="0"
+                    Title="Select Sub-Flow"
+                    Icon="{ui:SymbolIcon Link20}"/>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1" Margin="20" VerticalAlignment="Top">
+            <!-- Instructions -->
+            <TextBlock Text="Select the flow to execute as a sub-flow:"
+                      FontSize="12"
+                      Margin="0,0,0,15"
+                      TextWrapping="Wrap"/>
+
+            <!-- Flow Selection -->
+            <TextBlock Text="Target Flow" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <ComboBox Name="FlowComboBox"
+                     Padding="8"
+                     Margin="0,0,0,15"
+                     Height="32"
+                     ToolTip="Select which flow to execute"/>
+
+            <!-- Hint Text -->
+            <TextBlock Text="Note: The sub-flow will share variables with the parent flow."
+                      FontSize="10"
+                      Foreground="Gray"
+                      Margin="0,0,0,15"
+                      TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ui:Button Name="OkButton"
+                          Content="OK"
+                          Appearance="Primary"
+                          Click="OkButton_Click"
+                          Padding="20,0"
+                          Margin="0,0,10,0"/>
+                <ui:Button Name="CancelButton"
+                          Content="Cancel"
+                          Click="CancelButton_Click"
+                          Padding="20,0"
+                          IsCancel="True"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
