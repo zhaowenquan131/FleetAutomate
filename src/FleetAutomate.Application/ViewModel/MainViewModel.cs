@@ -1011,15 +1011,11 @@ namespace FleetAutomate.ViewModel
 
                     action = CreateLogAction(result.Value.logLevel, result.Value.message);
                 }
-                // Special handling for NotImplementedAction - create placeholder with proper name
+                // Special handling for NotImplementedAction - show warning and don't create
                 else if (actionTemplate.ActionType == typeof(NotImplementedAction))
                 {
-                    action = new NotImplementedAction
-                    {
-                        Name = actionTemplate.Name,
-                        Description = actionTemplate.Description,
-                        PlannedActionName = actionTemplate.Name
-                    };
+                    OnShowInfo?.Invoke("Not Implemented", $"The action '{actionTemplate.Name}' is not implemented yet. This feature is planned for a future release.");
+                    return;
                 }
                 else
                 {

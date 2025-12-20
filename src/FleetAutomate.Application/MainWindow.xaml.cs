@@ -209,6 +209,18 @@ namespace FleetAutomate
                 await messageBox.ShowDialogAsync();
             };
 
+            // Handle info messages
+            ViewModel.OnShowInfo += async (title, message) =>
+            {
+                var messageBox = new MessageBox
+                {
+                    Title = title,
+                    Content = message,
+                    PrimaryButtonText = "OK"
+                };
+                await messageBox.ShowDialogAsync();
+            };
+
             // Open Recent menu is set up after window is loaded
 
             // Handle "Save As" file dialog
