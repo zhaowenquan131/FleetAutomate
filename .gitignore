@@ -5,3 +5,4 @@ src/FleetAutomate.Application/.vs
 src/FleetAutomate.Application/bin
 src/FleetAutomate.Application/obj
 CLAUDE.md
+.claude/settings.local.json
