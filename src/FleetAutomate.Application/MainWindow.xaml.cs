@@ -120,14 +120,15 @@ namespace FleetAutomate
             // Handle wait for element prompt
             ViewModel.OnPromptWaitForElement += () =>
             {
-                var dialog = new WaitForElementDialog
+                var scopeKeys = GetAvailableScopeKeys();
+                var dialog = new WaitForElementDialog(scopeKeys)
                 {
                     Owner = this
                 };
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TimeoutMilliseconds, dialog.PollingIntervalMilliseconds);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TimeoutMilliseconds, dialog.PollingIntervalMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
                 }
 
                 return null; // User cancelled
@@ -136,14 +137,15 @@ namespace FleetAutomate
             // Handle click element prompt
             ViewModel.OnPromptClickElement += () =>
             {
-                var dialog = new ClickElementDialog
+                var scopeKeys = GetAvailableScopeKeys();
+                var dialog = new ClickElementDialog(scopeKeys)
                 {
                     Owner = this
                 };
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.RetryTimes, dialog.RetryDelayMilliseconds);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.RetryTimes, dialog.RetryDelayMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
                 }
 
                 return null; // User cancelled
@@ -152,14 +154,15 @@ namespace FleetAutomate
             // Handle set text prompt
             ViewModel.OnPromptSetText += () =>
             {
-                var dialog = new SetTextDialog
+                var scopeKeys = GetAvailableScopeKeys();
+                var dialog = new SetTextDialog(scopeKeys)
                 {
                     Owner = this
                 };
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TextToSet, dialog.ClearExistingText, dialog.RetryTimes, dialog.RetryDelayMilliseconds);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.TextToSet, dialog.ClearExistingText, dialog.RetryTimes, dialog.RetryDelayMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
                 }
 
                 return null; // User cancelled
@@ -649,9 +652,16 @@ namespace FleetAutomate
             bool useInvoke = clickAction.UseInvoke;
             int retryTimes = clickAction.RetryTimes;
             int retryDelayMilliseconds = clickAction.RetryDelayMilliseconds;
+            string? searchScope = clickAction.SearchScope;
+            bool addToGlobalDictionary = clickAction.AddToGlobalDictionary;
+
+            // Get available scope keys
+            var scopeKeys = GetAvailableScopeKeys();
 
             // Create and show the ClickElementDialog with pre-populated values
-            var dialog = new ClickElementDialog(elementIdentifier, identifierType, isDoubleClick, useInvoke, retryTimes, retryDelayMilliseconds)
+            var dialog = new ClickElementDialog(
+                elementIdentifier, identifierType, isDoubleClick, useInvoke,
+                retryTimes, retryDelayMilliseconds, searchScope, addToGlobalDictionary, scopeKeys)
             {
                 Owner = this
             };
@@ -665,7 +675,16 @@ namespace FleetAutomate
                 clickAction.UseInvoke = dialog.UseInvoke;
                 clickAction.RetryTimes = dialog.RetryTimes;
                 clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
+                clickAction.SearchScope = dialog.SearchScope;
+                clickAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
                 clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? " (invoke)" : "")} (retry:{dialog.RetryTimes}x)";
+
+                // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
+                if (dialog.AddToGlobalDictionary)
+                {
+                    var activeFlow = ViewModel.ActiveTestFlow?.Model;
+                    activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
+                }
 
                 // Force refresh
                 var currentTestFlow = ViewModel.ActiveTestFlow;
@@ -683,9 +702,16 @@ namespace FleetAutomate
             bool clearExistingText = setTextAction.ClearExistingText;
             int retryTimes = setTextAction.RetryTimes;
             int retryDelayMilliseconds = setTextAction.RetryDelayMilliseconds;
+            string? searchScope = setTextAction.SearchScope;
+            bool addToGlobalDictionary = setTextAction.AddToGlobalDictionary;
+
+            // Get available scope keys
+            var scopeKeys = GetAvailableScopeKeys();
 
             // Create and show the SetTextDialog with pre-populated values
-            var dialog = new SetTextDialog(elementIdentifier, identifierType, textToSet, clearExistingText, retryTimes, retryDelayMilliseconds)
+            var dialog = new SetTextDialog(
+                elementIdentifier, identifierType, textToSet, clearExistingText,
+                retryTimes, retryDelayMilliseconds, searchScope, addToGlobalDictionary, scopeKeys)
             {
                 Owner = this
             };
@@ -699,7 +725,16 @@ namespace FleetAutomate
                 setTextAction.ClearExistingText = dialog.ClearExistingText;
                 setTextAction.RetryTimes = dialog.RetryTimes;
                 setTextAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
+                setTextAction.SearchScope = dialog.SearchScope;
+                setTextAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
                 setTextAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
+
+                // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
+                if (dialog.AddToGlobalDictionary)
+                {
+                    var activeFlow = ViewModel.ActiveTestFlow?.Model;
+                    activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
+                }
 
                 // Force refresh
                 var currentTestFlow = ViewModel.ActiveTestFlow;
@@ -807,6 +842,18 @@ namespace FleetAutomate
                 ViewModel.ActiveTestFlow = null;
                 ViewModel.ActiveTestFlow = currentTestFlow;
             }
+        }
+
+        /// <summary>
+        /// Gets the available scope keys from the active flow's GlobalElementDictionary.
+        /// </summary>
+        private IEnumerable<string> GetAvailableScopeKeys()
+        {
+            var activeFlow = ViewModel.ActiveTestFlow?.Model;
+            if (activeFlow?.GlobalElementDictionary == null)
+                return [];
+
+            return activeFlow.GlobalElementDictionary.RegisteredKeys;
         }
 
         private void SetupOpenRecentMenu()
@@ -1102,6 +1149,18 @@ namespace FleetAutomate
             };
             template.ItemsSource = new System.Windows.Data.Binding("ChildActions") { Mode = System.Windows.Data.BindingMode.OneWay };
             treeView.ItemTemplate = template;
+
+            // Create ItemContainerStyle to highlight executing actions
+            var itemContainerStyle = new Style(typeof(System.Windows.Controls.TreeViewItem));
+
+            // Bind Background to State with ActionStateToBackgroundConverter
+            var backgroundBinding = new System.Windows.Data.Binding("State")
+            {
+                Converter = (IValueConverter)this.FindResource("ActionStateToBackgroundConverter")
+            };
+            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, backgroundBinding));
+
+            treeView.ItemContainerStyle = itemContainerStyle;
 
             Grid.SetRow(treeView, 1);
             grid.Children.Add(treeView);

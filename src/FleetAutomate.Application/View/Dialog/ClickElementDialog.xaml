@@ -40,11 +40,46 @@
                     <ComboBoxItem>ClassName</ComboBoxItem>
                 </ComboBox>
 
+                <!-- Search Scope -->
+                <TextBlock Text="Search Scope" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ComboBox Name="SearchScopeComboBox"
+                             Grid.Column="0"
+                             Padding="8"
+                             Height="32"
+                             IsEditable="False"
+                             ToolTip="Select a previously captured element as search root (faster search)">
+                        <ComboBoxItem IsSelected="True">(Desktop - Full Search)</ComboBoxItem>
+                    </ComboBox>
+                    <CheckBox Name="AddSearchScopeToGlobalDictionary"
+                             Grid.Column="1"
+                             Content="Add to Dict"
+                             VerticalAlignment="Center"
+                             Margin="10,0,0,0"
+                             ToolTip="Add the search scope element to the global dictionary"/>
+                </Grid>
+
                 <!-- Element Identifier -->
                 <TextBlock Text="Element Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
-                <controls:XPathInput x:Name="ElementIdentifierInput"
-                                    Margin="0,0,0,15"
-                                    ToolTip="Enter the element identifier or click 'Capture Element' to select from UI"/>
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <controls:XPathInput x:Name="ElementIdentifierInput"
+                                        Grid.Column="0"
+                                        ToolTip="Enter the element identifier or click 'Capture Element' to select from UI"/>
+                    <CheckBox Name="AddElementToGlobalDictionary"
+                             Grid.Column="1"
+                             Content="Add to Dict"
+                             VerticalAlignment="Center"
+                             Margin="10,0,0,0"
+                             ToolTip="Add this element to the global dictionary for use as search scope in subsequent actions"/>
+                </Grid>
 
                 <!-- Double Click Checkbox -->
                 <CheckBox Name="DoubleClickCheckBox"

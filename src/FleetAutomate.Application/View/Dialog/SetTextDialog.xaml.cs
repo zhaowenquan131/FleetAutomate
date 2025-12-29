@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using Wpf.Ui.Controls;
 
 namespace FleetAutomate.View.Dialog
@@ -39,10 +40,28 @@ namespace FleetAutomate.View.Dialog
         /// </summary>
         public int RetryDelayMilliseconds { get; private set; } = 500;
 
-        public SetTextDialog()
+        /// <summary>
+        /// Gets the search scope key (null or empty for desktop/full search).
+        /// </summary>
+        public string? SearchScope { get; private set; }
+
+        /// <summary>
+        /// Gets whether to add the found element to the global dictionary.
+        /// </summary>
+        public bool AddToGlobalDictionary { get; private set; } = false;
+
+        /// <summary>
+        /// Available scope keys from the global element dictionary.
+        /// </summary>
+        private readonly IEnumerable<string> _availableScopeKeys;
+
+        public SetTextDialog(IEnumerable<string>? availableScopeKeys = null)
         {
             InitializeComponent();
+            _availableScopeKeys = availableScopeKeys ?? [];
             ElementIdentifierInput.XPath = string.Empty;
+
+            PopulateScopeComboBox();
 
             // Subscribe to property change to enable/disable OK button
             var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
@@ -59,9 +78,21 @@ namespace FleetAutomate.View.Dialog
         /// <summary>
         /// Constructor for editing an existing SetTextAction with pre-populated values.
         /// </summary>
-        public SetTextDialog(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds)
+        public SetTextDialog(
+            string elementIdentifier,
+            string identifierType,
+            string textToSet,
+            bool clearExistingText,
+            int retryTimes,
+            int retryDelayMilliseconds,
+            string? searchScope = null,
+            bool addToGlobalDictionary = false,
+            IEnumerable<string>? availableScopeKeys = null)
         {
             InitializeComponent();
+            _availableScopeKeys = availableScopeKeys ?? [];
+
+            PopulateScopeComboBox();
 
             // Pre-populate the form fields
             ElementIdentifierInput.XPath = elementIdentifier;
@@ -70,6 +101,10 @@ namespace FleetAutomate.View.Dialog
             ClearExistingTextCheckBox.IsChecked = clearExistingText;
             RetryTimesTextBox.Text = retryTimes.ToString();
             RetryDelayTextBox.Text = retryDelayMilliseconds.ToString();
+            AddElementToGlobalDictionary.IsChecked = addToGlobalDictionary;
+
+            // Set search scope selection
+            SelectSearchScope(searchScope);
 
             // Subscribe to property change to enable/disable OK button
             var xpathDescriptor = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(
@@ -81,6 +116,48 @@ namespace FleetAutomate.View.Dialog
             UpdateOkButtonState();
             // Set button text for editing
             OkButton.Content = "OK";
+        }
+
+        private void PopulateScopeComboBox()
+        {
+            // Add available scope keys after the default "(Desktop - Full Search)" item
+            foreach (var key in _availableScopeKeys)
+            {
+                SearchScopeComboBox.Items.Add(new ComboBoxItem { Content = key, Tag = key });
+            }
+        }
+
+        private void SelectSearchScope(string? searchScope)
+        {
+            if (string.IsNullOrEmpty(searchScope))
+            {
+                SearchScopeComboBox.SelectedIndex = 0; // Desktop
+                return;
+            }
+
+            // Find and select the matching item
+            for (int i = 1; i < SearchScopeComboBox.Items.Count; i++)
+            {
+                if (SearchScopeComboBox.Items[i] is ComboBoxItem item && item.Tag as string == searchScope)
+                {
+                    SearchScopeComboBox.SelectedIndex = i;
+                    return;
+                }
+            }
+
+            // If not found, select desktop
+            SearchScopeComboBox.SelectedIndex = 0;
+        }
+
+        private string? GetSelectedSearchScope()
+        {
+            if (SearchScopeComboBox.SelectedIndex <= 0)
+                return null; // Desktop / Full Search
+
+            if (SearchScopeComboBox.SelectedItem is ComboBoxItem item)
+                return item.Tag as string;
+
+            return null;
         }
 
         private void TextToSetTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -137,6 +214,8 @@ namespace FleetAutomate.View.Dialog
             ClearExistingText = ClearExistingTextCheckBox.IsChecked ?? true;
             RetryTimes = retryTimes;
             RetryDelayMilliseconds = retryDelay;
+            SearchScope = GetSelectedSearchScope();
+            AddToGlobalDictionary = AddElementToGlobalDictionary.IsChecked ?? false;
 
             // Close with success
             DialogResult = true;

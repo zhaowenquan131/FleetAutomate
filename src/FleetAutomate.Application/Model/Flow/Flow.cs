@@ -5,6 +5,7 @@ using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.UIAutomation;
 using Canvas.TestRunner.Model.Actions;
 using FleetAutomate.Model.Flow;
+using FlaUI.Core.AutomationElements;
 
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
@@ -86,6 +87,13 @@ namespace FleetAutomate.Model.Flow
         [DataMember]
         public Actions.Logic.Environment Environment { get; set; } = new Actions.Logic.Environment();
 
+        /// <summary>
+        /// Global element dictionary for storing UI automation elements.
+        /// Keys are defined at design time, values are populated at runtime.
+        /// </summary>
+        [DataMember]
+        public GlobalElementDictionary GlobalElementDictionary { get; set; } = new GlobalElementDictionary();
+
         [DataMember]
         public string Description { get; set; }
         [DataMember]
@@ -152,6 +160,11 @@ namespace FleetAutomate.Model.Flow
                     if (CurrentAction is ILogicAction logicAction)
                     {
                         logicAction.Environment = Environment;
+                    }
+                    // Inject GlobalElementDictionary into UI element actions
+                    if (CurrentAction is IUIElementAction uiElementAction)
+                    {
+                        uiElementAction.ElementDictionary = GlobalElementDictionary;
                     }
                     // Use our own CancellationToken so we can cancel and resume
                     var rst = await CurrentAction.ExecuteAsync(_cancellationTokenSource.Token);
@@ -232,6 +245,11 @@ namespace FleetAutomate.Model.Flow
             State = ActionState.Ready;
             CurrentAction = null!;
 
+            // Initialize GlobalElementDictionary if null
+            GlobalElementDictionary ??= new GlobalElementDictionary();
+            // Clear runtime element values
+            GlobalElementDictionary.ClearRuntimeElements();
+
             // Reset all action states to Ready when project is opened
             ResetAllActionStates();
         }
@@ -241,6 +259,9 @@ namespace FleetAutomate.Model.Flow
         /// </summary>
         private void ResetAllActionStates()
         {
+            // Clear runtime element values for fresh execution
+            GlobalElementDictionary?.ClearRuntimeElements();
+
             foreach (var action in Actions)
             {
                 ResetActionState(action);

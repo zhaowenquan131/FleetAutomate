@@ -228,19 +228,19 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Wait for Element" dialog.
         /// Should return the element search parameters, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, int timeoutMs, int pollingIntervalMs)?>? OnPromptWaitForElement;
+        public event Func<(string elementIdentifier, string identifierType, int timeoutMs, int pollingIntervalMs, string? searchScope, bool addToGlobalDictionary)?>? OnPromptWaitForElement;
 
         /// <summary>
         /// Event fired when UI needs to show a "Click Element" dialog.
         /// Should return the element click parameters, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds)?>? OnPromptClickElement;
+        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)?>? OnPromptClickElement;
 
         /// <summary>
         /// Event fired when UI needs to show a "Set Text" dialog.
         /// Should return the element identifier, text to set, and clear flag, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds)?>? OnPromptSetText;
+        public event Func<(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)?>? OnPromptSetText;
 
         /// <summary>
         /// Event fired when UI needs to show an "If Window Contains Text" dialog.
@@ -969,7 +969,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateWaitForElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.timeoutMs, result.Value.pollingIntervalMs);
+                    action = CreateWaitForElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.timeoutMs, result.Value.pollingIntervalMs, result.Value.searchScope, result.Value.addToGlobalDictionary);
                 }
                 // Special handling for ClickElementAction - prompt user for element click parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.ClickElementAction))
@@ -981,7 +981,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.retryTimes, result.Value.retryDelayMilliseconds);
+                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.retryTimes, result.Value.retryDelayMilliseconds, result.Value.searchScope, result.Value.addToGlobalDictionary);
                 }
                 // Special handling for SetTextAction - prompt user for element and text parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.SetTextAction))
@@ -993,7 +993,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateSetTextAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.textToSet, result.Value.clearExistingText, result.Value.retryTimes, result.Value.retryDelayMilliseconds);
+                    action = CreateSetTextAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.textToSet, result.Value.clearExistingText, result.Value.retryTimes, result.Value.retryDelayMilliseconds, result.Value.searchScope, result.Value.addToGlobalDictionary);
                 }
                 // Special handling for IfWindowContainsTextAction - prompt user for window and text search parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction))
@@ -1317,7 +1317,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a WaitForElementAction with the given parameters.
         /// </summary>
-        private IAction? CreateWaitForElementAction(string elementIdentifier, string identifierType, int timeoutMs, int pollingIntervalMs)
+        private IAction? CreateWaitForElementAction(string elementIdentifier, string identifierType, int timeoutMs, int pollingIntervalMs, string? searchScope, bool addToGlobalDictionary)
         {
             try
             {
@@ -1327,8 +1327,16 @@ namespace FleetAutomate.ViewModel
                     IdentifierType = identifierType,
                     TimeoutMilliseconds = timeoutMs,
                     PollingIntervalMilliseconds = pollingIntervalMs,
+                    SearchScope = searchScope,
+                    AddToGlobalDictionary = addToGlobalDictionary,
                     Description = $"{FormatElementDescription(elementIdentifier, identifierType)} (timeout:{timeoutMs}ms)"
                 };
+
+                // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
+                if (addToGlobalDictionary)
+                {
+                    ActiveTestFlow?.Model?.GlobalElementDictionary?.RegisterKey(elementIdentifier);
+                }
 
                 return action;
             }
@@ -1342,7 +1350,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a ClickElementAction with the given parameters.
         /// </summary>
-        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds)
+        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)
         {
             try
             {
@@ -1354,8 +1362,16 @@ namespace FleetAutomate.ViewModel
                     UseInvoke = useInvoke,
                     RetryTimes = retryTimes,
                     RetryDelayMilliseconds = retryDelayMilliseconds,
+                    SearchScope = searchScope,
+                    AddToGlobalDictionary = addToGlobalDictionary,
                     Description = $"{FormatElementDescription(elementIdentifier, identifierType)}{(isDoubleClick ? " (double)" : "")}{(useInvoke ? " (invoke)" : "")} (retry:{retryTimes}x)"
                 };
+
+                // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
+                if (addToGlobalDictionary)
+                {
+                    ActiveTestFlow?.Model?.GlobalElementDictionary?.RegisterKey(elementIdentifier);
+                }
 
                 return action;
             }
@@ -1369,7 +1385,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a SetTextAction with the given parameters.
         /// </summary>
-        private IAction? CreateSetTextAction(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds)
+        private IAction? CreateSetTextAction(string elementIdentifier, string identifierType, string textToSet, bool clearExistingText, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)
         {
             try
             {
@@ -1381,8 +1397,16 @@ namespace FleetAutomate.ViewModel
                     ClearExistingText = clearExistingText,
                     RetryTimes = retryTimes,
                     RetryDelayMilliseconds = retryDelayMilliseconds,
+                    SearchScope = searchScope,
+                    AddToGlobalDictionary = addToGlobalDictionary,
                     Description = $"{FormatElementDescription(elementIdentifier, identifierType)} = '{textToSet}'{(clearExistingText ? " (clear first)" : "")} (retry:{retryTimes}x)"
                 };
+
+                // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
+                if (addToGlobalDictionary)
+                {
+                    ActiveTestFlow?.Model?.GlobalElementDictionary?.RegisterKey(elementIdentifier);
+                }
 
                 return action;
             }

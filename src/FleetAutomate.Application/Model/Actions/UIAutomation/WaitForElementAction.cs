@@ -13,7 +13,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to wait for a UI element to exist with a specified timeout.
     /// </summary>
     [DataContract]
-    public class WaitForElementAction : IAction, INotifyPropertyChanged
+    public class WaitForElementAction : IAction, IUIElementAction, INotifyPropertyChanged
     {
         public string Name
         {
@@ -142,6 +142,69 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         }
 
         /// <summary>
+        /// The key in the GlobalElementDictionary to use as the search root.
+        /// If null or empty, search from desktop.
+        /// </summary>
+        [DataMember]
+        private string? _searchScope;
+        public string? SearchScope
+        {
+            get => _searchScope;
+            set
+            {
+                if (_searchScope != value)
+                {
+                    _searchScope = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SearchScope)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether to add the found element to the GlobalElementDictionary.
+        /// </summary>
+        [DataMember]
+        private bool _addToGlobalDictionary = false;
+        public bool AddToGlobalDictionary
+        {
+            get => _addToGlobalDictionary;
+            set
+            {
+                if (_addToGlobalDictionary != value)
+                {
+                    _addToGlobalDictionary = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(AddToGlobalDictionary)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// The key to use when adding to the GlobalElementDictionary.
+        /// Defaults to ElementIdentifier if not specified.
+        /// </summary>
+        [DataMember]
+        private string? _globalDictionaryKey;
+        public string? GlobalDictionaryKey
+        {
+            get => _globalDictionaryKey;
+            set
+            {
+                if (_globalDictionaryKey != value)
+                {
+                    _globalDictionaryKey = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(GlobalDictionaryKey)));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reference to the TestFlow's GlobalElementDictionary.
+        /// Set at runtime before execution.
+        /// </summary>
+        [IgnoreDataMember]
+        public GlobalElementDictionary? ElementDictionary { get; set; }
+
+        /// <summary>
         /// The automation instance (not serialized)
         /// </summary>
         [IgnoreDataMember]
@@ -184,6 +247,22 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                 var desktop = _automation.GetDesktop();
                 global::System.Diagnostics.Debug.WriteLine("[WaitForElement] Desktop obtained successfully");
 
+                // Determine search root - use SearchScope from dictionary if specified
+                AutomationElement searchRoot = desktop;
+                if (!string.IsNullOrEmpty(SearchScope) && ElementDictionary != null)
+                {
+                    var scopeElement = ElementDictionary.GetElement(SearchScope);
+                    if (scopeElement != null)
+                    {
+                        searchRoot = scopeElement;
+                        global::System.Diagnostics.Debug.WriteLine($"[WaitForElement] Using search scope: {SearchScope}");
+                    }
+                    else
+                    {
+                        global::System.Diagnostics.Debug.WriteLine($"[WaitForElement] Warning: Search scope '{SearchScope}' not found in dictionary, using desktop");
+                    }
+                }
+
                 var startTime = DateTime.UtcNow;
                 int attemptCount = 0;
 
@@ -201,9 +280,17 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                     }
 
                     // Try to find the element
-                    var element = UIAutomationHelper.FindElement(desktop, IdentifierType, ElementIdentifier, "WaitForElement");
+                    var element = UIAutomationHelper.FindElement(searchRoot, IdentifierType, ElementIdentifier, "WaitForElement");
                     if (element != null)
                     {
+                        // Add element to global dictionary if requested
+                        if (AddToGlobalDictionary && ElementDictionary != null)
+                        {
+                            var key = string.IsNullOrEmpty(GlobalDictionaryKey) ? ElementIdentifier : GlobalDictionaryKey;
+                            ElementDictionary.SetElement(key, element);
+                            global::System.Diagnostics.Debug.WriteLine($"[WaitForElement] Added element to global dictionary with key: {key}");
+                        }
+
                         global::System.Diagnostics.Debug.WriteLine($"[WaitForElement] SUCCESS! Element found after {attemptCount} attempts in {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
                         State = ActionState.Completed;
                         return true;  // Element found!

@@ -22,6 +22,7 @@
         <converters:ProjectToStatusConverter x:Key="ProjectToStatusConverter"/>
         <converters:ActionStateToIconConverter x:Key="ActionStateToIconConverter"/>
         <converters:ActionStateToColorConverter x:Key="ActionStateToColorConverter"/>
+        <converters:ActionStateToBackgroundConverter x:Key="ActionStateToBackgroundConverter"/>
         <converters:ActionStateToSymbolConverter x:Key="ActionStateToSymbolConverter"/>
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
         <converters:ActionToFormattedNameConverter x:Key="ActionToFormattedNameConverter"/>
