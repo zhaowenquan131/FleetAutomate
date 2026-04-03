@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using FleetAutomate.Helpers;
 using Wpf.Ui.Controls;
 
 namespace FleetAutomate.View.Dialog
@@ -53,9 +54,9 @@ namespace FleetAutomate.View.Dialog
         /// <summary>
         /// Available scope keys from the global element dictionary.
         /// </summary>
-        private readonly IEnumerable<string> _availableScopeKeys;
+        private readonly IEnumerable<SearchScopeOption> _availableScopeKeys;
 
-        public ClickElementDialog(IEnumerable<string>? availableScopeKeys = null)
+        public ClickElementDialog(IEnumerable<SearchScopeOption>? availableScopeKeys = null)
         {
             InitializeComponent();
             _availableScopeKeys = availableScopeKeys ?? [];
@@ -84,7 +85,7 @@ namespace FleetAutomate.View.Dialog
             int retryDelayMilliseconds,
             string? searchScope = null,
             bool addToGlobalDictionary = false,
-            IEnumerable<string>? availableScopeKeys = null)
+            IEnumerable<SearchScopeOption>? availableScopeKeys = null)
         {
             InitializeComponent();
             _availableScopeKeys = availableScopeKeys ?? [];
@@ -115,9 +116,9 @@ namespace FleetAutomate.View.Dialog
         private void PopulateScopeComboBox()
         {
             // Add available scope keys after the default "(Desktop - Full Search)" item
-            foreach (var key in _availableScopeKeys)
+            foreach (var scopeOption in _availableScopeKeys)
             {
-                SearchScopeComboBox.Items.Add(new ComboBoxItem { Content = key, Tag = key });
+                SearchScopeComboBox.Items.Add(new ComboBoxItem { Content = scopeOption.DisplayText, Tag = scopeOption.Key });
             }
         }
 

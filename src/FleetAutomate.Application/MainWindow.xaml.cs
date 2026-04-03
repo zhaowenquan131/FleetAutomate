@@ -120,7 +120,7 @@ namespace FleetAutomate
             // Handle wait for element prompt
             ViewModel.OnPromptWaitForElement += () =>
             {
-                var scopeKeys = GetAvailableScopeKeys();
+                var scopeKeys = GetAvailableScopeOptions();
                 var dialog = new WaitForElementDialog(scopeKeys)
                 {
                     Owner = this
@@ -137,7 +137,7 @@ namespace FleetAutomate
             // Handle click element prompt
             ViewModel.OnPromptClickElement += () =>
             {
-                var scopeKeys = GetAvailableScopeKeys();
+                var scopeKeys = GetAvailableScopeOptions();
                 var dialog = new ClickElementDialog(scopeKeys)
                 {
                     Owner = this
@@ -154,7 +154,7 @@ namespace FleetAutomate
             // Handle set text prompt
             ViewModel.OnPromptSetText += () =>
             {
-                var scopeKeys = GetAvailableScopeKeys();
+                var scopeKeys = GetAvailableScopeOptions();
                 var dialog = new SetTextDialog(scopeKeys)
                 {
                     Owner = this
@@ -656,7 +656,7 @@ namespace FleetAutomate
             bool addToGlobalDictionary = clickAction.AddToGlobalDictionary;
 
             // Get available scope keys from actions BEFORE this action
-            var scopeKeys = GetAvailableScopeKeys(clickAction);
+            var scopeKeys = GetAvailableScopeOptions(clickAction);
 
             // Create and show the ClickElementDialog with pre-populated values
             var dialog = new ClickElementDialog(
@@ -706,7 +706,7 @@ namespace FleetAutomate
             bool addToGlobalDictionary = setTextAction.AddToGlobalDictionary;
 
             // Get available scope keys from actions BEFORE this action
-            var scopeKeys = GetAvailableScopeKeys(setTextAction);
+            var scopeKeys = GetAvailableScopeOptions(setTextAction);
 
             // Create and show the SetTextDialog with pre-populated values
             var dialog = new SetTextDialog(
@@ -850,15 +850,17 @@ namespace FleetAutomate
         /// </summary>
         /// <param name="currentAction">The current action being edited/created. If null, all existing actions are considered (for new actions added at end).</param>
         /// <returns>Collection of scope keys from preceding actions.</returns>
-        private IEnumerable<string> GetAvailableScopeKeys(Model.IAction? currentAction = null)
+        private IEnumerable<Helpers.SearchScopeOption> GetAvailableScopeOptions(Model.IAction? currentAction = null)
         {
             var activeFlow = ViewModel.ActiveTestFlow?.Model;
             if (activeFlow == null)
                 return [];
 
-            var scopeKeys = new List<string>();
-            CollectScopeKeysBeforeAction(activeFlow.Actions, currentAction, scopeKeys, out _);
-            return scopeKeys;
+            var scopeOptions = new List<Helpers.SearchScopeOption>();
+            var addedKeys = new HashSet<string>();
+            var actionSequence = 0;
+            CollectScopeOptionsBeforeAction(activeFlow.Actions, currentAction, scopeOptions, addedKeys, ref actionSequence, out _);
+            return scopeOptions;
         }
 
         /// <summary>
@@ -869,16 +871,20 @@ namespace FleetAutomate
         /// <param name="targetAction">The action to stop at (not included). If null, traverse all actions.</param>
         /// <param name="scopeKeys">The list to collect scope keys into.</param>
         /// <param name="foundTarget">Output: true if the target action was found.</param>
-        private void CollectScopeKeysBeforeAction(
+        private void CollectScopeOptionsBeforeAction(
             IEnumerable<Model.IAction> actions,
             Model.IAction? targetAction,
-            List<string> scopeKeys,
+            List<Helpers.SearchScopeOption> scopeOptions,
+            HashSet<string> addedKeys,
+            ref int actionSequence,
             out bool foundTarget)
         {
             foundTarget = false;
 
             foreach (var action in actions)
             {
+                actionSequence++;
+
                 // If this is the target action, stop here (don't include its key)
                 if (targetAction != null && ReferenceEquals(action, targetAction))
                 {
@@ -894,9 +900,15 @@ namespace FleetAutomate
                         ? uiAction.ElementIdentifier
                         : uiAction.GlobalDictionaryKey;
 
-                    if (!string.IsNullOrEmpty(key) && !scopeKeys.Contains(key))
+                    if (!string.IsNullOrEmpty(key) && addedKeys.Add(key))
                     {
-                        scopeKeys.Add(key);
+                        var elementSummary = Helpers.ElementDescriptionHelper.ExtractElementDescription(
+                            uiAction.ElementIdentifier,
+                            uiAction.IdentifierType);
+                        var displayText = string.Equals(key, uiAction.ElementIdentifier, StringComparison.Ordinal)
+                            ? $"{actionSequence}. {action.Name} - {elementSummary}"
+                            : $"{actionSequence}. {action.Name} - {elementSummary} [{key}]";
+                        scopeOptions.Add(new Helpers.SearchScopeOption(key, displayText));
                     }
                 }
 
@@ -904,7 +916,7 @@ namespace FleetAutomate
                 // do not need bespoke UI handling when their internal collection name changes.
                 if (action is Model.ICompositeAction compositeAction)
                 {
-                    CollectScopeKeysBeforeAction(compositeAction.GetChildActions(), targetAction, scopeKeys, out foundTarget);
+                    CollectScopeOptionsBeforeAction(compositeAction.GetChildActions(), targetAction, scopeOptions, addedKeys, ref actionSequence, out foundTarget);
                     if (foundTarget)
                         return;
                 }
@@ -912,7 +924,7 @@ namespace FleetAutomate
                 // IfAction also exposes an else branch outside GetChildActions().
                 if (action is Model.Actions.Logic.IfAction ifAction)
                 {
-                    CollectScopeKeysBeforeAction(ifAction.ElseBlock, targetAction, scopeKeys, out foundTarget);
+                    CollectScopeOptionsBeforeAction(ifAction.ElseBlock, targetAction, scopeOptions, addedKeys, ref actionSequence, out foundTarget);
                     if (foundTarget)
                         return;
                 }

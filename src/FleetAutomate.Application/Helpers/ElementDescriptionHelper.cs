@@ -26,11 +26,11 @@ namespace FleetAutomate.Helpers
                 try
                 {
                     // Parse patterns like //Button[@Name='OK'] or //Window[@Name='Test']//Button[@AutomationId='btnOk']
-                    var lastElementMatch = Regex.Match(identifier, @"(\w+)\[@(\w+)=['""]([^'""]+)['""]");
-                    if (lastElementMatch.Success)
+                    var elementMatches = Regex.Matches(identifier, @"(\w+)\[@(\w+)=['""]([^'""]+)['""]");
+                    if (elementMatches.Count > 0)
                     {
+                        var lastElementMatch = elementMatches[elementMatches.Count - 1];
                         string controlType = lastElementMatch.Groups[1].Value;
-                        string attrName = lastElementMatch.Groups[2].Value;
                         string attrValue = lastElementMatch.Groups[3].Value;
 
                         // Format: ControlType 'value'
