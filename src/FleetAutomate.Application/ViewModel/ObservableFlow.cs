@@ -16,6 +16,8 @@ namespace FleetAutomate.ViewModel
 {
     public partial class ObservableFlow : ObservableObject
     {
+        public event Action<ObservableFlow>? RuntimeStateChanged;
+
         private readonly TestFlow _model;
         private readonly int _instanceId; // Track instance for debugging
         private static int _instanceCounter = 0;
@@ -443,11 +445,18 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void Action_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            // Don't mark as changed during model refresh
-            if (!_isRefreshingFromModel)
+            if (_isRefreshingFromModel)
             {
-                HasUnsavedChanges = true;
+                return;
             }
+
+            if (e.PropertyName == nameof(IAction.State))
+            {
+                RuntimeStateChanged?.Invoke(this);
+                return;
+            }
+
+            HasUnsavedChanges = true;
         }
 
         /// <summary>
@@ -870,6 +879,10 @@ namespace FleetAutomate.ViewModel
             if (_model.CurrentAction != value)
             {
                 _model.CurrentAction = value;
+                if (!_isRefreshingFromModel)
+                {
+                    RuntimeStateChanged?.Invoke(this);
+                }
             }
         }
 
@@ -910,6 +923,10 @@ namespace FleetAutomate.ViewModel
             if (_model.State != value)
             {
                 _model.State = value;
+                if (!_isRefreshingFromModel)
+                {
+                    RuntimeStateChanged?.Invoke(this);
+                }
             }
         }
 

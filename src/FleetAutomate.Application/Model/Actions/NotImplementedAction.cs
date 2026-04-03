@@ -32,7 +32,7 @@ namespace Canvas.TestRunner.Model.Actions
         /// <summary>
         /// Gets or sets the current state of the action.
         /// </summary>
-        [DataMember]
+        [IgnoreDataMember]
         public ActionState State
         {
             get => _state;

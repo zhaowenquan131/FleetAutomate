@@ -96,7 +96,7 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
             }
         }
 
-        [DataMember]
+        [IgnoreDataMember]
         private ActionState _state;
         public ActionState State
         {

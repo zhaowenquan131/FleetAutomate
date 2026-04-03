@@ -55,7 +55,7 @@ namespace FleetAutomate.Model.Flow
         private CancellationTokenSource _cancellationTokenSource;
 
 
-        [DataMember]
+        [IgnoreDataMember]
         public IAction CurrentAction { get; set; }
 
         [DataMember]
@@ -98,10 +98,10 @@ namespace FleetAutomate.Model.Flow
         public string Description { get; set; }
         [DataMember]
         public bool IsEnabled { get; set; } = true;
-        [DataMember]
+        [IgnoreDataMember]
         public ActionState State { get; set; } = ActionState.Ready;
 
-        [DataMember] // Don't serialize file path, this is for runtime use
+        [IgnoreDataMember] // Don't serialize file path, this is for runtime use
         public string FileName { get; set; }
 
         /// <summary>

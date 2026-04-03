@@ -47,7 +47,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
             }
         }
 
-        [DataMember]
+        [IgnoreDataMember]
         private ActionState _state = ActionState.Ready;
 
         public ActionState State

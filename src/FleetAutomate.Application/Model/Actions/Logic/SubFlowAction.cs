@@ -52,7 +52,7 @@ namespace FleetAutomate.Model.Actions.Logic
             }
         }
 
-        [DataMember]
+        [IgnoreDataMember]
         private ActionState _state = ActionState.Ready;
         public ActionState State
         {

@@ -198,6 +198,8 @@ namespace FleetAutomate.Services
                 if (project == null)
                     throw new InvalidOperationException("Failed to load project from file");
 
+                ProjectRuntimeStateStore.Load(filePath, project);
+
                 CurrentProject = project;
                 CurrentProjectFilePath = filePath;
                 HasUnsavedChanges = false;
@@ -270,6 +272,8 @@ namespace FleetAutomate.Services
             {
                 if (CurrentProject == null)
                     return true; // No project to close
+
+                SaveRuntimeState();
 
                 // Check for unsaved changes
                 if (HasUnsavedChanges)
@@ -452,6 +456,18 @@ namespace FleetAutomate.Services
             HasUnsavedChanges = true;
         }
 
+        public void SaveRuntimeState()
+        {
+            try
+            {
+                ProjectRuntimeStateStore.Save(CurrentProjectFilePath, CurrentProject);
+            }
+            catch (Exception ex)
+            {
+                OnOperationFailed?.Invoke("Failed to save runtime state", ex);
+            }
+        }
+
         /// <summary>
         /// Generates a file path for a TestFlow based on its name and the current project location.
         /// </summary>
@@ -603,6 +619,8 @@ namespace FleetAutomate.Services
                     EnsureTestFlowDirectoriesExist();
                     CurrentProject.SaveTestFlowsToFiles(projectDirectory);
                 }
+
+                SaveRuntimeState();
                 HasUnsavedChanges = false;
 
                 return true;

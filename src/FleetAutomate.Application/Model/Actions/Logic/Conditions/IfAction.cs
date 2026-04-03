@@ -135,7 +135,7 @@ namespace FleetAutomate.Model.Actions.Logic
         public ObservableCollection<IAction> ElseBlock { get; set; } = [];
 
         [ObservableProperty]
-        [DataMember(Name = "State")]
+        [IgnoreDataMember]
         private ActionState _state;
 
         /// <summary>

@@ -14,6 +14,7 @@ using FleetAutomate.Model;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
@@ -379,6 +380,8 @@ namespace FleetAutomate.ViewModel
         {
             ProjectManager.OnProjectChanged += (project) =>
             {
+                UnsubscribeFromProjectRuntimeStateEvents();
+
                 // Clear all open tabs when project changes
                 OpenTestFlows.Clear();
                 ActiveTestFlow = null;
@@ -391,7 +394,9 @@ namespace FleetAutomate.ViewModel
                 ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)AddExistingTestFlowCommand).NotifyCanExecuteChanged();
-                ActiveProject = new ObservableProject(project);
+                ActiveProject = project == null ? null : new ObservableProject(project);
+
+                SubscribeToProjectRuntimeStateEvents();
             };
 
             ProjectManager.OnProjectPathChanged += (path) =>
@@ -432,6 +437,60 @@ namespace FleetAutomate.ViewModel
         protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
             base.OnPropertyChanged(e);
+        }
+
+        private void SubscribeToProjectRuntimeStateEvents()
+        {
+            if (ActiveProject == null)
+            {
+                return;
+            }
+
+            ActiveProject.TestFlows.CollectionChanged += ActiveProject_TestFlows_CollectionChanged;
+            foreach (var flow in ActiveProject.TestFlows)
+            {
+                flow.RuntimeStateChanged += ObservableFlow_RuntimeStateChanged;
+            }
+        }
+
+        private void UnsubscribeFromProjectRuntimeStateEvents()
+        {
+            if (ActiveProject == null)
+            {
+                return;
+            }
+
+            ActiveProject.TestFlows.CollectionChanged -= ActiveProject_TestFlows_CollectionChanged;
+            foreach (var flow in ActiveProject.TestFlows)
+            {
+                flow.RuntimeStateChanged -= ObservableFlow_RuntimeStateChanged;
+            }
+        }
+
+        private void ActiveProject_TestFlows_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.NewItems != null)
+            {
+                foreach (ObservableFlow flow in e.NewItems)
+                {
+                    flow.RuntimeStateChanged += ObservableFlow_RuntimeStateChanged;
+                }
+            }
+
+            if (e.OldItems != null)
+            {
+                foreach (ObservableFlow flow in e.OldItems)
+                {
+                    flow.RuntimeStateChanged -= ObservableFlow_RuntimeStateChanged;
+                }
+            }
+
+            ProjectManager.SaveRuntimeState();
+        }
+
+        private void ObservableFlow_RuntimeStateChanged(ObservableFlow flow)
+        {
+            ProjectManager.SaveRuntimeState();
         }
 
         /// <summary>

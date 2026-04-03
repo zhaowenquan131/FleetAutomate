@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch FleetAutomate.Application",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build FleetAutomate.Application",
+      "program": "${workspaceFolder}/FleetAutomate.Application/bin/Debug/net8.0-windows/FleetAutomate.dll",
+      "cwd": "${workspaceFolder}/FleetAutomate.Application",
+      "console": "internalConsole",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Attach to FleetAutomate.Application",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickProcess}"
+    }
+  ]
+}
+

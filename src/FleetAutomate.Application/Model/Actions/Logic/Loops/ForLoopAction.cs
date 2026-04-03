@@ -136,7 +136,7 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
 
         public ObservableCollection<IAction> Body { get; } = [];
 
-        [DataMember]
+        [IgnoreDataMember]
         private ActionState _state;
         public ActionState State
         {

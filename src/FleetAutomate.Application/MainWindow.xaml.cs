@@ -655,8 +655,8 @@ namespace FleetAutomate
             string? searchScope = clickAction.SearchScope;
             bool addToGlobalDictionary = clickAction.AddToGlobalDictionary;
 
-            // Get available scope keys
-            var scopeKeys = GetAvailableScopeKeys();
+            // Get available scope keys from actions BEFORE this action
+            var scopeKeys = GetAvailableScopeKeys(clickAction);
 
             // Create and show the ClickElementDialog with pre-populated values
             var dialog = new ClickElementDialog(
@@ -705,8 +705,8 @@ namespace FleetAutomate
             string? searchScope = setTextAction.SearchScope;
             bool addToGlobalDictionary = setTextAction.AddToGlobalDictionary;
 
-            // Get available scope keys
-            var scopeKeys = GetAvailableScopeKeys();
+            // Get available scope keys from actions BEFORE this action
+            var scopeKeys = GetAvailableScopeKeys(setTextAction);
 
             // Create and show the SetTextDialog with pre-populated values
             var dialog = new SetTextDialog(
@@ -845,15 +845,78 @@ namespace FleetAutomate
         }
 
         /// <summary>
-        /// Gets the available scope keys from the active flow's GlobalElementDictionary.
+        /// Gets the available scope keys from actions that appear BEFORE the current action.
+        /// Only actions with AddToGlobalDictionary=true are included as potential search scopes.
         /// </summary>
-        private IEnumerable<string> GetAvailableScopeKeys()
+        /// <param name="currentAction">The current action being edited/created. If null, all existing actions are considered (for new actions added at end).</param>
+        /// <returns>Collection of scope keys from preceding actions.</returns>
+        private IEnumerable<string> GetAvailableScopeKeys(Model.IAction? currentAction = null)
         {
             var activeFlow = ViewModel.ActiveTestFlow?.Model;
-            if (activeFlow?.GlobalElementDictionary == null)
+            if (activeFlow == null)
                 return [];
 
-            return activeFlow.GlobalElementDictionary.RegisteredKeys;
+            var scopeKeys = new List<string>();
+            CollectScopeKeysBeforeAction(activeFlow.Actions, currentAction, scopeKeys, out _);
+            return scopeKeys;
+        }
+
+        /// <summary>
+        /// Recursively collects scope keys from IUIElementAction instances that have AddToGlobalDictionary=true,
+        /// stopping when the target action is found.
+        /// </summary>
+        /// <param name="actions">The collection of actions to traverse.</param>
+        /// <param name="targetAction">The action to stop at (not included). If null, traverse all actions.</param>
+        /// <param name="scopeKeys">The list to collect scope keys into.</param>
+        /// <param name="foundTarget">Output: true if the target action was found.</param>
+        private void CollectScopeKeysBeforeAction(
+            IEnumerable<Model.IAction> actions,
+            Model.IAction? targetAction,
+            List<string> scopeKeys,
+            out bool foundTarget)
+        {
+            foundTarget = false;
+
+            foreach (var action in actions)
+            {
+                // If this is the target action, stop here (don't include its key)
+                if (targetAction != null && ReferenceEquals(action, targetAction))
+                {
+                    foundTarget = true;
+                    return;
+                }
+
+                // If this action is an IUIElementAction with AddToGlobalDictionary=true, collect its key
+                if (action is Model.Actions.UIAutomation.IUIElementAction uiAction && uiAction.AddToGlobalDictionary)
+                {
+                    // Use GlobalDictionaryKey if specified, otherwise use ElementIdentifier
+                    var key = string.IsNullOrEmpty(uiAction.GlobalDictionaryKey)
+                        ? uiAction.ElementIdentifier
+                        : uiAction.GlobalDictionaryKey;
+
+                    if (!string.IsNullOrEmpty(key) && !scopeKeys.Contains(key))
+                    {
+                        scopeKeys.Add(key);
+                    }
+                }
+
+                // Recurse through composite children via the shared interface so loop implementations
+                // do not need bespoke UI handling when their internal collection name changes.
+                if (action is Model.ICompositeAction compositeAction)
+                {
+                    CollectScopeKeysBeforeAction(compositeAction.GetChildActions(), targetAction, scopeKeys, out foundTarget);
+                    if (foundTarget)
+                        return;
+                }
+
+                // IfAction also exposes an else branch outside GetChildActions().
+                if (action is Model.Actions.Logic.IfAction ifAction)
+                {
+                    CollectScopeKeysBeforeAction(ifAction.ElseBlock, targetAction, scopeKeys, out foundTarget);
+                    if (foundTarget)
+                        return;
+                }
+            }
         }
 
         private void SetupOpenRecentMenu()

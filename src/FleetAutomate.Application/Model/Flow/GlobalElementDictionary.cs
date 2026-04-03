@@ -23,7 +23,22 @@ namespace FleetAutomate.Model.Flow
         /// Not serialized - populated during flow execution.
         /// </summary>
         [IgnoreDataMember]
-        private readonly Dictionary<string, AutomationElement?> _elements = [];
+        private Dictionary<string, AutomationElement?>? _elements = [];
+
+        [OnDeserializing]
+        private void OnDeserializing(StreamingContext context)
+        {
+            _elements = [];
+        }
+
+        [OnDeserialized]
+        private void OnDeserialized(StreamingContext context)
+        {
+            _elements ??= [];
+            RegisteredKeys ??= [];
+        }
+
+        private Dictionary<string, AutomationElement?> Elements => _elements ??= [];
 
         /// <summary>
         /// Gets the AutomationElement for the specified key.
@@ -35,7 +50,7 @@ namespace FleetAutomate.Model.Flow
             if (string.IsNullOrEmpty(key))
                 return null;
 
-            return _elements.TryGetValue(key, out var element) ? element : null;
+            return Elements.TryGetValue(key, out var element) ? element : null;
         }
 
         /// <summary>
@@ -49,7 +64,7 @@ namespace FleetAutomate.Model.Flow
             if (string.IsNullOrEmpty(key))
                 return;
 
-            _elements[key] = element;
+            Elements[key] = element;
 
             // Add to registered keys if not already present
             if (!RegisteredKeys.Contains(key))
@@ -84,7 +99,7 @@ namespace FleetAutomate.Model.Flow
             if (string.IsNullOrEmpty(key))
                 return false;
 
-            _elements.Remove(key);
+            Elements.Remove(key);
             return RegisteredKeys.Remove(key);
         }
 
@@ -111,7 +126,7 @@ namespace FleetAutomate.Model.Flow
             if (string.IsNullOrEmpty(key))
                 return false;
 
-            return _elements.TryGetValue(key, out var element) && element != null;
+            return Elements.TryGetValue(key, out var element) && element != null;
         }
 
         /// <summary>
@@ -120,7 +135,7 @@ namespace FleetAutomate.Model.Flow
         /// </summary>
         public void ClearRuntimeElements()
         {
-            _elements.Clear();
+            Elements.Clear();
         }
 
         /// <summary>
@@ -128,7 +143,7 @@ namespace FleetAutomate.Model.Flow
         /// </summary>
         public void Clear()
         {
-            _elements.Clear();
+            Elements.Clear();
             RegisteredKeys.Clear();
         }
 
