@@ -215,7 +215,7 @@ namespace FleetAutomate.Helpers
                 // 1️⃣ Window 快速定位
                 if (xPath.StartsWith("//Window["))
                 {
-                    var split = xPath.Split(new[] { "]//" }, 2, StringSplitOptions.None);
+                    var split = xPath.Split(["]//"], 2, StringSplitOptions.None);
                     if (split.Length != 2)
                         return null;
 
@@ -236,6 +236,13 @@ namespace FleetAutomate.Helpers
 
                 // 2️⃣ 解析 XPath
                 var segments = ParseXPath(remaining);
+                if (segments.Count > 0 && segments[0].Match(start))
+                {
+                    // Captured paths may include the search root itself (for example the desktop pane).
+                    // Skip that segment so the next lookup starts from the current root's children.
+                    segments.RemoveAt(0);
+                }
+
                 if (segments.Count == 0)
                     return start;
 
