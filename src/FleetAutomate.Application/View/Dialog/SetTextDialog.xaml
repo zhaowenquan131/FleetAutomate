@@ -10,7 +10,7 @@
         Height="600"
         Width="550"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
@@ -30,14 +30,14 @@
                 <!-- Identifier Type -->
                 <TextBlock Text="Identifier Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                 <ComboBox Name="IdentifierTypeComboBox"
-                         Padding="8"
+                         Padding="8,4"
                          Margin="0,0,0,15"
-                         Height="32"
+                         MinHeight="36"
                          SelectedIndex="0">
-                    <ComboBoxItem>XPath</ComboBoxItem>
-                    <ComboBoxItem>AutomationId</ComboBoxItem>
-                    <ComboBoxItem>Name</ComboBoxItem>
-                    <ComboBoxItem>ClassName</ComboBoxItem>
+                    <ComboBoxItem VerticalContentAlignment="Center">XPath</ComboBoxItem>
+                    <ComboBoxItem VerticalContentAlignment="Center">AutomationId</ComboBoxItem>
+                    <ComboBoxItem VerticalContentAlignment="Center">Name</ComboBoxItem>
+                    <ComboBoxItem VerticalContentAlignment="Center">ClassName</ComboBoxItem>
                 </ComboBox>
 
                 <!-- Search Scope -->
@@ -49,11 +49,11 @@
                     </Grid.ColumnDefinitions>
                     <ComboBox Name="SearchScopeComboBox"
                              Grid.Column="0"
-                             Padding="8"
-                             Height="32"
+                             Padding="8,4"
+                             MinHeight="36"
                              IsEditable="False"
                              ToolTip="Select a previously captured element as search root (faster search)">
-                        <ComboBoxItem IsSelected="True">(Desktop - Full Search)</ComboBoxItem>
+                        <ComboBoxItem IsSelected="True" VerticalContentAlignment="Center">(Desktop - Full Search)</ComboBoxItem>
                     </ComboBox>
                     <CheckBox Name="AddSearchScopeToGlobalDictionary"
                              Grid.Column="1"
@@ -153,3 +153,6 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+
+
+

@@ -25,6 +25,8 @@ namespace FleetAutomate.View.Dialog
             MessageTextBox.Focus();
             MessageTextBox.TextChanged += MessageTextBox_TextChanged;
             UpdateOkButtonState();
+            // Set button text for creating
+            OkButton.Content = "Create";
         }
 
         /// <summary>

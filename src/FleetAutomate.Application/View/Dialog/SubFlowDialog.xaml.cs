@@ -35,6 +35,18 @@ namespace FleetAutomate.View.Dialog
 
             // Focus on ComboBox
             FlowComboBox.Focus();
+            OkButton.Content = "创建";
+        }
+
+        public SubFlowDialog(IEnumerable<string> availableFlows, string? selectedFlowName)
+            : this(availableFlows)
+        {
+            if (!string.IsNullOrWhiteSpace(selectedFlowName) && FlowComboBox.Items.Contains(selectedFlowName))
+            {
+                FlowComboBox.SelectedItem = selectedFlowName;
+            }
+
+            OkButton.Content = "保存";
         }
 
         private void UpdateOkButtonState()

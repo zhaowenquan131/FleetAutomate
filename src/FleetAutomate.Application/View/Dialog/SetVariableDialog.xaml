@@ -9,7 +9,7 @@
         Height="350"
         Width="400"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
@@ -36,14 +36,14 @@
             <!-- Variable Type -->
             <TextBlock Text="Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
             <ComboBox Name="VariableTypeComboBox"
-                     Padding="8"
+                     Padding="8,4"
                      Margin="0,0,0,15"
-                     Height="32"
+                     MinHeight="36"
                      SelectedIndex="0">
-                <ComboBoxItem>Integer (int)</ComboBoxItem>
-                <ComboBoxItem>Decimal (double)</ComboBoxItem>
-                <ComboBoxItem>Text</ComboBoxItem>
-                <ComboBoxItem>Boolean</ComboBoxItem>
+                <ComboBoxItem VerticalContentAlignment="Center">Integer (int)</ComboBoxItem>
+                <ComboBoxItem VerticalContentAlignment="Center">Decimal (double)</ComboBoxItem>
+                <ComboBoxItem VerticalContentAlignment="Center">Text</ComboBoxItem>
+                <ComboBoxItem VerticalContentAlignment="Center">Boolean</ComboBoxItem>
             </ComboBox>
 
             <!-- Variable Value -->
@@ -80,3 +80,6 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+
+
+

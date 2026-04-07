@@ -9,7 +9,7 @@
         Height="450"
         Width="550"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
@@ -111,3 +111,4 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+

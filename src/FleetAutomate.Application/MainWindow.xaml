@@ -179,15 +179,22 @@
             <avalonDock:LayoutRoot>
                 <avalonDock:LayoutPanel Orientation="Horizontal">
 
-                    <!-- Left Side: ToolBox and TestFlows -->
+                    <!-- Left Side: Action Box and TestFlows -->
                     <avalonDock:LayoutAnchorablePaneGroup DockWidth="250" Orientation="Vertical">
 
-                        <!-- ToolBox Pane -->
+                        <!-- Action Box Pane -->
                         <avalonDock:LayoutAnchorablePane DockHeight="*">
-                            <avalonDock:LayoutAnchorable Title="ToolBox" CanClose="False" CanHide="False">
+                            <avalonDock:LayoutAnchorable Title="Action Box" CanClose="False" CanHide="False">
                                 <TreeView Name="ActionsToolBox"
                                           ItemsSource="{Binding ActionCategories}"
-                                          MouseDoubleClick="ActionsToolBox_MouseDoubleClick">
+                                          MouseDoubleClick="ActionsToolBox_MouseDoubleClick"
+                                          PreviewMouseRightButtonDown="ActionsToolBox_PreviewMouseRightButtonDown">
+                                    <TreeView.ContextMenu>
+                                        <ContextMenu Opened="ActionsToolBox_ContextMenu_Opening">
+                                            <MenuItem Header="复制名称"
+                                                      Click="CopyActionTemplateNameMenuItem_Click"/>
+                                        </ContextMenu>
+                                    </TreeView.ContextMenu>
 
                                     <!-- Category Level (HierarchicalDataTemplate) -->
                                     <TreeView.ItemTemplate>

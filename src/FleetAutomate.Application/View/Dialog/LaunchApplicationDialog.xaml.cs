@@ -41,6 +41,8 @@ namespace FleetAutomate.View.Dialog
             WaitForCompletionCheckBox.Checked += WaitForCompletionCheckBox_Changed;
             WaitForCompletionCheckBox.Unchecked += WaitForCompletionCheckBox_Changed;
             UpdateOkButtonState();
+            // Set button text for creating
+            OkButton.Content = "Create";
         }
 
         /// <summary>

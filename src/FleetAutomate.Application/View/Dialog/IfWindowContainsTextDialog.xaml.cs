@@ -41,6 +41,8 @@ namespace FleetAutomate.View.Dialog
             WindowIdentifierTextBox.TextChanged += InputTextBox_TextChanged;
             SearchTextTextBox.TextChanged += InputTextBox_TextChanged;
             UpdateOkButtonState();
+            // Set button text for creating
+            OkButton.Content = "Create";
         }
 
         /// <summary>
@@ -61,6 +63,8 @@ namespace FleetAutomate.View.Dialog
             WindowIdentifierTextBox.TextChanged += InputTextBox_TextChanged;
             SearchTextTextBox.TextChanged += InputTextBox_TextChanged;
             UpdateOkButtonState();
+            // Set button text for editing
+            OkButton.Content = "Save";
         }
 
         private void InputTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)

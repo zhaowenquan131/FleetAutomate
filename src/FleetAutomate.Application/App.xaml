@@ -10,6 +10,11 @@
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
             </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="MinHeight" Value="32" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -10,6 +10,7 @@
         Height="500"
         Width="500"
         WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
@@ -30,8 +31,8 @@
             <ComboBox Name="ConditionTypeComboBox"
                      Margin="0,0,0,15"
                      SelectionChanged="ConditionTypeComboBox_SelectionChanged">
-                <ComboBoxItem Content="Normal Expression" IsSelected="True" Tag="Expression"/>
-                <ComboBoxItem Content="UIElement Exists" Tag="UIElementExists"/>
+                <ComboBoxItem Content="Normal Expression" IsSelected="True" Tag="Expression" VerticalContentAlignment="Center"/>
+                <ComboBoxItem Content="UIElement Exists" Tag="UIElementExists" VerticalContentAlignment="Center"/>
             </ComboBox>
 
             <!-- Normal Expression Panel -->
@@ -53,11 +54,11 @@
             <!-- UIElement Exists Panel -->
             <StackPanel Name="UIElementPanel" Visibility="Collapsed">
                 <TextBlock Text="Element Identifier Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
-                <ComboBox Name="IdentifierTypeComboBox" Margin="0,0,0,10">
-                    <ComboBoxItem Content="XPath" IsSelected="True"/>
-                    <ComboBoxItem Content="AutomationId"/>
-                    <ComboBoxItem Content="Name"/>
-                    <ComboBoxItem Content="ClassName"/>
+                <ComboBox Name="IdentifierTypeComboBox" Margin="0,0,0,10" VerticalContentAlignment="Center">
+                    <ComboBoxItem Content="XPath" IsSelected="True" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="AutomationId" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Name" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="ClassName" VerticalContentAlignment="Center"/>
                 </ComboBox>
 
                 <TextBlock Text="Element Identifier" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
@@ -110,3 +111,7 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+
+
+
+

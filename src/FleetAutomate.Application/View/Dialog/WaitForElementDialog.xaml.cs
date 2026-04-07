@@ -63,6 +63,8 @@ namespace FleetAutomate.View.Dialog
             IdentifierTypeComboBox.SelectionChanged += IdentifierTypeComboBox_SelectionChanged;
             UpdateOkButtonState();
             UpdateHintText();
+            // Set button text for creating
+            OkButton.Content = "Create";
         }
 
         /// <summary>
@@ -101,6 +103,8 @@ namespace FleetAutomate.View.Dialog
             IdentifierTypeComboBox.SelectionChanged += IdentifierTypeComboBox_SelectionChanged;
             UpdateOkButtonState();
             UpdateHintText();
+            // Set button text for editing
+            OkButton.Content = "Save";
         }
 
         private void PopulateScopeComboBox()

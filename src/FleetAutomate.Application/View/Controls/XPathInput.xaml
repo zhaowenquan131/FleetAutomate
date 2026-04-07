@@ -13,10 +13,12 @@
         <TextBox x:Name="XPathTextBox"
                  Grid.Column="0"
                  Text="{Binding ElementName=Root, Path=XPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                 TextAlignment="Left"
                  TextWrapping="Wrap"
                  AcceptsReturn="True"
                  MinHeight="60"
                  Padding="8"
+                 HorizontalContentAlignment="Left"
                  VerticalScrollBarVisibility="Auto"/>
 
         <!-- Capture Button -->

@@ -116,7 +116,7 @@ namespace FleetAutomate.View.Dialog
             TextToSetTextBox.TextChanged += TextToSetTextBox_TextChanged;
             UpdateOkButtonState();
             // Set button text for editing
-            OkButton.Content = "OK";
+            OkButton.Content = "Save";
         }
 
         private void PopulateScopeComboBox()

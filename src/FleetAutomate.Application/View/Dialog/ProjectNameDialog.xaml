@@ -1,11 +1,11 @@
-﻿<Window x:Class="FleetAutomate.View.Dialog.ProjectNameDialog"
+<Window x:Class="FleetAutomate.View.Dialog.ProjectNameDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Create New Project" 
         Height="250" Width="400"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None"
         Background="{DynamicResource ApplicationBackgroundBrush}">
     <Border BorderBrush="{DynamicResource ControlElevationBorderBrush}" BorderThickness="1">

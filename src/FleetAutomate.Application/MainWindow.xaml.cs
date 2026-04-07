@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Specialized;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -382,6 +383,91 @@ namespace FleetAutomate
             }
         }
 
+        private void ActionsToolBox_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.TreeView treeView)
+            {
+                return;
+            }
+
+            var treeViewItem = FindAncestor<System.Windows.Controls.TreeViewItem>(e.OriginalSource as DependencyObject);
+            if (treeViewItem == null)
+            {
+                return;
+            }
+
+            treeViewItem.IsSelected = true;
+            e.Handled = false;
+        }
+
+        private void ActionsToolBox_ContextMenu_Opening(object sender, RoutedEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.ContextMenu contextMenu)
+            {
+                return;
+            }
+
+            var selectedTemplate = ActionsToolBox?.SelectedItem as Model.ActionTemplate;
+            foreach (var item in contextMenu.Items.OfType<System.Windows.Controls.MenuItem>())
+            {
+                item.IsEnabled = selectedTemplate != null;
+            }
+        }
+
+        private void CopyActionTemplateNameMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (ActionsToolBox?.SelectedItem is not Model.ActionTemplate actionTemplate)
+            {
+                return;
+            }
+
+            const int maxAttempts = 5;
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                try
+                {
+                    System.Windows.Clipboard.SetText(actionTemplate.Name);
+                    return;
+                }
+                catch (System.Runtime.InteropServices.ExternalException)
+                {
+                    if (attempt < maxAttempts)
+                    {
+                        Thread.Sleep(100);
+                        continue;
+                    }
+                }
+            }
+
+            try
+            {
+                System.Windows.MessageBox.Show(
+                    "剪贴板当前被其他程序占用，复制名称失败，请稍后重试。",
+                    "Copy Name Failed",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Warning);
+            }
+            catch
+            {
+                // Do not let clipboard/messagebox failures bring down the app.
+            }
+        }
+
+        private static T? FindAncestor<T>(DependencyObject? current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T match)
+                {
+                    return match;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return null;
+        }
+
         private void TestFlowActionsTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             // Update the SelectedAction in the ViewModel
@@ -501,6 +587,11 @@ namespace FleetAutomate
                         {
                             EditClickElementAction(clickAction);
                         }
+                        // Special handling for WaitForElementAction - use WaitForElementDialog for editing
+                        else if (action is Model.Actions.UIAutomation.WaitForElementAction waitAction)
+                        {
+                            EditWaitForElementAction(waitAction);
+                        }
                         // Special handling for SetTextAction - use SetTextDialog for editing
                         else if (action is Model.Actions.UIAutomation.SetTextAction setTextAction)
                         {
@@ -520,6 +611,16 @@ namespace FleetAutomate
                         else if (action is Model.Actions.System.LogAction logAction)
                         {
                             EditLogAction(logAction);
+                        }
+                        // Special handling for SetVariableAction<T> - use SetVariableDialog for editing
+                        else if (IsSetVariableAction(action))
+                        {
+                            EditSetVariableAction(action);
+                        }
+                        // Special handling for SubFlowAction - use SubFlowDialog for editing
+                        else if (action is Model.Actions.Logic.SubFlowAction subFlowAction)
+                        {
+                            EditSubFlowAction(subFlowAction);
                         }
                         else
                         {
@@ -693,6 +794,41 @@ namespace FleetAutomate
             }
         }
 
+        private void EditWaitForElementAction(Model.Actions.UIAutomation.WaitForElementAction waitAction)
+        {
+            var scopeKeys = GetAvailableScopeOptions(waitAction);
+            var dialog = new WaitForElementDialog(
+                waitAction.ElementIdentifier,
+                waitAction.IdentifierType,
+                waitAction.TimeoutMilliseconds,
+                waitAction.PollingIntervalMilliseconds,
+                waitAction.SearchScope,
+                waitAction.AddToGlobalDictionary,
+                scopeKeys)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                waitAction.ElementIdentifier = dialog.ElementIdentifier;
+                waitAction.IdentifierType = dialog.IdentifierType;
+                waitAction.TimeoutMilliseconds = dialog.TimeoutMilliseconds;
+                waitAction.PollingIntervalMilliseconds = dialog.PollingIntervalMilliseconds;
+                waitAction.SearchScope = dialog.SearchScope;
+                waitAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
+                waitAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (timeout:{dialog.TimeoutMilliseconds}ms)";
+
+                if (dialog.AddToGlobalDictionary)
+                {
+                    var activeFlow = ViewModel.ActiveTestFlow?.Model;
+                    activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
+                }
+
+                RefreshActiveTestFlow();
+            }
+        }
+
         private void EditSetTextAction(Model.Actions.UIAutomation.SetTextAction setTextAction)
         {
             // Extract current values from the SetTextAction
@@ -844,6 +980,96 @@ namespace FleetAutomate
             }
         }
 
+        private void EditSetVariableAction(Model.IAction action)
+        {
+            var variableProperty = action.GetType().GetProperty("Variable");
+            var variable = variableProperty?.GetValue(action) as Model.Actions.Logic.Variable;
+            if (variable == null)
+            {
+                return;
+            }
+
+            var dialog = new SetVariableDialog(
+                variable.Name,
+                GetVariableTypeKey(variable.Type),
+                variable.Value?.ToString() ?? string.Empty)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var parsedValue = Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(dialog.VariableValue, dialog.VariableType);
+                if (parsedValue == null)
+                {
+                    return;
+                }
+
+                variable.Name = dialog.VariableName;
+                variable.Value = parsedValue;
+                variable.Type = GetTypeFromVariableKey(dialog.VariableType);
+
+                var descriptionProperty = action.GetType().GetProperty("Description");
+                descriptionProperty?.SetValue(action, $"Set {variable.ShortTypeName} {variable.Name} = {variable.Value}");
+
+                RefreshActiveTestFlow();
+            }
+        }
+
+        private void EditSubFlowAction(Model.Actions.Logic.SubFlowAction subFlowAction)
+        {
+            var availableFlows = ViewModel.ActiveProject?.Model?.TestFlows?
+                .Where(flow => flow.IsEnabled
+                    && !string.IsNullOrWhiteSpace(flow.Name)
+                    && !string.Equals(flow.Name, ViewModel.ActiveTestFlow?.Name, StringComparison.Ordinal))
+                .Select(flow => flow.Name)
+                .ToList() ?? [];
+
+            var dialog = new SubFlowDialog(availableFlows, subFlowAction.TargetFlowName)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.SelectedFlowName))
+            {
+                subFlowAction.TargetFlowName = dialog.SelectedFlowName;
+                subFlowAction.Description = $"Execute sub-flow: {dialog.SelectedFlowName}";
+                subFlowAction.TestProject = ViewModel.ActiveProject?.Model;
+
+                RefreshActiveTestFlow();
+            }
+        }
+
+        private static string GetVariableTypeKey(Type? type)
+        {
+            if (type == typeof(int))
+                return "int";
+            if (type == typeof(double) || type == typeof(float) || type == typeof(decimal))
+                return "double";
+            if (type == typeof(bool))
+                return "bool";
+
+            return "string";
+        }
+
+        private static Type GetTypeFromVariableKey(string variableType)
+        {
+            return variableType switch
+            {
+                "int" => typeof(int),
+                "double" => typeof(double),
+                "bool" => typeof(bool),
+                _ => typeof(string)
+            };
+        }
+
+        private void RefreshActiveTestFlow()
+        {
+            var currentTestFlow = ViewModel.ActiveTestFlow;
+            ViewModel.ActiveTestFlow = null;
+            ViewModel.ActiveTestFlow = currentTestFlow;
+        }
+
         /// <summary>
         /// Gets the available scope keys from actions that appear BEFORE the current action.
         /// Only actions with AddToGlobalDictionary=true are included as potential search scopes.
@@ -929,6 +1155,13 @@ namespace FleetAutomate
                         return;
                 }
             }
+        }
+
+        private static bool IsSetVariableAction(Model.IAction action)
+        {
+            var actionType = action.GetType();
+            return actionType.IsGenericType
+                && actionType.GetGenericTypeDefinition() == typeof(Model.Actions.Logic.SetVariableAction<>);
         }
 
         private void SetupOpenRecentMenu()

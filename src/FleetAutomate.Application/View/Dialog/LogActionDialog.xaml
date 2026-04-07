@@ -9,7 +9,7 @@
         Height="350"
         Width="550"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
@@ -29,16 +29,16 @@
                 <!-- Log Level -->
                 <TextBlock Text="Log Level" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                 <ComboBox Name="LogLevelComboBox"
-                         Height="32"
+                         MinHeight="36"
                          Margin="0,0,0,15"
                          SelectedIndex="2"
                          ToolTip="Select the log level for this message">
-                    <ComboBoxItem Content="Trace"/>
-                    <ComboBoxItem Content="Debug"/>
-                    <ComboBoxItem Content="Info"/>
-                    <ComboBoxItem Content="Warn"/>
-                    <ComboBoxItem Content="Error"/>
-                    <ComboBoxItem Content="Fatal"/>
+                    <ComboBoxItem Content="Trace" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Debug" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Info" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Warn" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Error" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Fatal" VerticalContentAlignment="Center"/>
                 </ComboBox>
 
                 <!-- Message -->
@@ -84,3 +84,6 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+
+
+

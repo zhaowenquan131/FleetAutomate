@@ -47,6 +47,8 @@ namespace FleetAutomate.View.Dialog
             xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
 
             UpdateOkButtonState();
+            // Set button text for creating
+            OkButton.Content = "Create";
         }
 
         /// <summary>
@@ -94,6 +96,8 @@ namespace FleetAutomate.View.Dialog
             xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
 
             UpdateOkButtonState();
+            // Set button text for editing
+            OkButton.Content = "Save";
         }
 
         private void ConditionTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

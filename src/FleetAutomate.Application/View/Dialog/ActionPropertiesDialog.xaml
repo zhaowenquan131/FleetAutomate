@@ -6,6 +6,7 @@
         Title="Edit Action Properties"
         Height="500" Width="600"
         WindowStartupLocation="CenterOwner"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid Margin="10">
         <Grid.RowDefinitions>
@@ -38,11 +39,11 @@
                 <!-- WaitForElementAction / ClickElementAction Properties -->
                 <StackPanel Name="UIAutomationPanel" Visibility="Collapsed">
                     <TextBlock Text="Identifier Type" FontWeight="Bold" Margin="0,0,0,5"/>
-                    <ComboBox Name="IdentifierTypeComboBox" Margin="0,0,0,15">
-                        <ComboBoxItem Content="XPath"/>
-                        <ComboBoxItem Content="AutomationId"/>
-                        <ComboBoxItem Content="Name"/>
-                        <ComboBoxItem Content="ClassName"/>
+                    <ComboBox Name="IdentifierTypeComboBox" Margin="0,0,0,15" VerticalContentAlignment="Center">
+                        <ComboBoxItem Content="XPath" VerticalContentAlignment="Center"/>
+                        <ComboBoxItem Content="AutomationId" VerticalContentAlignment="Center"/>
+                        <ComboBoxItem Content="Name" VerticalContentAlignment="Center"/>
+                        <ComboBoxItem Content="ClassName" VerticalContentAlignment="Center"/>
                     </ComboBox>
 
                     <TextBlock Text="Element Identifier" FontWeight="Bold" Margin="0,0,0,5"/>
@@ -101,3 +102,7 @@
         </StackPanel>
     </Grid>
 </ui:FluentWindow>
+
+
+
+

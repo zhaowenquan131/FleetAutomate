@@ -33,6 +33,21 @@ namespace FleetAutomate.View.Dialog
             VariableTypeComboBox.SelectionChanged += VariableTypeComboBox_SelectionChanged;
             UpdateOkButtonState();
             UpdateHintText();
+            OkButton.Content = "创建";
+        }
+
+        public SetVariableDialog(string variableName, string variableType, string variableValue)
+        {
+            InitializeComponent();
+            VariableNameTextBox.Text = variableName;
+            VariableValueTextBox.Text = variableValue;
+            VariableTypeComboBox.SelectedIndex = GetIndexFromType(variableType);
+            VariableNameTextBox.Focus();
+            VariableNameTextBox.TextChanged += VariableNameTextBox_TextChanged;
+            VariableTypeComboBox.SelectionChanged += VariableTypeComboBox_SelectionChanged;
+            UpdateOkButtonState();
+            UpdateHintText();
+            OkButton.Content = "保存";
         }
 
         private void VariableNameTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -177,6 +192,18 @@ namespace FleetAutomate.View.Dialog
                 2 => "string",
                 3 => "bool",
                 _ => "string"
+            };
+        }
+
+        private static int GetIndexFromType(string variableType)
+        {
+            return variableType switch
+            {
+                "int" => 0,
+                "double" => 1,
+                "string" => 2,
+                "bool" => 3,
+                _ => 2
             };
         }
 

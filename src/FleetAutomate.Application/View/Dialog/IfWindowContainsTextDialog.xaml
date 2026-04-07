@@ -9,7 +9,7 @@
         Height="450"
         Width="550"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
     <Grid>
         <Grid.RowDefinitions>
@@ -29,12 +29,12 @@
                 <!-- Window Identifier Type -->
                 <TextBlock Text="Window Identifier Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                 <ComboBox Name="IdentifierTypeComboBox"
-                         Padding="8"
+                         Padding="8,4"
                          Margin="0,0,0,15"
-                         Height="32"
+                         MinHeight="36"
                          SelectedIndex="0">
-                    <ComboBoxItem>Name (Window Title)</ComboBoxItem>
-                    <ComboBoxItem>AutomationId</ComboBoxItem>
+                    <ComboBoxItem VerticalContentAlignment="Center">Name (Window Title)</ComboBoxItem>
+                    <ComboBoxItem VerticalContentAlignment="Center">AutomationId</ComboBoxItem>
                 </ComboBox>
 
                 <!-- Window Identifier -->
@@ -100,3 +100,6 @@
         </Border>
     </Grid>
 </ui:FluentWindow>
+
+
+
