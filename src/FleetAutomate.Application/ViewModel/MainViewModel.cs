@@ -55,6 +55,8 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public bool HasUnsavedChanges => ProjectManager?.HasUnsavedChanges ?? false;
 
+        public bool HasAnyUnsavedFlowChanges => ActiveProject?.TestFlows.Any(flow => flow.HasUnsavedChanges) == true;
+
         /// <summary>
         /// Gets the current project file path.
         /// </summary>
@@ -95,6 +97,7 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+                    OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
                 }
             }
         }
@@ -158,14 +161,19 @@ namespace FleetAutomate.ViewModel
             {
                 if (SetProperty(ref _selectedAction, value))
                 {
+                    OnPropertyChanged(nameof(HasSelectedAction));
                     // Update command states
                     ((RelayCommand)DeleteActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ToggleElseBlockCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ExecuteStepCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ExecuteFromThisStepCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)MoveSelectedActionUpCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)MoveSelectedActionDownCommand).NotifyCanExecuteChanged();
                 }
             }
         }
+
+        public bool HasSelectedAction => SelectedAction != null;
 
         /// <summary>
         /// Gets the hierarchical action categories for the ToolBox TreeView.
@@ -341,6 +349,16 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public ICommand CloseTestFlowTabCommand { get; }
 
+        /// <summary>
+        /// Command to move the selected action up within its current collection.
+        /// </summary>
+        public ICommand MoveSelectedActionUpCommand { get; }
+
+        /// <summary>
+        /// Command to move the selected action down within its current collection.
+        /// </summary>
+        public ICommand MoveSelectedActionDownCommand { get; }
+
         public MainViewModel()
         {
             _projectManager = new TestProjectManager();
@@ -351,7 +369,7 @@ namespace FleetAutomate.ViewModel
             // Initialize commands
             CreateNewProjectCommand = new RelayCommand(CreateNewProject);
             OpenProjectCommand = new RelayCommand<string>(OpenProject);
-            SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded && ActiveTestFlow?.HasUnsavedChanges == true);
+            SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded && (HasUnsavedChanges || HasAnyUnsavedFlowChanges));
             SaveProjectAsCommand = new RelayCommand(SaveProjectAs, () => IsProjectLoaded);
             CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectLoaded);
             DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && ActiveTestFlow != null);
@@ -365,6 +383,8 @@ namespace FleetAutomate.ViewModel
             AddExistingTestFlowCommand = new RelayCommand(AddExistingTestFlow, () => IsProjectLoaded);
             OpenTestFlowInTabCommand = new RelayCommand<ObservableFlow>(OpenTestFlowInTab);
             CloseTestFlowTabCommand = new RelayCommand<ObservableFlow>(CloseTestFlowTab);
+            MoveSelectedActionUpCommand = new RelayCommand(MoveSelectedActionUp, CanMoveSelectedActionUp);
+            MoveSelectedActionDownCommand = new RelayCommand(MoveSelectedActionDown, CanMoveSelectedActionDown);
 
             // Initialize action categories for toolbox
             InitializeActionCategories();
@@ -394,6 +414,7 @@ namespace FleetAutomate.ViewModel
                 ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)AddExistingTestFlowCommand).NotifyCanExecuteChanged();
+                OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
                 ActiveProject = project == null ? null : new ObservableProject(project);
 
                 SubscribeToProjectRuntimeStateEvents();
@@ -407,6 +428,9 @@ namespace FleetAutomate.ViewModel
             ProjectManager.OnUnsavedChangesChanged += (hasChanges) =>
             {
                 OnPropertyChanged(nameof(HasUnsavedChanges));
+                ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
             };
 
             ProjectManager.OnOperationFailed += (message, exception) =>
@@ -450,6 +474,7 @@ namespace FleetAutomate.ViewModel
             foreach (var flow in ActiveProject.TestFlows)
             {
                 flow.RuntimeStateChanged += ObservableFlow_RuntimeStateChanged;
+                flow.PropertyChanged += ObservableFlow_PropertyChanged;
             }
         }
 
@@ -464,6 +489,7 @@ namespace FleetAutomate.ViewModel
             foreach (var flow in ActiveProject.TestFlows)
             {
                 flow.RuntimeStateChanged -= ObservableFlow_RuntimeStateChanged;
+                flow.PropertyChanged -= ObservableFlow_PropertyChanged;
             }
         }
 
@@ -474,6 +500,7 @@ namespace FleetAutomate.ViewModel
                 foreach (ObservableFlow flow in e.NewItems)
                 {
                     flow.RuntimeStateChanged += ObservableFlow_RuntimeStateChanged;
+                    flow.PropertyChanged += ObservableFlow_PropertyChanged;
                 }
             }
 
@@ -482,15 +509,34 @@ namespace FleetAutomate.ViewModel
                 foreach (ObservableFlow flow in e.OldItems)
                 {
                     flow.RuntimeStateChanged -= ObservableFlow_RuntimeStateChanged;
+                    flow.PropertyChanged -= ObservableFlow_PropertyChanged;
                 }
             }
 
             ProjectManager.SaveRuntimeState();
+            OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+            ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
         }
 
         private void ObservableFlow_RuntimeStateChanged(ObservableFlow flow)
         {
             ProjectManager.SaveRuntimeState();
+        }
+
+        private void ObservableFlow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ObservableFlow.HasUnsavedChanges))
+            {
+                if (sender is ObservableFlow flow && flow.HasUnsavedChanges)
+                {
+                    ProjectManager.MarkAsModified();
+                }
+
+                OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+                ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+            }
         }
 
         /// <summary>
@@ -971,6 +1017,11 @@ namespace FleetAutomate.ViewModel
         /// <param name="actionTemplate">The action template to create an instance from.</param>
         public void AddActionFromTemplate(ActionTemplate actionTemplate)
         {
+            AddActionFromTemplate(actionTemplate, SelectedAction);
+        }
+
+        public void AddActionFromTemplate(ActionTemplate actionTemplate, IAction? insertionTarget)
+        {
             if (ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No TestFlow Selected", "Please select a TestFlow before adding actions.");
@@ -1106,26 +1157,7 @@ namespace FleetAutomate.ViewModel
 
                 if (action != null)
                 {
-                    // Check if an ActionBlock is selected (pseudo-node for action blocks)
-                    if (SelectedAction is ActionBlock actionBlock)
-                    {
-                        // Add to the managed collection of the action block
-                        actionBlock.ManagedCollection.Add(action);
-                    }
-                    // Check if a composite action is selected
-                    else if (SelectedAction is ICompositeAction compositeAction)
-                    {
-                        // Add to the child actions of the selected composite action
-                        compositeAction.GetChildActions().Add(action);
-                    }
-                    else
-                    {
-                        // Add to the root TestFlow Actions collection
-                        ActiveTestFlow.Actions.Add(action);
-                    }
-
-                    // Select the newly added action
-                    SelectedAction = action;
+                    InsertAction(action, insertionTarget);
                 }
             }
             catch (Exception ex)
@@ -1514,6 +1546,57 @@ namespace FleetAutomate.ViewModel
             };
         }
 
+        public void InsertAction(IAction action, IAction? insertionTarget)
+        {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (ActiveTestFlow == null)
+                throw new InvalidOperationException("No active TestFlow.");
+
+            if (insertionTarget is ActionBlock actionBlock)
+            {
+                actionBlock.ManagedCollection.Add(action);
+                ActiveTestFlow.HasUnsavedChanges = true;
+            }
+            else if (insertionTarget != null && TryGetParentCollection(insertionTarget, out var parentCollection, out var insertionIndex))
+            {
+                InsertIntoCollection(parentCollection, insertionIndex + 1, action);
+            }
+            else
+            {
+                ActiveTestFlow.AddAction(action);
+            }
+
+            SelectedAction = action;
+        }
+
+        public bool RemoveAction(IAction action)
+        {
+            if (ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            var removed = ActiveTestFlow.RemoveAction(action);
+            if (!removed)
+            {
+                removed = RemoveActionFromNested(ActiveTestFlow.Actions, action);
+            }
+
+            if (removed && ReferenceEquals(SelectedAction, action))
+            {
+                SelectedAction = null;
+            }
+
+            if (removed && ActiveTestFlow != null)
+            {
+                ActiveTestFlow.HasUnsavedChanges = true;
+            }
+
+            return removed;
+        }
+
         /// <summary>
         /// Deletes the currently selected action from the selected TestFlow.
         /// </summary>
@@ -1527,14 +1610,7 @@ namespace FleetAutomate.ViewModel
 
             try
             {
-                // Try to remove from root first
-                var removed = ActiveTestFlow.RemoveAction(SelectedAction);
-
-                if (!removed)
-                {
-                    // If not found in root, search in nested collections (composite actions)
-                    removed = RemoveActionFromNested(ActiveTestFlow.Actions, SelectedAction);
-                }
+                var removed = RemoveAction(SelectedAction);
 
                 if (removed)
                 {
@@ -1579,6 +1655,122 @@ namespace FleetAutomate.ViewModel
             }
 
             return false;
+        }
+
+        private bool TryGetParentCollection(IAction targetAction, out ObservableCollection<IAction> parentCollection, out int index)
+        {
+            parentCollection = null!;
+            index = -1;
+
+            if (ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            return TryFindInCollection(ActiveTestFlow.Actions, targetAction, out parentCollection, out index);
+        }
+
+        private bool TryFindInCollection(ObservableCollection<IAction> actions, IAction targetAction, out ObservableCollection<IAction> parentCollection, out int index)
+        {
+            index = actions.IndexOf(targetAction);
+            if (index >= 0)
+            {
+                parentCollection = actions;
+                return true;
+            }
+
+            foreach (var action in actions)
+            {
+                if (action is not ICompositeAction compositeAction)
+                {
+                    continue;
+                }
+
+                if (TryFindInCollection(compositeAction.GetChildActions(), targetAction, out parentCollection, out index))
+                {
+                    return true;
+                }
+            }
+
+            parentCollection = null!;
+            index = -1;
+            return false;
+        }
+
+        private void InsertIntoCollection(ObservableCollection<IAction> collection, int index, IAction action)
+        {
+            index = Math.Max(0, Math.Min(index, collection.Count));
+
+            if (ReferenceEquals(collection, ActiveTestFlow?.Actions))
+            {
+                ActiveTestFlow.InsertAction(index, action);
+            }
+            else
+            {
+                collection.Insert(index, action);
+                ActiveTestFlow!.HasUnsavedChanges = true;
+            }
+        }
+
+        private bool CanMoveSelectedActionUp()
+        {
+            return CanMoveSelectedAction(-1);
+        }
+
+        private bool CanMoveSelectedActionDown()
+        {
+            return CanMoveSelectedAction(1);
+        }
+
+        private bool CanMoveSelectedAction(int offset)
+        {
+            if (SelectedAction == null || SelectedAction is ActionBlock || ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            return TryGetParentCollection(SelectedAction, out var parentCollection, out var index)
+                && index + offset >= 0
+                && index + offset < parentCollection.Count;
+        }
+
+        private void MoveSelectedActionUp()
+        {
+            MoveSelectedAction(-1);
+        }
+
+        private void MoveSelectedActionDown()
+        {
+            MoveSelectedAction(1);
+        }
+
+        private void MoveSelectedAction(int offset)
+        {
+            if (SelectedAction == null || SelectedAction is ActionBlock || ActiveTestFlow == null)
+            {
+                return;
+            }
+
+            if (!TryGetParentCollection(SelectedAction, out var parentCollection, out var index))
+            {
+                return;
+            }
+
+            var newIndex = index + offset;
+            if (newIndex < 0 || newIndex >= parentCollection.Count)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(parentCollection, ActiveTestFlow.Actions))
+            {
+                ActiveTestFlow.MoveAction(index, newIndex);
+            }
+            else
+            {
+                parentCollection.Move(index, newIndex);
+                ActiveTestFlow.HasUnsavedChanges = true;
+            }
         }
 
         /// <summary>
