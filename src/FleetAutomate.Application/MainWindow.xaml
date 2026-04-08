@@ -25,6 +25,8 @@
         <converters:ActionStateToBackgroundConverter x:Key="ActionStateToBackgroundConverter"/>
         <converters:ActionStateToSymbolConverter x:Key="ActionStateToSymbolConverter"/>
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
+        <converters:ActionTypeToSymbolConverter x:Key="ActionTypeToSymbolConverter"/>
+        <converters:ActionTypeToIconVisibilityConverter x:Key="ActionTypeToIconVisibilityConverter"/>
         <converters:ActionToFormattedNameConverter x:Key="ActionToFormattedNameConverter"/>
 
         <!-- Easing function for smooth pulsing animation -->
@@ -213,10 +215,20 @@
                                             <HierarchicalDataTemplate.ItemTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal" Margin="5,2">
-                                                        <TextBlock Text="{Binding Icon}"
-                                                                   FontSize="14"
-                                                                   Margin="0,0,5,0"
-                                                                   VerticalAlignment="Center"/>
+                                                        <Grid Width="18"
+                                                              Height="18"
+                                                              Margin="0,0,5,0">
+                                                            <TextBlock Text="{Binding Icon}"
+                                                                       FontSize="14"
+                                                                       VerticalAlignment="Center"
+                                                                       HorizontalAlignment="Center"
+                                                                       Visibility="{Binding ., Converter={StaticResource ActionTypeToIconVisibilityConverter}}"/>
+                                                            <ui:SymbolIcon Symbol="{Binding ., Converter={StaticResource ActionTypeToSymbolConverter}}"
+                                                                           FontSize="14"
+                                                                           VerticalAlignment="Center"
+                                                                           HorizontalAlignment="Center"
+                                                                           Visibility="{Binding ., Converter={StaticResource ActionTypeToIconVisibilityConverter}, ConverterParameter=Symbol}"/>
+                                                        </Grid>
                                                         <StackPanel>
                                                             <TextBlock Text="{Binding Name}"
                                                                        FontWeight="Bold"

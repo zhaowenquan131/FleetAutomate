@@ -23,7 +23,7 @@ namespace FleetAutomate.Converters
             {
                 // UI Automation Actions
                 WaitForElementAction => "⏱️",
-                ClickElementAction => "👆",
+                ClickElementAction => string.Empty,
 
                 // System Actions
                 LaunchApplicationAction => "🚀",

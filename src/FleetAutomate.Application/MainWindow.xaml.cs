@@ -1340,6 +1340,11 @@ namespace FleetAutomate
             {
                 DataContext = flow
             };
+            var selectedBackgroundBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255));
+            treeView.Resources[System.Windows.SystemColors.HighlightBrushKey] = selectedBackgroundBrush;
+            treeView.Resources[System.Windows.SystemColors.InactiveSelectionHighlightBrushKey] = selectedBackgroundBrush;
+            treeView.Resources[System.Windows.SystemColors.HighlightTextBrushKey] = System.Windows.Media.Brushes.Black;
+            treeView.Resources[System.Windows.SystemColors.InactiveSelectionHighlightTextBrushKey] = System.Windows.Media.Brushes.Black;
             treeView.SetBinding(System.Windows.Controls.TreeView.ItemsSourceProperty, new System.Windows.Data.Binding("Actions") { Mode = System.Windows.Data.BindingMode.OneWay });
             treeView.SelectedItemChanged += TestFlowActionsTreeView_SelectedItemChanged;
             treeView.KeyDown += TestFlowActionsTreeView_KeyDown;
@@ -1393,12 +1398,41 @@ namespace FleetAutomate
             factory.AppendChild(statusIcon);
 
             // Action type icon
+            var typeIconHost = new FrameworkElementFactory(typeof(Grid));
+            typeIconHost.SetValue(FrameworkElement.WidthProperty, 18.0);
+            typeIconHost.SetValue(FrameworkElement.HeightProperty, 18.0);
+            typeIconHost.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 5, 0));
+
             var typeIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
-            typeIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding { Converter = (IValueConverter)this.FindResource("ActionTypeToIconConverter") });
+            typeIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding
+            {
+                Converter = (IValueConverter)this.FindResource("ActionTypeToIconConverter")
+            });
+            typeIcon.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding(".")
+            {
+                Converter = (IValueConverter)this.FindResource("ActionTypeToIconVisibilityConverter")
+            });
             typeIcon.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 14.0);
-            typeIcon.SetValue(System.Windows.Controls.TextBlock.MarginProperty, new Thickness(0, 0, 5, 0));
             typeIcon.SetValue(System.Windows.Controls.TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
-            factory.AppendChild(typeIcon);
+            typeIcon.SetValue(System.Windows.Controls.TextBlock.HorizontalAlignmentProperty, System.Windows.HorizontalAlignment.Center);
+            typeIconHost.AppendChild(typeIcon);
+
+            var symbolIcon = new FrameworkElementFactory(typeof(Wpf.Ui.Controls.SymbolIcon));
+            symbolIcon.SetBinding(Wpf.Ui.Controls.SymbolIcon.SymbolProperty, new System.Windows.Data.Binding(".")
+            {
+                Converter = (IValueConverter)this.FindResource("ActionTypeToSymbolConverter")
+            });
+            symbolIcon.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding(".")
+            {
+                Converter = (IValueConverter)this.FindResource("ActionTypeToIconVisibilityConverter"),
+                ConverterParameter = "Symbol"
+            });
+            symbolIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            symbolIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, System.Windows.HorizontalAlignment.Center);
+            symbolIcon.SetValue(Wpf.Ui.Controls.SymbolIcon.FontSizeProperty, 14.0);
+            typeIconHost.AppendChild(symbolIcon);
+
+            factory.AppendChild(typeIconHost);
 
             // Action info stack
             var infoStack = new FrameworkElementFactory(typeof(StackPanel));
@@ -1467,6 +1501,16 @@ namespace FleetAutomate
                 Converter = (IValueConverter)this.FindResource("ActionStateToBackgroundConverter")
             };
             itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, backgroundBinding));
+            itemContainerStyle.Triggers.Add(new Trigger
+            {
+                Property = System.Windows.Controls.TreeViewItem.IsSelectedProperty,
+                Value = true,
+                Setters =
+                {
+                    new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255))),
+                    new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black)
+                }
+            });
 
             treeView.ItemContainerStyle = itemContainerStyle;
 

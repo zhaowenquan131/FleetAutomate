@@ -872,7 +872,7 @@ namespace FleetAutomate.ViewModel
             var uiAutomation = new ActionCategory("UI Automation", "🖱️");
             uiAutomation.Actions.Add(new ActionTemplate("Wait for Element", "UIAutomation", "⏱️",
                 typeof(Model.Actions.UIAutomation.WaitForElementAction), "Wait for UI element"));
-            uiAutomation.Actions.Add(new ActionTemplate("Click Element", "UIAutomation", "👆",
+            uiAutomation.Actions.Add(new ActionTemplate("Click Element", "UIAutomation", string.Empty,
                 typeof(Model.Actions.UIAutomation.ClickElementAction), "Click on UI element"));
             uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Text", "UIAutomation", "🔍",
                 typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction), "Check if window contains text"));
@@ -1812,6 +1812,12 @@ namespace FleetAutomate.ViewModel
                 if (SelectedAction is ILogicAction logicAction && ActiveTestFlow != null)
                 {
                     logicAction.Environment = ActiveTestFlow.Model.Environment;
+                }
+
+                // Keep single-step execution consistent with full flow execution.
+                if (SelectedAction is Model.Actions.UIAutomation.IUIElementAction uiElementAction && ActiveTestFlow != null)
+                {
+                    uiElementAction.ElementDictionary = ActiveTestFlow.Model.GlobalElementDictionary;
                 }
 
                 // Execute the action

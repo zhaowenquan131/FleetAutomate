@@ -236,11 +236,12 @@ namespace FleetAutomate.Helpers
 
                 // 2️⃣ 解析 XPath
                 var segments = ParseXPath(remaining);
-                if (segments.Count > 0 && segments[0].Match(start))
+                var rootSegmentIndex = segments.FindIndex(segment => segment.Match(start));
+                if (rootSegmentIndex >= 0)
                 {
-                    // Captured paths may include the search root itself (for example the desktop pane).
-                    // Skip that segment so the next lookup starts from the current root's children.
-                    segments.RemoveAt(0);
+                    // Users may keep an absolute XPath even when SearchScope narrows the root.
+                    // Trim all leading segments up to the current root so the remaining lookup is relative.
+                    segments.RemoveRange(0, rootSegmentIndex + 1);
                 }
 
                 if (segments.Count == 0)

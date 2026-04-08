@@ -149,9 +149,9 @@ namespace FleetAutomate.Services
                 string? automationId = null;
                 try { automationId = element.Properties.AutomationId.ValueOrDefault; } catch { }
 
-                if (!string.IsNullOrWhiteSpace(automationId))
+                if (IsStableAutomationId(automationId))
                 {
-                    var escapedId = EscapeXPath(automationId);
+                    var escapedId = EscapeXPath(automationId!);
                     return $"{controlType}[@AutomationId=\"{escapedId}\"]";
                 }
 
@@ -211,6 +211,19 @@ namespace FleetAutomate.Services
             }
 
             return value;
+        }
+
+        private static bool IsStableAutomationId(string? automationId)
+        {
+            if (string.IsNullOrWhiteSpace(automationId))
+                return false;
+
+            // WinForms often emits transient numeric IDs for container panes.
+            // Skip those so generated paths prefer stable names or button IDs.
+            if (automationId.All(char.IsDigit))
+                return false;
+
+            return true;
         }
 
         /// <summary>

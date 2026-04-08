@@ -6,3 +6,5 @@ src/FleetAutomate.Application/bin
 src/FleetAutomate.Application/obj
 CLAUDE.md
 .claude/settings.local.json
+src/FleetAutomate.Application/logs
+AGENTS.md
