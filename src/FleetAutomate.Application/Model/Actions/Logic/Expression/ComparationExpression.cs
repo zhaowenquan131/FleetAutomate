@@ -9,6 +9,68 @@ using System.Threading.Tasks;
 namespace FleetAutomate.Model.Actions.Logic.Expression
 {
     [DataContract]
+    public class EqualExpression : ExpressionBase<bool>
+    {
+        [DataMember]
+        public object OperandLeft { get; set; }
+
+        [DataMember]
+        public object OperandRight { get; set; }
+
+        public override void Evaluate()
+        {
+            var left = ResolveOperand(OperandLeft);
+            var right = ResolveOperand(OperandRight);
+            Result = Equals(left, right);
+        }
+
+        private object? ResolveOperand(object operand)
+        {
+            if (operand is string varName && Environment != null)
+            {
+                var variable = Environment.Variables.FirstOrDefault(v => v.Name == varName);
+                if (variable != null)
+                {
+                    return variable.Value ?? varName;
+                }
+            }
+
+            return operand;
+        }
+    }
+
+    [DataContract]
+    public class NotEqualExpression : ExpressionBase<bool>
+    {
+        [DataMember]
+        public object OperandLeft { get; set; }
+
+        [DataMember]
+        public object OperandRight { get; set; }
+
+        public override void Evaluate()
+        {
+            var left = ResolveOperand(OperandLeft);
+            var right = ResolveOperand(OperandRight);
+            Result = !Equals(left, right);
+        }
+
+        private object? ResolveOperand(object operand)
+        {
+            if (operand is string varName && Environment != null)
+            {
+                var variable = Environment.Variables.FirstOrDefault(v => v.Name == varName);
+                if (variable != null)
+                {
+                    return variable.Value ?? varName;
+                }
+            }
+
+            return operand;
+        }
+    }
+
+    [DataContract]
     public class GreaterThanExpression : ExpressionBase<bool>
     {
         [DataMember]
@@ -295,10 +357,12 @@ namespace FleetAutomate.Model.Actions.Logic.Expression
                 return null;
             }
 
-            // Try to match comparison operators: >=, <=, >, <
-            // Order matters: >= and <= must be checked before > and <
+            // Try to match comparison operators.
+            // Order matters: multi-character operators must be checked first.
             var operatorPatterns = new[]
             {
+                ("==", typeof(EqualExpression)),
+                ("!=", typeof(NotEqualExpression)),
                 (">=", typeof(GreaterThanOrEqualExpression)),
                 ("<=", typeof(SmallerThanOrEqualExpression)),
                 (">", typeof(GreaterThanExpression)),

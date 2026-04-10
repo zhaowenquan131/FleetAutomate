@@ -66,10 +66,19 @@ namespace FleetAutomate.ViewModel
         private ActionState _state = ActionState.Ready;
 
         [ObservableProperty]
+        private TestFlowBreakReason _breakReason = TestFlowBreakReason.None;
+
+        [ObservableProperty]
+        private IAction? _lastFailedAction;
+
+        [ObservableProperty]
         private bool _isEnabled = true;
 
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
+
+        [ObservableProperty]
+        private IReadOnlyDictionary<string, object?> _runtimeVariables = new Dictionary<string, object?>();
 
         public ObservableCollection<IAction> Actions { get; }
 
@@ -588,7 +597,10 @@ namespace FleetAutomate.ViewModel
             Description = _model.Description ?? string.Empty;
             FileName = _model.FileName ?? string.Empty;
             State = _model.State;
+            BreakReason = _model.BreakReason;
+            LastFailedAction = _model.LastFailedAction;
             IsEnabled = _model.IsEnabled;
+            RuntimeVariables = new Dictionary<string, object?>(_model.GetRuntimeVariableValues(), StringComparer.Ordinal);
 
             // Clear existing subscriptions and pseudo-nodes
             foreach (var ifAction in _subscribedIfActions.ToList())
@@ -823,6 +835,18 @@ namespace FleetAutomate.ViewModel
             _model.Cancel();
         }
 
+        public void Pause()
+        {
+            _model.Pause();
+            RefreshRuntimeStateFromModel();
+        }
+
+        public void Stop()
+        {
+            _model.Stop();
+            RefreshRuntimeStateFromModel();
+        }
+
         /// <summary>
         /// Executes the flow asynchronously.
         /// </summary>
@@ -833,6 +857,39 @@ namespace FleetAutomate.ViewModel
             var result = await _model.ExecuteAsync(cancellationToken);
             RefreshFromModel(); // Refresh to get updated state
             return result;
+        }
+
+        public async Task<bool> StartAsync(CancellationToken cancellationToken)
+        {
+            var result = await _model.StartAsync(cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> StartFromActionAsync(IAction action, CancellationToken cancellationToken)
+        {
+            var result = await _model.StartFromActionAsync(action, cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> ContinueAsync(CancellationToken cancellationToken)
+        {
+            var result = await _model.ContinueAsync(cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> StepActionAsync(IAction action, CancellationToken cancellationToken)
+        {
+            var result = await _model.StepActionAsync(action, cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public IReadOnlyDictionary<string, object?> GetRuntimeVariableValues()
+        {
+            return RuntimeVariables;
         }
 
         /// <summary>
@@ -930,6 +987,30 @@ namespace FleetAutomate.ViewModel
             }
         }
 
+        partial void OnBreakReasonChanged(TestFlowBreakReason value)
+        {
+            if (!_isRefreshingFromModel)
+            {
+                RuntimeStateChanged?.Invoke(this);
+            }
+        }
+
+        partial void OnLastFailedActionChanged(IAction? value)
+        {
+            if (!_isRefreshingFromModel)
+            {
+                RuntimeStateChanged?.Invoke(this);
+            }
+        }
+
+        partial void OnRuntimeVariablesChanged(IReadOnlyDictionary<string, object?> value)
+        {
+            if (!_isRefreshingFromModel)
+            {
+                RuntimeStateChanged?.Invoke(this);
+            }
+        }
+
         partial void OnIsEnabledChanged(bool value)
         {
             if (_model.IsEnabled != value)
@@ -940,6 +1021,18 @@ namespace FleetAutomate.ViewModel
                     HasUnsavedChanges = true;
                 }
             }
+        }
+
+        private void RefreshRuntimeStateFromModel()
+        {
+            _isRefreshingFromModel = true;
+            CurrentAction = _model.CurrentAction;
+            State = _model.State;
+            BreakReason = _model.BreakReason;
+            LastFailedAction = _model.LastFailedAction;
+            RuntimeVariables = new Dictionary<string, object?>(_model.GetRuntimeVariableValues(), StringComparer.Ordinal);
+            _isRefreshingFromModel = false;
+            RuntimeStateChanged?.Invoke(this);
         }
     }
 }

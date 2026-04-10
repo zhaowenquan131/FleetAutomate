@@ -17,6 +17,16 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
     [KnownType(typeof(System.LaunchApplicationAction))]
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]
+    [KnownType(typeof(Expression.EqualExpression))]
+    [KnownType(typeof(Expression.NotEqualExpression))]
+    [KnownType(typeof(Expression.GreaterThanExpression))]
+    [KnownType(typeof(Expression.GreaterThanOrEqualExpression))]
+    [KnownType(typeof(Expression.SmallerThanExpression))]
+    [KnownType(typeof(Expression.SmallerThanOrEqualExpression))]
+    [KnownType(typeof(Expression.LiteralExpression<bool>))]
+    [KnownType(typeof(Expression.LiteralExpression<int>))]
+    [KnownType(typeof(Expression.LiteralExpression<double>))]
+    [KnownType(typeof(Expression.LiteralExpression<string>))]
     public class WhileLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
