@@ -8,3 +8,5 @@ CLAUDE.md
 .claude/settings.local.json
 src/FleetAutomate.Application/logs
 AGENTS.md
+src/FleetAutomate.Cli/obj
+src/FleetAutomate.Cli/bin
