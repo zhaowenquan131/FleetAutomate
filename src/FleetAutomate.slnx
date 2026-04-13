@@ -4,4 +4,5 @@
   <Project Path="FlaUI/src/FlaUI.UIA3/FlaUI.UIA3.csproj" />
   <Project Path="FleetAutomate.Application/FleetAutomate.csproj" />
   <Project Path="FleetAutomate.Cli/FleetAutomate.Cli.csproj" />
+  <Project Path="FleetAutomate.Tests/FleetAutomate.Tests.csproj" />
 </Solution>
