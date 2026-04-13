@@ -63,7 +63,7 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public void Cancel()
         {
-            throw new NotImplementedException();
+            // Variable assignment is atomic and doesn't support in-flight cancellation.
         }
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)

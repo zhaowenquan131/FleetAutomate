@@ -1697,7 +1697,11 @@ namespace FleetAutomate.ViewModel
             try
             {
                 ActiveTestFlow.Pause();
-                ApplyExecutionStateAfterRun(true, string.Empty, string.Empty);
+                RefreshCurrentRuntimeVariables();
+
+                // A pause request may only take effect after the current atomic action finishes.
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = ActiveTestFlow.State == ActionState.Paused;
             }
             catch (Exception ex)
             {

@@ -12,7 +12,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to set text in a UI input element.
     /// </summary>
     [DataContract]
-    public class SetTextAction : IRetryableAction, IUIElementAction, INotifyPropertyChanged
+    public class SetTextAction : IRetryableAction, IUIElementAction, IPauseAwareAction, INotifyPropertyChanged
     {
         public string Name => "Set Text";
 
@@ -230,6 +230,11 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// </summary>
         [IgnoreDataMember]
         private AutomationBase? _automation;
+
+        [IgnoreDataMember]
+        public ActionPauseBehavior PauseBehavior => RetryTimes > 0
+            ? ActionPauseBehavior.BetweenAttempts
+            : ActionPauseBehavior.None;
 
         public void Cancel()
         {

@@ -145,7 +145,7 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
 
         public void Cancel()
         {
-            throw new NotImplementedException();
+            // Loop cancellation is coordinated by child actions via the shared flow token.
         }
 
         /// <summary>

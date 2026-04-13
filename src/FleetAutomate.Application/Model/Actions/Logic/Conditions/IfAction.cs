@@ -288,7 +288,7 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public void Cancel()
         {
-            throw new NotImplementedException();
+            // Composite cancellation is coordinated by child actions via the shared flow token.
         }
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)

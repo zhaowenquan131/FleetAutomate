@@ -14,7 +14,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to click on a UI element.
     /// </summary>
     [DataContract]
-    public class ClickElementAction : IRetryableAction, IUIElementAction, INotifyPropertyChanged
+    public class ClickElementAction : IRetryableAction, IUIElementAction, IPauseAwareAction, INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -232,6 +232,11 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// </summary>
         [IgnoreDataMember]
         private AutomationBase? _automation;
+
+        [IgnoreDataMember]
+        public ActionPauseBehavior PauseBehavior => RetryTimes > 0
+            ? ActionPauseBehavior.BetweenAttempts
+            : ActionPauseBehavior.None;
 
         public void Cancel()
         {

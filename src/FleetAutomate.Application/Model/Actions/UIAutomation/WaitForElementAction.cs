@@ -13,7 +13,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to wait for a UI element to exist with a specified timeout.
     /// </summary>
     [DataContract]
-    public class WaitForElementAction : IAction, IUIElementAction, INotifyPropertyChanged
+    public class WaitForElementAction : IAction, IUIElementAction, IPauseAwareAction, INotifyPropertyChanged
     {
         public string Name
         {
@@ -209,6 +209,9 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// </summary>
         [IgnoreDataMember]
         private AutomationBase? _automation;
+
+        [IgnoreDataMember]
+        public ActionPauseBehavior PauseBehavior => ActionPauseBehavior.Cooperative;
 
         public void Cancel()
         {

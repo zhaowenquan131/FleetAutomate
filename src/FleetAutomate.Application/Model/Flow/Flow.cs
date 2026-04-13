@@ -138,8 +138,12 @@ namespace FleetAutomate.Model.Flow
         public void Pause()
         {
             _pauseRequested = true;
-            CurrentAction?.Cancel();
-            _cancellationTokenSource?.Cancel();
+
+            if (CanInterruptCurrentActionForPause())
+            {
+                CurrentAction?.Cancel();
+                _cancellationTokenSource?.Cancel();
+            }
         }
 
         public void Stop()
@@ -487,6 +491,16 @@ namespace FleetAutomate.Model.Flow
             {
                 uiElementAction.ElementDictionary = GlobalElementDictionary;
             }
+        }
+
+        private bool CanInterruptCurrentActionForPause()
+        {
+            if (CurrentAction is not IPauseAwareAction pauseAwareAction)
+            {
+                return false;
+            }
+
+            return pauseAwareAction.PauseBehavior != ActionPauseBehavior.None;
         }
 
         /// <summary>
