@@ -90,8 +90,14 @@
                 <!-- Use Invoke Checkbox -->
                 <CheckBox Name="UseInvokeCheckBox"
                          Content="Use Invoke Pattern"
-                         Margin="0,0,0,15"
+                         Margin="0,0,0,8"
                          ToolTip="Use Invoke pattern instead of mouse click (useful when element is behind another element)"/>
+
+                <CheckBox Name="InvokeWithoutWaitingCheckBox"
+                         Content="Invoke Without Waiting"
+                         Margin="20,0,0,15"
+                         ToolTip="Dispatch Invoke on a dedicated STA thread and continue without waiting for the target UI to finish"
+                         IsEnabled="False"/>
 
                 <!-- Retry Times -->
                 <TextBlock Text="Retry Times" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>

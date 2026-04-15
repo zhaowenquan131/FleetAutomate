@@ -245,7 +245,7 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Click Element" dialog.
         /// Should return the element click parameters, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)?>? OnPromptClickElement;
+        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, bool invokeWithoutWaiting, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)?>? OnPromptClickElement;
 
         /// <summary>
         /// Event fired when UI needs to show a "Set Text" dialog.
@@ -1098,7 +1098,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.retryTimes, result.Value.retryDelayMilliseconds, result.Value.searchScope, result.Value.addToGlobalDictionary);
+                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.invokeWithoutWaiting, result.Value.retryTimes, result.Value.retryDelayMilliseconds, result.Value.searchScope, result.Value.addToGlobalDictionary);
                 }
                 // Special handling for SetTextAction - prompt user for element and text parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.SetTextAction))
@@ -1448,7 +1448,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a ClickElementAction with the given parameters.
         /// </summary>
-        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)
+        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, bool invokeWithoutWaiting, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)
         {
             try
             {
@@ -1458,11 +1458,12 @@ namespace FleetAutomate.ViewModel
                     IdentifierType = identifierType,
                     IsDoubleClick = isDoubleClick,
                     UseInvoke = useInvoke,
+                    InvokeWithoutWaiting = useInvoke && invokeWithoutWaiting,
                     RetryTimes = retryTimes,
                     RetryDelayMilliseconds = retryDelayMilliseconds,
                     SearchScope = searchScope,
                     AddToGlobalDictionary = addToGlobalDictionary,
-                    Description = $"{FormatElementDescription(elementIdentifier, identifierType)}{(isDoubleClick ? " (double)" : "")}{(useInvoke ? " (invoke)" : "")} (retry:{retryTimes}x)"
+                    Description = BuildClickElementDescription(elementIdentifier, identifierType, isDoubleClick, useInvoke, useInvoke && invokeWithoutWaiting, retryTimes)
                 };
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
@@ -1478,6 +1479,13 @@ namespace FleetAutomate.ViewModel
                 OnShowError?.Invoke("Error", $"Failed to create click element action: {ex.Message}");
                 return null;
             }
+        }
+
+        private string BuildClickElementDescription(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, bool invokeWithoutWaiting, int retryTimes)
+        {
+            return $"{FormatElementDescription(elementIdentifier, identifierType)}" +
+                   $"{(isDoubleClick ? " (double)" : "")}" +
+                   $"{(useInvoke ? invokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)" : "")} (retry:{retryTimes}x)";
         }
 
         /// <summary>
@@ -1872,7 +1880,8 @@ namespace FleetAutomate.ViewModel
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
                 RefreshCurrentRuntimeVariables();
-                OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
+                OnShowError?.Invoke("Execution Error", PrependActionSummaryToError(
+                    $"An error occurred while executing the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1898,7 +1907,8 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 RefreshCurrentRuntimeVariables();
-                OnShowError?.Invoke("Pause Error", $"An error occurred while pausing the TestFlow: {ex.Message}");
+                OnShowError?.Invoke("Pause Error", PrependActionSummaryToError(
+                    $"An error occurred while pausing the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1925,7 +1935,8 @@ namespace FleetAutomate.ViewModel
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
                 RefreshCurrentRuntimeVariables();
-                OnShowError?.Invoke("Continue Error", $"An error occurred while continuing the TestFlow: {ex.Message}");
+                OnShowError?.Invoke("Continue Error", PrependActionSummaryToError(
+                    $"An error occurred while continuing the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1947,7 +1958,8 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 RefreshCurrentRuntimeVariables();
-                OnShowError?.Invoke("Stop Error", $"An error occurred while stopping the TestFlow: {ex.Message}");
+                OnShowError?.Invoke("Stop Error", PrependActionSummaryToError(
+                    $"An error occurred while stopping the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1962,21 +1974,25 @@ namespace FleetAutomate.ViewModel
                 return;
             }
 
+            var selectedAction = SelectedAction;
+
             try
             {
                 IsTestFlowRunning = true;
                 IsTestFlowPaused = false;
 
                 ActiveTestFlow.SyncToModel();
-                var result = await ActiveTestFlow.StepActionAsync(SelectedAction, CancellationToken.None);
-                ApplyExecutionStateAfterRun(result, "Step Execution Failed", $"Action '{SelectedAction.Name}' execution failed or was cancelled.");
+                var result = await ActiveTestFlow.StepActionAsync(selectedAction, CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Step Execution Failed", $"Action '{selectedAction.Name}' execution failed or was cancelled.");
             }
             catch (Exception ex)
             {
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
                 RefreshCurrentRuntimeVariables();
-                OnShowError?.Invoke("Step Execution Error", $"An error occurred while executing the action: {ex.Message}");
+                OnShowError?.Invoke("Step Execution Error", PrependActionSummaryToError(
+                    $"An error occurred while executing the action: {ex.Message}",
+                    selectedAction));
             }
         }
 
@@ -1997,13 +2013,15 @@ namespace FleetAutomate.ViewModel
                 return;
             }
 
+            var selectedAction = SelectedAction;
+
             try
             {
                 ActiveTestFlow.SyncToModel();
                 IsTestFlowRunning = true;
                 IsTestFlowPaused = false;
 
-                var result = await ActiveTestFlow.StartFromActionAsync(SelectedAction, CancellationToken.None);
+                var result = await ActiveTestFlow.StartFromActionAsync(selectedAction, CancellationToken.None);
                 ApplyExecutionStateAfterRun(result, "Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
             }
             catch (Exception ex)
@@ -2011,7 +2029,9 @@ namespace FleetAutomate.ViewModel
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
                 RefreshCurrentRuntimeVariables();
-                OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
+                OnShowError?.Invoke("Execution Error", PrependActionSummaryToError(
+                    $"An error occurred while executing the TestFlow: {ex.Message}",
+                    selectedAction));
             }
         }
 
@@ -2050,6 +2070,26 @@ namespace FleetAutomate.ViewModel
         {
             CurrentRuntimeVariables = ActiveTestFlow?.RuntimeVariables
                 ?? new Dictionary<string, object?>();
+        }
+
+        private string PrependActionSummaryToError(string message, IAction? fallbackAction = null)
+        {
+            var action = ActiveTestFlow?.LastFailedAction
+                ?? ActiveTestFlow?.CurrentAction
+                ?? fallbackAction;
+
+            if (action == null)
+            {
+                return message;
+            }
+
+            var summary = action.Name;
+            if (string.IsNullOrWhiteSpace(summary))
+            {
+                summary = action.GetType().Name;
+            }
+
+            return $"Action: {summary}{System.Environment.NewLine}{System.Environment.NewLine}{message}";
         }
 
         /// <summary>

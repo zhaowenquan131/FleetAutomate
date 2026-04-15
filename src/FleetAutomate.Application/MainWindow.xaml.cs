@@ -152,7 +152,7 @@ namespace FleetAutomate
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.RetryTimes, dialog.RetryDelayMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.InvokeWithoutWaiting, dialog.RetryTimes, dialog.RetryDelayMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
                 }
 
                 return null; // User cancelled
@@ -920,6 +920,7 @@ namespace FleetAutomate
             string identifierType = clickAction.IdentifierType;
             bool isDoubleClick = clickAction.IsDoubleClick;
             bool useInvoke = clickAction.UseInvoke;
+            bool invokeWithoutWaiting = clickAction.InvokeWithoutWaiting;
             int retryTimes = clickAction.RetryTimes;
             int retryDelayMilliseconds = clickAction.RetryDelayMilliseconds;
             string? searchScope = clickAction.SearchScope;
@@ -930,7 +931,7 @@ namespace FleetAutomate
 
             // Create and show the ClickElementDialog with pre-populated values
             var dialog = new ClickElementDialog(
-                elementIdentifier, identifierType, isDoubleClick, useInvoke,
+                elementIdentifier, identifierType, isDoubleClick, useInvoke, invokeWithoutWaiting,
                 retryTimes, retryDelayMilliseconds, searchScope, addToGlobalDictionary, scopeKeys)
             {
                 Owner = this
@@ -943,11 +944,12 @@ namespace FleetAutomate
                 clickAction.IdentifierType = dialog.IdentifierType;
                 clickAction.IsDoubleClick = dialog.IsDoubleClick;
                 clickAction.UseInvoke = dialog.UseInvoke;
+                clickAction.InvokeWithoutWaiting = dialog.UseInvoke && dialog.InvokeWithoutWaiting;
                 clickAction.RetryTimes = dialog.RetryTimes;
                 clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
                 clickAction.SearchScope = dialog.SearchScope;
                 clickAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? " (invoke)" : "")} (retry:{dialog.RetryTimes}x)";
+                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? (dialog.InvokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)") : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
                 if (dialog.AddToGlobalDictionary)

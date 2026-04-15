@@ -74,7 +74,20 @@ namespace FleetAutomate.Model.Actions.Logic
 
             try
             {
-                Environment.Variables.Add(Variable);
+                var existingVariable = Environment.Variables.FirstOrDefault(v =>
+                    string.Equals(v.Name, Variable.Name, StringComparison.Ordinal));
+
+                if (existingVariable != null)
+                {
+                    existingVariable.Value = Variable.Value;
+                    existingVariable.Type = Variable.Type;
+                    Variable = existingVariable;
+                }
+                else
+                {
+                    Environment.Variables.Add(Variable);
+                }
+
                 State = ActionState.Completed;
                 return true;
             }

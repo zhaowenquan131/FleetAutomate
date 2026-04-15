@@ -238,7 +238,19 @@ namespace FleetAutomate.Model.Flow
 
         public IReadOnlyDictionary<string, object?> GetRuntimeVariableValues()
         {
-            return Environment.Variables.ToDictionary(variable => variable.Name, variable => variable.Value, StringComparer.Ordinal);
+            var values = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+            foreach (var variable in Environment.Variables)
+            {
+                if (string.IsNullOrWhiteSpace(variable.Name))
+                {
+                    continue;
+                }
+
+                values[variable.Name] = variable.Value;
+            }
+
+            return values;
         }
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
