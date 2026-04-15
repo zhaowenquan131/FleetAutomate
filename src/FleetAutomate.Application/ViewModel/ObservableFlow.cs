@@ -97,7 +97,10 @@ namespace FleetAutomate.ViewModel
             Debug.WriteLine($"[ELSE_BLOCK] Actions_CollectionChanged: Action={e.Action}");
 
             // Mark as having unsaved changes when actions are added or removed (but not during model refresh)
-            if (!_isRefreshingFromModel && (e.Action == NotifyCollectionChangedAction.Add || e.Action == NotifyCollectionChangedAction.Remove))
+            if (!_isRefreshingFromModel &&
+                (e.Action == NotifyCollectionChangedAction.Add ||
+                 e.Action == NotifyCollectionChangedAction.Remove ||
+                 e.Action == NotifyCollectionChangedAction.Move))
             {
                 HasUnsavedChanges = true;
             }
@@ -106,28 +109,8 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (var item in e.NewItems)
                 {
-                    // Sync ALL non-pseudo-node actions to the model
-                    // This ensures actions added via Actions.Add() are also synced
                     if (item is IAction action && action is not ActionBlock)
                     {
-                        // Use IndexOf to check if already in model (safer than Contains for complex objects)
-                        int modelIndex = -1;
-                        for (int i = 0; i < _model.Actions.Count; i++)
-                        {
-                            if (ReferenceEquals(_model.Actions[i], action))
-                            {
-                                modelIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (modelIndex == -1)
-                        {
-                            // Not in model, add it
-                            _model.Actions.Add(action);
-                            Debug.WriteLine($"  → Synced action to model: {action.Name}");
-                        }
-
                         // Subscribe to general property changes on this action
                         SubscribeToActionPropertyChanges(action);
                     }
@@ -169,12 +152,8 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (var item in e.OldItems)
                 {
-                    // Sync to model: Remove non-pseudo-node actions from the model
                     if (item is IAction action && action is not ActionBlock)
                     {
-                        _model.Actions.Remove(action);
-                        Debug.WriteLine($"  → Removed action from model: {action.Name}");
-
                         // Unsubscribe from general property changes
                         UnsubscribeFromActionPropertyChanges(action);
                     }
@@ -194,6 +173,27 @@ namespace FleetAutomate.ViewModel
                         // Remove the associated Else Block pseudo-node if it exists
                         RemoveElseBlockNode(ifAction);
                     }
+                }
+            }
+
+            if (!_isRefreshingFromModel &&
+                (e.Action == NotifyCollectionChangedAction.Add ||
+                 e.Action == NotifyCollectionChangedAction.Remove ||
+                 e.Action == NotifyCollectionChangedAction.Move ||
+                 e.Action == NotifyCollectionChangedAction.Reset))
+            {
+                SyncTopLevelActionsToModel();
+            }
+        }
+
+        private void SyncTopLevelActionsToModel()
+        {
+            _model.Actions.Clear();
+            foreach (var action in Actions)
+            {
+                if (action is not ActionBlock)
+                {
+                    _model.Actions.Add(action);
                 }
             }
         }
@@ -279,6 +279,14 @@ namespace FleetAutomate.ViewModel
         {
             int collectionId = collection.GetHashCode();
             Debug.WriteLine($"[ELSE_BLOCK] HandleNestedCollectionChanged: Action={e.Action}, collectionId={collectionId}, Collection has {collection.Count} items");
+
+            if (!_isRefreshingFromModel &&
+                (e.Action == NotifyCollectionChangedAction.Add ||
+                 e.Action == NotifyCollectionChangedAction.Remove ||
+                 e.Action == NotifyCollectionChangedAction.Move))
+            {
+                HasUnsavedChanges = true;
+            }
 
             if (e.NewItems != null)
             {
@@ -698,18 +706,6 @@ namespace FleetAutomate.ViewModel
                 throw new ArgumentNullException(nameof(action));
 
             Actions.Add(action);
-
-            // Subscribe to IfAction property changes
-            if (action is IfAction ifAction)
-            {
-                ((INotifyPropertyChanged)ifAction).PropertyChanged += IfAction_PropertyChanged;
-            }
-
-            // Only add non-pseudo-nodes to the model
-            if (action is not ActionBlock)
-            {
-                _model.Actions.Add(action);
-            }
         }
 
         /// <summary>
@@ -722,18 +718,6 @@ namespace FleetAutomate.ViewModel
         {
             if (Actions.Remove(action))
             {
-                // If removing an IfAction, also remove its Else Block pseudo-node
-                if (action is IfAction ifAction)
-                {
-                    RemoveElseBlockNode(ifAction);
-                    _model.Actions.Remove(ifAction);
-                }
-                else if (action is not ActionBlock)
-                {
-                    // For non-pseudo-node actions, sync to model
-                    _model.Actions.Remove(action);
-                }
-                // Don't remove Else Block pseudo-nodes from model (they're not in it)
                 return true;
             }
             return false;
@@ -750,18 +734,6 @@ namespace FleetAutomate.ViewModel
                 throw new ArgumentNullException(nameof(action));
 
             Actions.Insert(index, action);
-
-            // Subscribe to IfAction property changes
-            if (action is IfAction ifAction)
-            {
-                ((INotifyPropertyChanged)ifAction).PropertyChanged += IfAction_PropertyChanged;
-            }
-
-            // Only add non-pseudo-nodes to the model
-            if (action is not ActionBlock)
-            {
-                _model.Actions.Insert(index, action);
-            }
         }
 
         /// <summary>
@@ -776,16 +748,7 @@ namespace FleetAutomate.ViewModel
             if (newIndex < 0 || newIndex >= Actions.Count)
                 throw new ArgumentOutOfRangeException(nameof(newIndex));
 
-            var action = Actions[oldIndex];
-            Actions.RemoveAt(oldIndex);
-            Actions.Insert(newIndex, action);
-
-            // Only move non-pseudo-nodes in the model
-            if (action is not ActionBlock)
-            {
-                _model.Actions.RemoveAt(oldIndex);
-                _model.Actions.Insert(newIndex, action);
-            }
+            Actions.Move(oldIndex, newIndex);
         }
 
         /// <summary>

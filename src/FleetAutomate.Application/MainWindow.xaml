@@ -190,6 +190,8 @@
                                 <TreeView Name="ActionsToolBox"
                                           ItemsSource="{Binding ActionCategories}"
                                           MouseDoubleClick="ActionsToolBox_MouseDoubleClick"
+                                          PreviewMouseLeftButtonDown="ActionsToolBox_PreviewMouseLeftButtonDown"
+                                          PreviewMouseMove="ActionsToolBox_PreviewMouseMove"
                                           PreviewMouseRightButtonDown="ActionsToolBox_PreviewMouseRightButtonDown">
                                     <TreeView.ContextMenu>
                                         <ContextMenu Opened="ActionsToolBox_ContextMenu_Opening">
