@@ -189,6 +189,24 @@ namespace FleetAutomate.Model.Flow
         {
             switch (action)
             {
+                case IfAction ifAction:
+                    if (ifAction.Condition == null)
+                    {
+                        yield return new SyntaxError(action, "If condition cannot be null", "Condition", SyntaxErrorSeverity.Critical)
+                        {
+                            ActionPath = context.CurrentPath
+                        };
+                    }
+                    else if (ifAction.Condition is not bool && ifAction.Condition is not ExpressionBase<bool>)
+                    {
+                        yield return new SyntaxError(action, "If condition must be a boolean value or Expression<bool>", "Condition", SyntaxErrorSeverity.Critical)
+                        {
+                            ActionPath = context.CurrentPath,
+                            Context = ifAction.Condition?.GetType()?.Name
+                        };
+                    }
+                    break;
+
                 case WhileLoopAction whileLoop:
                     if (whileLoop.Condition == null)
                     {
