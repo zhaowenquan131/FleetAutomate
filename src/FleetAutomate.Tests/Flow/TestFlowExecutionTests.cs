@@ -1,4 +1,6 @@
 using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Expression;
 using FleetAutomate.Model.Flow;
 
 namespace FleetAutomate.Tests.Flow;
@@ -70,6 +72,116 @@ public sealed class TestFlowExecutionTests
         Assert.Null(flow.CurrentAction);
         Assert.Equal(1, first.ExecutionCount);
         Assert.Equal(1, second.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task StartFromActionAsync_RunsFromSpecifiedActionOnly()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        var first = new RecordingAction("first");
+        var second = new RecordingAction("second");
+        var third = new RecordingAction("third");
+        flow.Actions.Add(first);
+        flow.Actions.Add(second);
+        flow.Actions.Add(third);
+
+        var result = await flow.StartFromActionAsync(second, CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Completed, flow.State);
+        Assert.Equal(0, first.ExecutionCount);
+        Assert.Equal(1, second.ExecutionCount);
+        Assert.Equal(1, third.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task StartFromActionIndexAsync_RunsFromSpecifiedIndexOnly()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        var first = new RecordingAction("first");
+        var second = new RecordingAction("second");
+        var third = new RecordingAction("third");
+        flow.Actions.Add(first);
+        flow.Actions.Add(second);
+        flow.Actions.Add(third);
+
+        var result = await flow.StartFromActionIndexAsync(2, CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Completed, flow.State);
+        Assert.Equal(0, first.ExecutionCount);
+        Assert.Equal(0, second.ExecutionCount);
+        Assert.Equal(1, third.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task StartFromActionAsync_WhenActionIsNotInFlow_Throws()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+
+        var missing = new RecordingAction("missing");
+
+        await Assert.ThrowsAsync<ArgumentException>(() => flow.StartFromActionAsync(missing, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task StartFromActionIndexAsync_WhenIndexIsOutOfRange_Throws()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        flow.Actions.Add(new RecordingAction("first"));
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => flow.StartFromActionIndexAsync(1, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task StepActionAsync_ExecutesSpecifiedActionAndStops()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        var first = new RecordingAction("first");
+        var second = new RecordingAction("second");
+        var third = new RecordingAction("third");
+        flow.Actions.Add(first);
+        flow.Actions.Add(second);
+        flow.Actions.Add(third);
+
+        var result = await flow.StepActionAsync(second, CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Paused, flow.State);
+        Assert.Equal(TestFlowBreakReason.StepCompleted, flow.BreakReason);
+        Assert.Equal(0, first.ExecutionCount);
+        Assert.Equal(1, second.ExecutionCount);
+        Assert.Equal(0, third.ExecutionCount);
+        Assert.Same(third, flow.CurrentAction);
+    }
+
+    [Fact]
+    public async Task StepActionAsync_WhenActionIsNotInFlow_Throws()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        flow.Actions.Add(new RecordingAction("first"));
+
+        var missing = new RecordingAction("missing");
+
+        await Assert.ThrowsAsync<ArgumentException>(() => flow.StepActionAsync(missing, CancellationToken.None));
     }
 
     [Fact]
@@ -153,6 +265,110 @@ public sealed class TestFlowExecutionTests
         Assert.Equal(TestFlowBreakReason.PauseRequested, flow.BreakReason);
         Assert.Same(current, flow.CurrentAction);
         Assert.Equal(0, next.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task IfAction_WhenConditionTrue_ExecutesIfBlockOnly()
+    {
+        var action = new IfAction
+        {
+            Condition = true,
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment()
+        };
+        var ifBlockAction = new RecordingAction("if");
+        var elseBlockAction = new RecordingAction("else");
+        action.IfBlock.Add(ifBlockAction);
+        action.ElseBlock.Add(elseBlockAction);
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Completed, action.State);
+        Assert.Equal(1, ifBlockAction.ExecutionCount);
+        Assert.Equal(0, elseBlockAction.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task IfAction_WhenConditionFalse_ExecutesElseBlockOnly()
+    {
+        var action = new IfAction
+        {
+            Condition = false,
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment()
+        };
+        var ifBlockAction = new RecordingAction("if");
+        var elseBlockAction = new RecordingAction("else");
+        action.IfBlock.Add(ifBlockAction);
+        action.ElseBlock.Add(elseBlockAction);
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Completed, action.State);
+        Assert.Equal(0, ifBlockAction.ExecutionCount);
+        Assert.Equal(1, elseBlockAction.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task IfAction_WhenConditionIsExpression_UsesEnvironmentVariables()
+    {
+        var environment = new FleetAutomate.Model.Actions.Logic.Environment();
+        environment.Variables.Add(new Variable("count", 3, typeof(int)));
+
+        var action = new IfAction
+        {
+            Condition = new EqualExpression
+            {
+                OperandLeft = "count",
+                OperandRight = 3
+            },
+            Environment = environment
+        };
+        var ifBlockAction = new RecordingAction("if");
+        var elseBlockAction = new RecordingAction("else");
+        action.IfBlock.Add(ifBlockAction);
+        action.ElseBlock.Add(elseBlockAction);
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Completed, action.State);
+        Assert.Equal(1, ifBlockAction.ExecutionCount);
+        Assert.Equal(0, elseBlockAction.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task IfAction_WhenChildFails_ReturnsFalseAndSetsFailed()
+    {
+        var action = new IfAction
+        {
+            Condition = true,
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment()
+        };
+        var failingChild = new ResultAction("failing", false);
+        var skippedElseChild = new RecordingAction("else");
+        action.IfBlock.Add(failingChild);
+        action.ElseBlock.Add(skippedElseChild);
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.False(result);
+        Assert.Equal(ActionState.Failed, action.State);
+        Assert.Equal(1, failingChild.ExecutionCount);
+        Assert.Equal(0, skippedElseChild.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task IfAction_WhenConditionIsInvalid_ThrowsAndSetsFailed()
+    {
+        var action = new IfAction
+        {
+            Condition = "invalid",
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment()
+        };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => action.ExecuteAsync(CancellationToken.None));
+        Assert.Equal(ActionState.Failed, action.State);
     }
 }
 
