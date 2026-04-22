@@ -97,9 +97,14 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
                     OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+                    OnPropertyChanged(nameof(CurrentBreakReasonText));
+                    OnPropertyChanged(nameof(CurrentActionSummary));
+                    OnPropertyChanged(nameof(LastFailedActionSummary));
+                    OnPropertyChanged(nameof(CanSkipFailedAction));
                 }
             }
         }
@@ -119,6 +124,7 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                 }
             }
@@ -143,6 +149,7 @@ namespace FleetAutomate.ViewModel
                     OnPropertyChanged(nameof(IsTestFlowNotPaused));
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                 }
             }
         }
@@ -176,6 +183,14 @@ namespace FleetAutomate.ViewModel
         }
 
         public bool HasSelectedAction => SelectedAction != null;
+
+        public bool CanSkipFailedAction => ActiveTestFlow?.State == ActionState.Failed && ActiveTestFlow?.CurrentAction != null;
+
+        public string CurrentBreakReasonText => ActiveTestFlow?.BreakReason.ToString() ?? TestFlowBreakReason.None.ToString();
+
+        public string CurrentActionSummary => ActiveTestFlow?.CurrentAction?.Name ?? "-";
+
+        public string LastFailedActionSummary => ActiveTestFlow?.LastFailedAction?.Name ?? "-";
 
         /// <summary>
         /// Gets the hierarchical action categories for the ToolBox TreeView.
@@ -322,6 +337,11 @@ namespace FleetAutomate.ViewModel
         public ICommand ContinueTestFlowCommand { get; }
 
         /// <summary>
+        /// Command to skip the current failed action and continue execution.
+        /// </summary>
+        public ICommand SkipFailedActionCommand { get; }
+
+        /// <summary>
         /// Command to stop the currently running TestFlow.
         /// </summary>
         public ICommand StopTestFlowCommand { get; }
@@ -379,6 +399,7 @@ namespace FleetAutomate.ViewModel
             RunTestFlowCommand = new RelayCommand(RunTestFlow, () => ActiveTestFlow != null && !IsTestFlowRunning);
             PauseTestFlowCommand = new RelayCommand(PauseTestFlow, () => IsTestFlowRunning && !IsTestFlowPaused);
             ContinueTestFlowCommand = new RelayCommand(ContinueTestFlow, () => IsTestFlowPaused);
+            SkipFailedActionCommand = new RelayCommand(SkipFailedActionAndContinue, () => CanSkipFailedAction);
             StopTestFlowCommand = new RelayCommand(StopTestFlow, () => IsTestFlowRunning);
             ExecuteStepCommand = new RelayCommand(ExecuteStep, () => SelectedAction != null);
             ExecuteFromThisStepCommand = new RelayCommand(ExecuteFromThisStep, () => SelectedAction != null && ActiveTestFlow != null);
@@ -1940,6 +1961,31 @@ namespace FleetAutomate.ViewModel
             }
         }
 
+        private async void SkipFailedActionAndContinue()
+        {
+            if (ActiveTestFlow == null || !CanSkipFailedAction)
+            {
+                return;
+            }
+
+            try
+            {
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = false;
+
+                var result = await ActiveTestFlow.SkipFailedActionAndContinueAsync(CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed after skipping the current failed action.");
+            }
+            catch (Exception ex)
+            {
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Skip Failed Action Error", PrependActionSummaryToError(
+                    $"An error occurred while skipping the failed action: {ex.Message}"));
+            }
+        }
+
         /// <summary>
         /// Stops the currently running TestFlow.
         /// </summary>
@@ -2070,6 +2116,11 @@ namespace FleetAutomate.ViewModel
         {
             CurrentRuntimeVariables = ActiveTestFlow?.RuntimeVariables
                 ?? new Dictionary<string, object?>();
+            OnPropertyChanged(nameof(CurrentBreakReasonText));
+            OnPropertyChanged(nameof(CurrentActionSummary));
+            OnPropertyChanged(nameof(LastFailedActionSummary));
+            OnPropertyChanged(nameof(CanSkipFailedAction));
+            ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
         }
 
         private string PrependActionSummaryToError(string message, IAction? fallbackAction = null)

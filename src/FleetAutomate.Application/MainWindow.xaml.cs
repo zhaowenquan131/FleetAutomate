@@ -1518,6 +1518,41 @@ namespace FleetAutomate
             moveDownButton.SetBinding(VisibilityProperty, visibilityBinding);
             toolbarStack.Children.Add(moveDownButton);
 
+            var stepButton = new Wpf.Ui.Controls.Button
+            {
+                Content = "Step",
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Execute selected action",
+                Command = ViewModel.ExecuteStepCommand
+            };
+            stepButton.SetBinding(VisibilityProperty, visibilityBinding);
+            toolbarStack.Children.Add(stepButton);
+
+            var runFromButton = new Wpf.Ui.Controls.Button
+            {
+                Content = "Run From",
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Execute TestFlow starting from selected action",
+                Command = ViewModel.ExecuteFromThisStepCommand
+            };
+            runFromButton.SetBinding(VisibilityProperty, visibilityBinding);
+            toolbarStack.Children.Add(runFromButton);
+
+            var skipFailedButton = new Wpf.Ui.Controls.Button
+            {
+                Content = "Skip Failed",
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Skip current failed action and continue",
+                Command = ViewModel.SkipFailedActionCommand
+            };
+            var skipFailedVisibilityBinding = new System.Windows.Data.Binding(nameof(MainViewModel.CanSkipFailedAction))
+            {
+                Source = ViewModel,
+                Converter = new BooleanToVisibilityConverter()
+            };
+            skipFailedButton.SetBinding(VisibilityProperty, skipFailedVisibilityBinding);
+            toolbarStack.Children.Add(skipFailedButton);
+
             var deleteButton = new Wpf.Ui.Controls.Button
             {
                 Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Delete20 },
@@ -1588,7 +1623,13 @@ namespace FleetAutomate
 
             // Status icon
             var statusIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
-            statusIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("State") { Converter = (IValueConverter)this.FindResource("ActionStateToIconConverter") });
+            var statusIconBinding = new MultiBinding
+            {
+                Converter = (IMultiValueConverter)this.FindResource("ActionStateToIconConverter")
+            };
+            statusIconBinding.Bindings.Add(new System.Windows.Data.Binding("."));
+            statusIconBinding.Bindings.Add(new System.Windows.Data.Binding("State"));
+            statusIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, statusIconBinding);
             statusIcon.SetBinding(System.Windows.Controls.TextBlock.ForegroundProperty, new System.Windows.Data.Binding("State") { Converter = (IValueConverter)this.FindResource("ActionStateToColorConverter") });
             statusIcon.SetValue(System.Windows.Controls.TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily("Segoe UI Symbol"));
             statusIcon.SetValue(System.Windows.Controls.TextBlock.FontWeightProperty, FontWeights.Bold);

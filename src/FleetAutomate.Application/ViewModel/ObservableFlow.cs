@@ -843,6 +843,13 @@ namespace FleetAutomate.ViewModel
             return result;
         }
 
+        public async Task<bool> SkipFailedActionAndContinueAsync(CancellationToken cancellationToken)
+        {
+            var result = await _model.SkipFailedActionAndContinueAsync(cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
         public async Task<bool> StepActionAsync(IAction action, CancellationToken cancellationToken)
         {
             var result = await _model.StepActionAsync(action, cancellationToken);

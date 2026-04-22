@@ -181,7 +181,9 @@ namespace FleetAutomate.Model.Flow
                 throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
             }
 
-            return ExecuteCoreAsync(startAction, resetStates: true, stepOnce: false, cancellationToken);
+            ResetActionStatesFrom(startAction);
+            LastFailedAction = null;
+            return ExecuteCoreAsync(startAction, resetStates: false, stepOnce: false, cancellationToken);
         }
 
         public Task<bool> StartFromActionIndexAsync(int actionIndex, CancellationToken cancellationToken)
@@ -303,6 +305,20 @@ namespace FleetAutomate.Model.Flow
             foreach (var action in Actions)
             {
                 ResetActionState(action);
+            }
+        }
+
+        private void ResetActionStatesFrom(IAction startAction)
+        {
+            var startIndex = Actions.IndexOf(startAction);
+            if (startIndex < 0)
+            {
+                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
+            }
+
+            for (var index = startIndex; index < Actions.Count; index++)
+            {
+                ResetActionState(Actions[index]);
             }
         }
 
