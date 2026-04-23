@@ -21,55 +21,55 @@
     </d2p1:anyType>
     <d2p1:anyType z:Id="11" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
       <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
-      <d3p1:_description z:Id="12">Click number 1</d3p1:_description>
+      <d3p1:_description z:Id="12">AutomationId: num1Button (invoke no-wait) (retry:3x)</d3p1:_description>
       <d3p1:_elementIdentifier z:Id="13">num1Button</d3p1:_elementIdentifier>
       <d3p1:_globalDictionaryKey i:nil="true" />
       <d3p1:_identifierType z:Id="14">AutomationId</d3p1:_identifierType>
-      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_invokeWithoutWaiting>true</d3p1:_invokeWithoutWaiting>
       <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
       <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
       <d3p1:_retryTimes>3</d3p1:_retryTimes>
       <d3p1:_searchScope i:nil="true" />
-      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+      <d3p1:_useInvoke>true</d3p1:_useInvoke>
     </d2p1:anyType>
     <d2p1:anyType z:Id="15" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
       <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
-      <d3p1:_description z:Id="16">Click plus</d3p1:_description>
+      <d3p1:_description z:Id="16">AutomationId: plusButton (invoke no-wait) (retry:3x)</d3p1:_description>
       <d3p1:_elementIdentifier z:Id="17">plusButton</d3p1:_elementIdentifier>
       <d3p1:_globalDictionaryKey i:nil="true" />
       <d3p1:_identifierType z:Id="18">AutomationId</d3p1:_identifierType>
-      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_invokeWithoutWaiting>true</d3p1:_invokeWithoutWaiting>
       <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
       <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
       <d3p1:_retryTimes>3</d3p1:_retryTimes>
       <d3p1:_searchScope i:nil="true" />
-      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+      <d3p1:_useInvoke>true</d3p1:_useInvoke>
     </d2p1:anyType>
     <d2p1:anyType z:Id="19" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
       <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
-      <d3p1:_description z:Id="20">Click number 2</d3p1:_description>
+      <d3p1:_description z:Id="20">AutomationId: num2Button (invoke no-wait) (retry:3x)</d3p1:_description>
       <d3p1:_elementIdentifier z:Id="21">num2Button</d3p1:_elementIdentifier>
       <d3p1:_globalDictionaryKey i:nil="true" />
       <d3p1:_identifierType z:Id="22">AutomationId</d3p1:_identifierType>
-      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_invokeWithoutWaiting>true</d3p1:_invokeWithoutWaiting>
       <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
       <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
       <d3p1:_retryTimes>3</d3p1:_retryTimes>
       <d3p1:_searchScope i:nil="true" />
-      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+      <d3p1:_useInvoke>true</d3p1:_useInvoke>
     </d2p1:anyType>
     <d2p1:anyType z:Id="23" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
       <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
-      <d3p1:_description z:Id="24">Click equals</d3p1:_description>
+      <d3p1:_description z:Id="24">AutomationId: equalButton (invoke no-wait) (retry:3x)</d3p1:_description>
       <d3p1:_elementIdentifier z:Id="25">equalButton</d3p1:_elementIdentifier>
       <d3p1:_globalDictionaryKey i:nil="true" />
       <d3p1:_identifierType z:Id="26">AutomationId</d3p1:_identifierType>
-      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_invokeWithoutWaiting>true</d3p1:_invokeWithoutWaiting>
       <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
       <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
       <d3p1:_retryTimes>3</d3p1:_retryTimes>
       <d3p1:_searchScope i:nil="true" />
-      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+      <d3p1:_useInvoke>true</d3p1:_useInvoke>
     </d2p1:anyType>
     <d2p1:anyType z:Id="27" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:WaitForElementAction">
       <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
