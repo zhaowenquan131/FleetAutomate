@@ -24,6 +24,16 @@ namespace FleetAutomate.Model.Flow
         Failed
     }
 
+    public enum TestFlowBreakReason
+    {
+        None,
+        PauseRequested,
+        StepCompleted,
+        ActionFailed,
+        Completed,
+        Stopped
+    }
+
     [DataContract]
     [KnownType(typeof(SetVariableAction<object>))]
     [KnownType(typeof(WhileLoopAction))]
@@ -57,6 +67,9 @@ namespace FleetAutomate.Model.Flow
 
         [IgnoreDataMember]
         public IAction CurrentAction { get; set; }
+
+        [IgnoreDataMember]
+        public IAction? LastFailedAction { get; private set; }
 
         [DataMember]
         public string Name { get; set; }
@@ -101,6 +114,9 @@ namespace FleetAutomate.Model.Flow
         [IgnoreDataMember]
         public ActionState State { get; set; } = ActionState.Ready;
 
+        [IgnoreDataMember]
+        public TestFlowBreakReason BreakReason { get; private set; } = TestFlowBreakReason.None;
+
         [IgnoreDataMember] // Don't serialize file path, this is for runtime use
         public string FileName { get; set; }
 
@@ -111,9 +127,33 @@ namespace FleetAutomate.Model.Flow
         [IgnoreDataMember]
         public Project.TestProject ParentProject { get; set; }
 
+        [IgnoreDataMember]
+        private bool _pauseRequested;
+
         public void Cancel()
         {
+            Pause();
+        }
+
+        public void Pause()
+        {
+            _pauseRequested = true;
+
+            if (CanInterruptCurrentActionForPause())
+            {
+                CurrentAction?.Cancel();
+                _cancellationTokenSource?.Cancel();
+            }
+        }
+
+        public void Stop()
+        {
+            _pauseRequested = false;
+            CurrentAction?.Cancel();
             _cancellationTokenSource?.Cancel();
+            State = ActionState.Ready;
+            BreakReason = TestFlowBreakReason.Stopped;
+            CurrentAction = null!;
         }
 
         /// <summary>
@@ -129,80 +169,95 @@ namespace FleetAutomate.Model.Flow
             }
         }
 
+        public Task<bool> StartAsync(CancellationToken cancellationToken)
+        {
+            return ExecuteCoreAsync(GetFirstRunnableAction(), resetStates: true, stepOnce: false, cancellationToken);
+        }
+
+        public Task<bool> StartFromActionAsync(IAction startAction, CancellationToken cancellationToken)
+        {
+            if (!Actions.Contains(startAction))
+            {
+                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
+            }
+
+            ResetActionStatesFrom(startAction);
+            LastFailedAction = null;
+            return ExecuteCoreAsync(startAction, resetStates: false, stepOnce: false, cancellationToken);
+        }
+
+        public Task<bool> StartFromActionIndexAsync(int actionIndex, CancellationToken cancellationToken)
+        {
+            if (actionIndex < 0 || actionIndex >= Actions.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(actionIndex));
+            }
+
+            return StartFromActionAsync(Actions[actionIndex], cancellationToken);
+        }
+
+        public Task<bool> ContinueAsync(CancellationToken cancellationToken)
+        {
+            var resumeAction = CurrentAction ?? GetFirstRunnableAction();
+            return ExecuteCoreAsync(resumeAction, resetStates: false, stepOnce: false, cancellationToken);
+        }
+
+        public Task<bool> StepAsync(CancellationToken cancellationToken)
+        {
+            var resumeAction = CurrentAction ?? GetFirstRunnableAction();
+            return ExecuteCoreAsync(resumeAction, resetStates: State is not ActionState.Paused and not ActionState.Failed, stepOnce: true, cancellationToken);
+        }
+
+        public Task<bool> StepActionAsync(IAction action, CancellationToken cancellationToken)
+        {
+            if (!Actions.Contains(action))
+            {
+                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(action));
+            }
+
+            return ExecuteCoreAsync(action, resetStates: true, stepOnce: true, cancellationToken);
+        }
+
+        public Task<bool> SkipFailedActionAndContinueAsync(CancellationToken cancellationToken)
+        {
+            if (State != ActionState.Failed || CurrentAction == null)
+            {
+                return ContinueAsync(cancellationToken);
+            }
+
+            var nextAction = GetNextAction(CurrentAction);
+            if (nextAction == null)
+            {
+                State = ActionState.Completed;
+                BreakReason = TestFlowBreakReason.Completed;
+                CurrentAction = null!;
+                return Task.FromResult(true);
+            }
+
+            CurrentAction = nextAction;
+            return ExecuteCoreAsync(nextAction, resetStates: false, stepOnce: false, cancellationToken);
+        }
+
+        public IReadOnlyDictionary<string, object?> GetRuntimeVariableValues()
+        {
+            var values = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+            foreach (var variable in Environment.Variables)
+            {
+                if (string.IsNullOrWhiteSpace(variable.Name))
+                {
+                    continue;
+                }
+
+                values[variable.Name] = variable.Value;
+            }
+
+            return values;
+        }
+
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
-            // Prepare for execution (recreate CancellationTokenSource if needed)
-            PrepareForExecution();
-
-            var leftActions = Actions;
-            if (State == ActionState.Paused || State == ActionState.Failed)
-            {
-                leftActions = [.. Actions.SkipWhile(a => a != CurrentAction)];
-            }
-            else
-            {
-                // Reset all action states to Ready when starting a fresh execution
-                ResetAllActionStates();
-            }
-
-            State = ActionState.Running;
-            // Yield to allow UI to update the TestFlow state
-            await Task.Yield();
-
-            foreach (var action in leftActions)
-            {
-                CurrentAction = action;
-                // Yield to allow UI to update CurrentAction indicator
-                await Task.Yield();
-
-                try
-                {
-                    if (CurrentAction is ILogicAction logicAction)
-                    {
-                        logicAction.Environment = Environment;
-                    }
-                    // Inject GlobalElementDictionary into UI element actions
-                    if (CurrentAction is IUIElementAction uiElementAction)
-                    {
-                        uiElementAction.ElementDictionary = GlobalElementDictionary;
-                    }
-                    // Use our own CancellationToken so we can cancel and resume
-                    var rst = await CurrentAction.ExecuteAsync(_cancellationTokenSource.Token);
-                    if (!rst)
-                    {
-                        // Check if cancellation was requested (user clicked Pause)
-                        if (_cancellationTokenSource.IsCancellationRequested)
-                        {
-                            State = ActionState.Paused;
-                            await Task.Yield();
-                            return true;
-                        }
-                        // Otherwise, it's a real failure
-                        State = ActionState.Failed;
-                        await Task.Yield();
-                        return false;
-                    }
-
-                    // Yield after each action to allow UI to update action states
-                    await Task.Yield();
-                }
-                catch (OperationCanceledException ex)
-                {
-                    State = ActionState.Paused;
-                    await Task.Yield();
-                    return true;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Error(ex, $"[TestFlow] ERROR executing action '{CurrentAction?.Name}': {ex.GetType().Name} - {ex.Message}");
-                    State = ActionState.Failed;
-                    await Task.Yield();
-                    return false;
-                }
-            }
-            State = ActionState.Completed;
-            await Task.Yield();
-            return true;
+            return await ContinueAsync(cancellationToken);
         }
 
         /// <summary>
@@ -213,24 +268,7 @@ namespace FleetAutomate.Model.Flow
         /// <returns>True if execution completed successfully, false otherwise.</returns>
         public async Task<bool> ExecuteFromAction(IAction startAction, CancellationToken cancellationToken)
         {
-            // Verify the action exists in the Actions collection
-            if (!Actions.Contains(startAction))
-            {
-                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
-            }
-
-            // Prepare for execution (recreate CancellationTokenSource if needed)
-            PrepareForExecution();
-
-            // Set the current action and state to Paused so ExecuteAsync will use SkipWhile logic
-            CurrentAction = startAction;
-            State = ActionState.Paused;
-
-            // Reset all action states to Ready (except those before startAction)
-            ResetAllActionStates();
-
-            // Call ExecuteAsync which will start from CurrentAction
-            return await ExecuteAsync(cancellationToken);
+            return await StartFromActionAsync(startAction, cancellationToken);
         }
 
         /// <summary>
@@ -243,6 +281,8 @@ namespace FleetAutomate.Model.Flow
                 _cancellationTokenSource = new CancellationTokenSource();
             }
             State = ActionState.Ready;
+            BreakReason = TestFlowBreakReason.None;
+            LastFailedAction = null;
             CurrentAction = null!;
 
             // Initialize GlobalElementDictionary if null
@@ -265,6 +305,20 @@ namespace FleetAutomate.Model.Flow
             foreach (var action in Actions)
             {
                 ResetActionState(action);
+            }
+        }
+
+        private void ResetActionStatesFrom(IAction startAction)
+        {
+            var startIndex = Actions.IndexOf(startAction);
+            if (startIndex < 0)
+            {
+                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
+            }
+
+            for (var index = startIndex; index < Actions.Count; index++)
+            {
+                ResetActionState(Actions[index]);
             }
         }
 
@@ -310,6 +364,171 @@ namespace FleetAutomate.Model.Flow
                     ResetActionState(elseIfAction);
                 }
             }
+        }
+
+        private async Task<bool> ExecuteCoreAsync(IAction? startAction, bool resetStates, bool stepOnce, CancellationToken cancellationToken)
+        {
+            PrepareForExecution();
+
+            if (resetStates)
+            {
+                ResetAllActionStates();
+                LastFailedAction = null;
+            }
+
+            var action = startAction ?? GetFirstRunnableAction();
+            if (action == null)
+            {
+                State = ActionState.Completed;
+                BreakReason = TestFlowBreakReason.Completed;
+                CurrentAction = null!;
+                return true;
+            }
+
+            var startIndex = Actions.IndexOf(action);
+            if (startIndex < 0)
+            {
+                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
+            }
+
+            _pauseRequested = false;
+            BreakReason = TestFlowBreakReason.None;
+            State = ActionState.Running;
+            await Task.Yield();
+
+            for (var index = startIndex; index < Actions.Count; index++)
+            {
+                var current = Actions[index];
+                var next = index + 1 < Actions.Count ? Actions[index + 1] : null;
+
+                CurrentAction = current;
+                await Task.Yield();
+
+                try
+                {
+                    InjectExecutionContext(current);
+                    var result = await current.ExecuteAsync(_cancellationTokenSource.Token);
+                    if (!result)
+                    {
+                        if (_cancellationTokenSource.IsCancellationRequested)
+                        {
+                            State = ActionState.Paused;
+                            BreakReason = TestFlowBreakReason.PauseRequested;
+                            CurrentAction = current;
+                            await Task.Yield();
+                            return true;
+                        }
+
+                        State = ActionState.Failed;
+                        BreakReason = TestFlowBreakReason.ActionFailed;
+                        LastFailedAction = current;
+                        CurrentAction = current;
+                        await Task.Yield();
+                        return false;
+                    }
+
+                    if (stepOnce)
+                    {
+                        if (next == null)
+                        {
+                            State = ActionState.Completed;
+                            BreakReason = TestFlowBreakReason.Completed;
+                            CurrentAction = null!;
+                            await Task.Yield();
+                            return true;
+                        }
+
+                        State = ActionState.Paused;
+                        BreakReason = TestFlowBreakReason.StepCompleted;
+                        CurrentAction = next;
+                        await Task.Yield();
+                        return true;
+                    }
+
+                    if (_pauseRequested)
+                    {
+                        if (next == null)
+                        {
+                            State = ActionState.Completed;
+                            BreakReason = TestFlowBreakReason.Completed;
+                            CurrentAction = null!;
+                            await Task.Yield();
+                            return true;
+                        }
+
+                        State = ActionState.Paused;
+                        BreakReason = TestFlowBreakReason.PauseRequested;
+                        CurrentAction = next;
+                        await Task.Yield();
+                        return true;
+                    }
+
+                    await Task.Yield();
+                }
+                catch (OperationCanceledException)
+                {
+                    State = ActionState.Paused;
+                    BreakReason = TestFlowBreakReason.PauseRequested;
+                    CurrentAction = current;
+                    await Task.Yield();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error(ex, $"[TestFlow] ERROR executing action '{current.Name}': {ex.GetType().Name} - {ex.Message}");
+                    State = ActionState.Failed;
+                    BreakReason = TestFlowBreakReason.ActionFailed;
+                    LastFailedAction = current;
+                    CurrentAction = current;
+                    await Task.Yield();
+                    return false;
+                }
+            }
+
+            State = ActionState.Completed;
+            BreakReason = TestFlowBreakReason.Completed;
+            CurrentAction = null!;
+            await Task.Yield();
+            return true;
+        }
+
+        private IAction? GetFirstRunnableAction()
+        {
+            return Actions.FirstOrDefault();
+        }
+
+        private IAction? GetNextAction(IAction action)
+        {
+            var index = Actions.IndexOf(action);
+            if (index < 0 || index + 1 >= Actions.Count)
+            {
+                return null;
+            }
+
+            return Actions[index + 1];
+        }
+
+        private void InjectExecutionContext(IAction action)
+        {
+            if (action is ILogicAction logicAction)
+            {
+                logicAction.Environment = Environment;
+            }
+
+            if (action is IUIElementAction uiElementAction)
+            {
+                uiElementAction.ElementDictionary = GlobalElementDictionary;
+            }
+        }
+
+        private bool CanInterruptCurrentActionForPause()
+        {
+            if (CurrentAction is not IPauseAwareAction pauseAwareAction)
+            {
+                return false;
+            }
+
+            return pauseAwareAction.PauseBehavior != ActionPauseBehavior.None;
         }
 
         /// <summary>

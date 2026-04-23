@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -188,6 +189,24 @@ namespace FleetAutomate.Model.Flow
         {
             switch (action)
             {
+                case IfAction ifAction:
+                    if (ifAction.Condition == null)
+                    {
+                        yield return new SyntaxError(action, "If condition cannot be null", "Condition", SyntaxErrorSeverity.Critical)
+                        {
+                            ActionPath = context.CurrentPath
+                        };
+                    }
+                    else if (ifAction.Condition is not bool && ifAction.Condition is not ExpressionBase<bool>)
+                    {
+                        yield return new SyntaxError(action, "If condition must be a boolean value or Expression<bool>", "Condition", SyntaxErrorSeverity.Critical)
+                        {
+                            ActionPath = context.CurrentPath,
+                            Context = ifAction.Condition?.GetType()?.Name
+                        };
+                    }
+                    break;
+
                 case WhileLoopAction whileLoop:
                     if (whileLoop.Condition == null)
                     {
@@ -249,10 +268,13 @@ namespace FleetAutomate.Model.Flow
         /// </summary>
         private static IEnumerable<SyntaxError> ValidateNestedActions(IAction action, SyntaxValidationContext context, int depth)
         {
+            var visitedNestedActions = new HashSet<IAction>(ReferenceEqualityComparer<IAction>.Instance);
+
             // Use reflection to find ObservableCollection<IAction> properties
             var actionCollectionProperties = action.GetType()
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => typeof(ObservableCollection<IAction>).IsAssignableFrom(p.PropertyType))
+                .Where(p =>
+                    typeof(ObservableCollection<IAction>).IsAssignableFrom(p.PropertyType))
                 .ToList();
 
             foreach (var property in actionCollectionProperties)
@@ -262,6 +284,11 @@ namespace FleetAutomate.Model.Flow
                     for (int i = 0; i < collection.Count; i++)
                     {
                         var nestedAction = collection[i];
+                        if (nestedAction == null || !visitedNestedActions.Add(nestedAction))
+                        {
+                            continue;
+                        }
+
                         var childContext = context.CreateChildContext($"{property.Name}[{i}]", action);
                         
                         foreach (var error in ValidateAction(nestedAction, childContext, depth))
@@ -275,13 +302,21 @@ namespace FleetAutomate.Model.Flow
             // Also check for single IAction properties
             var singleActionProperties = action.GetType()
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => typeof(IAction).IsAssignableFrom(p.PropertyType) && p.PropertyType != typeof(IAction[]) && !typeof(ObservableCollection<IAction>).IsAssignableFrom(p.PropertyType))
+                .Where(p =>
+                    typeof(IAction).IsAssignableFrom(p.PropertyType) &&
+                    p.PropertyType != typeof(IAction[]) &&
+                    !typeof(ObservableCollection<IAction>).IsAssignableFrom(p.PropertyType))
                 .ToList();
 
             foreach (var property in singleActionProperties)
             {
                 if (property.GetValue(action) is IAction nestedAction)
                 {
+                    if (!visitedNestedActions.Add(nestedAction))
+                    {
+                        continue;
+                    }
+
                     var childContext = context.CreateChildContext(property.Name, action);
                     
                     foreach (var error in ValidateAction(nestedAction, childContext, depth))
@@ -348,6 +383,22 @@ namespace FleetAutomate.Model.Flow
             }
             
             return errors;
+        }
+
+        private sealed class ReferenceEqualityComparer<T> : IEqualityComparer<T>
+            where T : class
+        {
+            public static ReferenceEqualityComparer<T> Instance { get; } = new();
+
+            public bool Equals(T? x, T? y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            public int GetHashCode(T obj)
+            {
+                return System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(obj);
+            }
         }
     }
 }

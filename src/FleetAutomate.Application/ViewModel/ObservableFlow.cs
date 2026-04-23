@@ -66,10 +66,19 @@ namespace FleetAutomate.ViewModel
         private ActionState _state = ActionState.Ready;
 
         [ObservableProperty]
+        private TestFlowBreakReason _breakReason = TestFlowBreakReason.None;
+
+        [ObservableProperty]
+        private IAction? _lastFailedAction;
+
+        [ObservableProperty]
         private bool _isEnabled = true;
 
         [ObservableProperty]
         private bool _hasUnsavedChanges = false;
+
+        [ObservableProperty]
+        private IReadOnlyDictionary<string, object?> _runtimeVariables = new Dictionary<string, object?>();
 
         public ObservableCollection<IAction> Actions { get; }
 
@@ -88,7 +97,10 @@ namespace FleetAutomate.ViewModel
             Debug.WriteLine($"[ELSE_BLOCK] Actions_CollectionChanged: Action={e.Action}");
 
             // Mark as having unsaved changes when actions are added or removed (but not during model refresh)
-            if (!_isRefreshingFromModel && (e.Action == NotifyCollectionChangedAction.Add || e.Action == NotifyCollectionChangedAction.Remove))
+            if (!_isRefreshingFromModel &&
+                (e.Action == NotifyCollectionChangedAction.Add ||
+                 e.Action == NotifyCollectionChangedAction.Remove ||
+                 e.Action == NotifyCollectionChangedAction.Move))
             {
                 HasUnsavedChanges = true;
             }
@@ -97,28 +109,8 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (var item in e.NewItems)
                 {
-                    // Sync ALL non-pseudo-node actions to the model
-                    // This ensures actions added via Actions.Add() are also synced
                     if (item is IAction action && action is not ActionBlock)
                     {
-                        // Use IndexOf to check if already in model (safer than Contains for complex objects)
-                        int modelIndex = -1;
-                        for (int i = 0; i < _model.Actions.Count; i++)
-                        {
-                            if (ReferenceEquals(_model.Actions[i], action))
-                            {
-                                modelIndex = i;
-                                break;
-                            }
-                        }
-
-                        if (modelIndex == -1)
-                        {
-                            // Not in model, add it
-                            _model.Actions.Add(action);
-                            Debug.WriteLine($"  → Synced action to model: {action.Name}");
-                        }
-
                         // Subscribe to general property changes on this action
                         SubscribeToActionPropertyChanges(action);
                     }
@@ -160,12 +152,8 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (var item in e.OldItems)
                 {
-                    // Sync to model: Remove non-pseudo-node actions from the model
                     if (item is IAction action && action is not ActionBlock)
                     {
-                        _model.Actions.Remove(action);
-                        Debug.WriteLine($"  → Removed action from model: {action.Name}");
-
                         // Unsubscribe from general property changes
                         UnsubscribeFromActionPropertyChanges(action);
                     }
@@ -185,6 +173,27 @@ namespace FleetAutomate.ViewModel
                         // Remove the associated Else Block pseudo-node if it exists
                         RemoveElseBlockNode(ifAction);
                     }
+                }
+            }
+
+            if (!_isRefreshingFromModel &&
+                (e.Action == NotifyCollectionChangedAction.Add ||
+                 e.Action == NotifyCollectionChangedAction.Remove ||
+                 e.Action == NotifyCollectionChangedAction.Move ||
+                 e.Action == NotifyCollectionChangedAction.Reset))
+            {
+                SyncTopLevelActionsToModel();
+            }
+        }
+
+        private void SyncTopLevelActionsToModel()
+        {
+            _model.Actions.Clear();
+            foreach (var action in Actions)
+            {
+                if (action is not ActionBlock)
+                {
+                    _model.Actions.Add(action);
                 }
             }
         }
@@ -270,6 +279,14 @@ namespace FleetAutomate.ViewModel
         {
             int collectionId = collection.GetHashCode();
             Debug.WriteLine($"[ELSE_BLOCK] HandleNestedCollectionChanged: Action={e.Action}, collectionId={collectionId}, Collection has {collection.Count} items");
+
+            if (!_isRefreshingFromModel &&
+                (e.Action == NotifyCollectionChangedAction.Add ||
+                 e.Action == NotifyCollectionChangedAction.Remove ||
+                 e.Action == NotifyCollectionChangedAction.Move))
+            {
+                HasUnsavedChanges = true;
+            }
 
             if (e.NewItems != null)
             {
@@ -588,7 +605,10 @@ namespace FleetAutomate.ViewModel
             Description = _model.Description ?? string.Empty;
             FileName = _model.FileName ?? string.Empty;
             State = _model.State;
+            BreakReason = _model.BreakReason;
+            LastFailedAction = _model.LastFailedAction;
             IsEnabled = _model.IsEnabled;
+            RuntimeVariables = new Dictionary<string, object?>(_model.GetRuntimeVariableValues(), StringComparer.Ordinal);
 
             // Clear existing subscriptions and pseudo-nodes
             foreach (var ifAction in _subscribedIfActions.ToList())
@@ -686,18 +706,6 @@ namespace FleetAutomate.ViewModel
                 throw new ArgumentNullException(nameof(action));
 
             Actions.Add(action);
-
-            // Subscribe to IfAction property changes
-            if (action is IfAction ifAction)
-            {
-                ((INotifyPropertyChanged)ifAction).PropertyChanged += IfAction_PropertyChanged;
-            }
-
-            // Only add non-pseudo-nodes to the model
-            if (action is not ActionBlock)
-            {
-                _model.Actions.Add(action);
-            }
         }
 
         /// <summary>
@@ -710,18 +718,6 @@ namespace FleetAutomate.ViewModel
         {
             if (Actions.Remove(action))
             {
-                // If removing an IfAction, also remove its Else Block pseudo-node
-                if (action is IfAction ifAction)
-                {
-                    RemoveElseBlockNode(ifAction);
-                    _model.Actions.Remove(ifAction);
-                }
-                else if (action is not ActionBlock)
-                {
-                    // For non-pseudo-node actions, sync to model
-                    _model.Actions.Remove(action);
-                }
-                // Don't remove Else Block pseudo-nodes from model (they're not in it)
                 return true;
             }
             return false;
@@ -738,18 +734,6 @@ namespace FleetAutomate.ViewModel
                 throw new ArgumentNullException(nameof(action));
 
             Actions.Insert(index, action);
-
-            // Subscribe to IfAction property changes
-            if (action is IfAction ifAction)
-            {
-                ((INotifyPropertyChanged)ifAction).PropertyChanged += IfAction_PropertyChanged;
-            }
-
-            // Only add non-pseudo-nodes to the model
-            if (action is not ActionBlock)
-            {
-                _model.Actions.Insert(index, action);
-            }
         }
 
         /// <summary>
@@ -764,16 +748,7 @@ namespace FleetAutomate.ViewModel
             if (newIndex < 0 || newIndex >= Actions.Count)
                 throw new ArgumentOutOfRangeException(nameof(newIndex));
 
-            var action = Actions[oldIndex];
-            Actions.RemoveAt(oldIndex);
-            Actions.Insert(newIndex, action);
-
-            // Only move non-pseudo-nodes in the model
-            if (action is not ActionBlock)
-            {
-                _model.Actions.RemoveAt(oldIndex);
-                _model.Actions.Insert(newIndex, action);
-            }
+            Actions.Move(oldIndex, newIndex);
         }
 
         /// <summary>
@@ -823,6 +798,18 @@ namespace FleetAutomate.ViewModel
             _model.Cancel();
         }
 
+        public void Pause()
+        {
+            _model.Pause();
+            RefreshRuntimeStateFromModel();
+        }
+
+        public void Stop()
+        {
+            _model.Stop();
+            RefreshRuntimeStateFromModel();
+        }
+
         /// <summary>
         /// Executes the flow asynchronously.
         /// </summary>
@@ -833,6 +820,46 @@ namespace FleetAutomate.ViewModel
             var result = await _model.ExecuteAsync(cancellationToken);
             RefreshFromModel(); // Refresh to get updated state
             return result;
+        }
+
+        public async Task<bool> StartAsync(CancellationToken cancellationToken)
+        {
+            var result = await _model.StartAsync(cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> StartFromActionAsync(IAction action, CancellationToken cancellationToken)
+        {
+            var result = await _model.StartFromActionAsync(action, cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> ContinueAsync(CancellationToken cancellationToken)
+        {
+            var result = await _model.ContinueAsync(cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> SkipFailedActionAndContinueAsync(CancellationToken cancellationToken)
+        {
+            var result = await _model.SkipFailedActionAndContinueAsync(cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public async Task<bool> StepActionAsync(IAction action, CancellationToken cancellationToken)
+        {
+            var result = await _model.StepActionAsync(action, cancellationToken);
+            RefreshFromModel();
+            return result;
+        }
+
+        public IReadOnlyDictionary<string, object?> GetRuntimeVariableValues()
+        {
+            return RuntimeVariables;
         }
 
         /// <summary>
@@ -930,6 +957,30 @@ namespace FleetAutomate.ViewModel
             }
         }
 
+        partial void OnBreakReasonChanged(TestFlowBreakReason value)
+        {
+            if (!_isRefreshingFromModel)
+            {
+                RuntimeStateChanged?.Invoke(this);
+            }
+        }
+
+        partial void OnLastFailedActionChanged(IAction? value)
+        {
+            if (!_isRefreshingFromModel)
+            {
+                RuntimeStateChanged?.Invoke(this);
+            }
+        }
+
+        partial void OnRuntimeVariablesChanged(IReadOnlyDictionary<string, object?> value)
+        {
+            if (!_isRefreshingFromModel)
+            {
+                RuntimeStateChanged?.Invoke(this);
+            }
+        }
+
         partial void OnIsEnabledChanged(bool value)
         {
             if (_model.IsEnabled != value)
@@ -940,6 +991,18 @@ namespace FleetAutomate.ViewModel
                     HasUnsavedChanges = true;
                 }
             }
+        }
+
+        private void RefreshRuntimeStateFromModel()
+        {
+            _isRefreshingFromModel = true;
+            CurrentAction = _model.CurrentAction;
+            State = _model.State;
+            BreakReason = _model.BreakReason;
+            LastFailedAction = _model.LastFailedAction;
+            RuntimeVariables = new Dictionary<string, object?>(_model.GetRuntimeVariableValues(), StringComparer.Ordinal);
+            _isRefreshingFromModel = false;
+            RuntimeStateChanged?.Invoke(this);
         }
     }
 }

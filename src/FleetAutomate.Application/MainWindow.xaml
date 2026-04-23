@@ -124,6 +124,20 @@
                     </Style>
                 </ui:MenuItem.Style>
             </ui:MenuItem>
+            <ui:MenuItem Header="Skip Failed" Icon="{ui:SymbolIcon ArrowRight20}"
+                        Command="{Binding SkipFailedActionCommand}"
+                        ToolTip="Skip current failed action and continue">
+                <ui:MenuItem.Style>
+                    <Style TargetType="ui:MenuItem">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CanSkipFailedAction}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ui:MenuItem.Style>
+            </ui:MenuItem>
             <!-- Stop button - visible when running -->
             <ui:MenuItem Header="Stop" Icon="{ui:SymbolIcon Stop20}"
                         Command="{Binding StopTestFlowCommand}"
@@ -190,6 +204,8 @@
                                 <TreeView Name="ActionsToolBox"
                                           ItemsSource="{Binding ActionCategories}"
                                           MouseDoubleClick="ActionsToolBox_MouseDoubleClick"
+                                          PreviewMouseLeftButtonDown="ActionsToolBox_PreviewMouseLeftButtonDown"
+                                          PreviewMouseMove="ActionsToolBox_PreviewMouseMove"
                                           PreviewMouseRightButtonDown="ActionsToolBox_PreviewMouseRightButtonDown">
                                     <TreeView.ContextMenu>
                                         <ContextMenu Opened="ActionsToolBox_ContextMenu_Opening">
@@ -359,6 +375,18 @@
             <Separator />
             <StatusBarItem>
                 <TextBlock Text="{Binding ActiveProject.TestFlows.Count, StringFormat='TestFlows: {0}', FallbackValue='0'}" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Text="{Binding CurrentBreakReasonText, StringFormat='Break: {0}'}" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Text="{Binding CurrentActionSummary, StringFormat='Current: {0}'}" />
+            </StatusBarItem>
+            <Separator />
+            <StatusBarItem>
+                <TextBlock Text="{Binding LastFailedActionSummary, StringFormat='Failed: {0}'}" />
             </StatusBarItem>
         </StatusBar>
 

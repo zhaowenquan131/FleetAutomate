@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-16"?>
+<TestFlow xmlns:i="http://www.w3.org/2001/XMLSchema-instance" z:Id="1" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/" xmlns="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Flow">
+  <ActionsArray xmlns:d2p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="2" z:Size="7">
+    <d2p1:anyType z:Id="3" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.System" i:type="d3p1:LaunchApplicationAction">
+      <d3p1:_arguments z:Id="4"></d3p1:_arguments>
+      <d3p1:_description z:Id="5">Launch Windows Calculator</d3p1:_description>
+      <d3p1:_executablePath z:Id="6">calc.exe</d3p1:_executablePath>
+      <d3p1:_timeoutMilliseconds>30000</d3p1:_timeoutMilliseconds>
+      <d3p1:_waitForCompletion>false</d3p1:_waitForCompletion>
+      <d3p1:_workingDirectory z:Ref="4" i:nil="true" />
+    </d2p1:anyType>
+    <d2p1:anyType z:Id="7" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:WaitForElementAction">
+      <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
+      <d3p1:_description z:Id="8">Wait for Calculator number pad to become ready</d3p1:_description>
+      <d3p1:_elementIdentifier z:Id="9">num1Button</d3p1:_elementIdentifier>
+      <d3p1:_globalDictionaryKey i:nil="true" />
+      <d3p1:_identifierType z:Id="10">AutomationId</d3p1:_identifierType>
+      <d3p1:_pollingIntervalMilliseconds>100</d3p1:_pollingIntervalMilliseconds>
+      <d3p1:_searchScope i:nil="true" />
+      <d3p1:_timeoutMilliseconds>10000</d3p1:_timeoutMilliseconds>
+    </d2p1:anyType>
+    <d2p1:anyType z:Id="11" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
+      <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
+      <d3p1:_description z:Id="12">Click number 1</d3p1:_description>
+      <d3p1:_elementIdentifier z:Id="13">num1Button</d3p1:_elementIdentifier>
+      <d3p1:_globalDictionaryKey i:nil="true" />
+      <d3p1:_identifierType z:Id="14">AutomationId</d3p1:_identifierType>
+      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
+      <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
+      <d3p1:_retryTimes>3</d3p1:_retryTimes>
+      <d3p1:_searchScope i:nil="true" />
+      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+    </d2p1:anyType>
+    <d2p1:anyType z:Id="15" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
+      <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
+      <d3p1:_description z:Id="16">Click plus</d3p1:_description>
+      <d3p1:_elementIdentifier z:Id="17">plusButton</d3p1:_elementIdentifier>
+      <d3p1:_globalDictionaryKey i:nil="true" />
+      <d3p1:_identifierType z:Id="18">AutomationId</d3p1:_identifierType>
+      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
+      <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
+      <d3p1:_retryTimes>3</d3p1:_retryTimes>
+      <d3p1:_searchScope i:nil="true" />
+      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+    </d2p1:anyType>
+    <d2p1:anyType z:Id="19" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
+      <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
+      <d3p1:_description z:Id="20">Click number 2</d3p1:_description>
+      <d3p1:_elementIdentifier z:Id="21">num2Button</d3p1:_elementIdentifier>
+      <d3p1:_globalDictionaryKey i:nil="true" />
+      <d3p1:_identifierType z:Id="22">AutomationId</d3p1:_identifierType>
+      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
+      <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
+      <d3p1:_retryTimes>3</d3p1:_retryTimes>
+      <d3p1:_searchScope i:nil="true" />
+      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+    </d2p1:anyType>
+    <d2p1:anyType z:Id="23" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:ClickElementAction">
+      <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
+      <d3p1:_description z:Id="24">Click equals</d3p1:_description>
+      <d3p1:_elementIdentifier z:Id="25">equalButton</d3p1:_elementIdentifier>
+      <d3p1:_globalDictionaryKey i:nil="true" />
+      <d3p1:_identifierType z:Id="26">AutomationId</d3p1:_identifierType>
+      <d3p1:_invokeWithoutWaiting>false</d3p1:_invokeWithoutWaiting>
+      <d3p1:_isDoubleClick>false</d3p1:_isDoubleClick>
+      <d3p1:_retryDelayMilliseconds>500</d3p1:_retryDelayMilliseconds>
+      <d3p1:_retryTimes>3</d3p1:_retryTimes>
+      <d3p1:_searchScope i:nil="true" />
+      <d3p1:_useInvoke>false</d3p1:_useInvoke>
+    </d2p1:anyType>
+    <d2p1:anyType z:Id="27" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d3p1:WaitForElementAction">
+      <d3p1:_addToGlobalDictionary>false</d3p1:_addToGlobalDictionary>
+      <d3p1:_description z:Id="28">Wait for result text to show 3</d3p1:_description>
+      <d3p1:_elementIdentifier z:Id="29">显示为 3</d3p1:_elementIdentifier>
+      <d3p1:_globalDictionaryKey i:nil="true" />
+      <d3p1:_identifierType z:Id="30">Name</d3p1:_identifierType>
+      <d3p1:_pollingIntervalMilliseconds>100</d3p1:_pollingIntervalMilliseconds>
+      <d3p1:_searchScope i:nil="true" />
+      <d3p1:_timeoutMilliseconds>5000</d3p1:_timeoutMilliseconds>
+    </d2p1:anyType>
+  </ActionsArray>
+  <Description z:Id="31">Launch Calculator, click 1 + 2 =, then verify the result contains 3.</Description>
+  <Environment xmlns:d2p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.Logic" z:Id="32">
+    <d2p1:Actions xmlns:d3p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="33" z:Size="0" />
+    <d2p1:Variables z:Id="34" z:Size="0" />
+  </Environment>
+  <GlobalElementDictionary z:Id="35">
+    <RegisteredKeys xmlns:d3p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="36" z:Size="0" />
+  </GlobalElementDictionary>
+  <IsEnabled>true</IsEnabled>
+  <Name z:Id="37">calculator_add_1_plus_2</Name>
+</TestFlow>

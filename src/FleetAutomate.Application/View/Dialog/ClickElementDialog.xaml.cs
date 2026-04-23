@@ -32,6 +32,11 @@ namespace FleetAutomate.View.Dialog
         public bool UseInvoke { get; private set; } = false;
 
         /// <summary>
+        /// Gets whether Invoke should be dispatched without waiting for completion.
+        /// </summary>
+        public bool InvokeWithoutWaiting { get; private set; } = false;
+
+        /// <summary>
         /// Gets the number of times to retry if the action fails.
         /// </summary>
         public int RetryTimes { get; private set; } = 3;
@@ -70,6 +75,9 @@ namespace FleetAutomate.View.Dialog
                 typeof(View.Controls.XPathInput));
             xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
 
+            UseInvokeCheckBox.Checked += UseInvokeCheckBox_CheckedChanged;
+            UseInvokeCheckBox.Unchecked += UseInvokeCheckBox_CheckedChanged;
+            UpdateInvokeOptions();
             UpdateOkButtonState();
             // Set button text for creating
             OkButton.Content = "Create";
@@ -83,6 +91,7 @@ namespace FleetAutomate.View.Dialog
             string identifierType,
             bool isDoubleClick,
             bool useInvoke,
+            bool invokeWithoutWaiting,
             int retryTimes,
             int retryDelayMilliseconds,
             string? searchScope = null,
@@ -99,6 +108,7 @@ namespace FleetAutomate.View.Dialog
             IdentifierTypeComboBox.SelectedIndex = GetIndexFromIdentifierType(identifierType);
             DoubleClickCheckBox.IsChecked = isDoubleClick;
             UseInvokeCheckBox.IsChecked = useInvoke;
+            InvokeWithoutWaitingCheckBox.IsChecked = invokeWithoutWaiting;
             RetryTimesTextBox.Text = retryTimes.ToString();
             RetryDelayTextBox.Text = retryDelayMilliseconds.ToString();
             AddElementToGlobalDictionary.IsChecked = addToGlobalDictionary;
@@ -112,6 +122,9 @@ namespace FleetAutomate.View.Dialog
                 typeof(View.Controls.XPathInput));
             xpathDescriptor?.AddValueChanged(ElementIdentifierInput, (s, e) => UpdateOkButtonState());
 
+            UseInvokeCheckBox.Checked += UseInvokeCheckBox_CheckedChanged;
+            UseInvokeCheckBox.Unchecked += UseInvokeCheckBox_CheckedChanged;
+            UpdateInvokeOptions();
             UpdateOkButtonState();
             // Set button text for editing
             OkButton.Content = "Save";
@@ -197,6 +210,7 @@ namespace FleetAutomate.View.Dialog
             IdentifierType = GetIdentifierTypeFromIndex(IdentifierTypeComboBox.SelectedIndex);
             IsDoubleClick = DoubleClickCheckBox.IsChecked ?? false;
             UseInvoke = UseInvokeCheckBox.IsChecked ?? false;
+            InvokeWithoutWaiting = UseInvoke && (InvokeWithoutWaitingCheckBox.IsChecked ?? false);
             RetryTimes = retryTimes;
             RetryDelayMilliseconds = retryDelay;
             SearchScope = GetSelectedSearchScope();
@@ -235,6 +249,21 @@ namespace FleetAutomate.View.Dialog
         {
             DialogResult = false;
             Close();
+        }
+
+        private void UseInvokeCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            UpdateInvokeOptions();
+        }
+
+        private void UpdateInvokeOptions()
+        {
+            var useInvoke = UseInvokeCheckBox.IsChecked ?? false;
+            InvokeWithoutWaitingCheckBox.IsEnabled = useInvoke;
+            if (!useInvoke)
+            {
+                InvokeWithoutWaitingCheckBox.IsChecked = false;
+            }
         }
     }
 }

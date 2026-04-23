@@ -1,5 +1,6 @@
 using System.Runtime.Serialization;
 using System.ComponentModel;
+using System.Threading;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
 using FlaUI.Core.Conditions;
@@ -14,7 +15,7 @@ namespace FleetAutomate.Model.Actions.UIAutomation
     /// Action to click on a UI element.
     /// </summary>
     [DataContract]
-    public class ClickElementAction : IRetryableAction, IUIElementAction, INotifyPropertyChanged
+    public class ClickElementAction : IRetryableAction, IUIElementAction, IPauseAwareAction, INotifyPropertyChanged
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
@@ -129,6 +130,25 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         }
 
         /// <summary>
+        /// Whether Invoke should be issued on a dedicated STA thread and not wait for completion.
+        /// This keeps the automation flow moving when the target opens a modal dialog or blocks.
+        /// </summary>
+        [DataMember]
+        private bool _invokeWithoutWaiting = false;
+        public bool InvokeWithoutWaiting
+        {
+            get => _invokeWithoutWaiting;
+            set
+            {
+                if (_invokeWithoutWaiting != value)
+                {
+                    _invokeWithoutWaiting = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(InvokeWithoutWaiting)));
+                }
+            }
+        }
+
+        /// <summary>
         /// Number of times to retry if the action fails (0 means no retry, just one attempt)
         /// </summary>
         [DataMember]
@@ -232,6 +252,11 @@ namespace FleetAutomate.Model.Actions.UIAutomation
         /// </summary>
         [IgnoreDataMember]
         private AutomationBase? _automation;
+
+        [IgnoreDataMember]
+        public ActionPauseBehavior PauseBehavior => RetryTimes > 0
+            ? ActionPauseBehavior.BetweenAttempts
+            : ActionPauseBehavior.None;
 
         public void Cancel()
         {
@@ -343,9 +368,18 @@ namespace FleetAutomate.Model.Actions.UIAutomation
                         // Try to use Invoke pattern (works for buttons and other invoke-able elements)
                         if (element.Patterns.Invoke.IsSupported)
                         {
-                            global::System.Diagnostics.Debug.WriteLine("[ClickElement] Invoke pattern is supported, invoking...");
-                            element.Patterns.Invoke.Pattern.Invoke();
-                            global::System.Diagnostics.Debug.WriteLine("[ClickElement] Invoke completed successfully");
+                            if (InvokeWithoutWaiting)
+                            {
+                                global::System.Diagnostics.Debug.WriteLine("[ClickElement] Invoke pattern is supported, invoking without waiting...");
+                                await StartInvokeWithoutWaitingAsync(element, cancellationToken);
+                                global::System.Diagnostics.Debug.WriteLine("[ClickElement] Invoke dispatched successfully");
+                            }
+                            else
+                            {
+                                global::System.Diagnostics.Debug.WriteLine("[ClickElement] Invoke pattern is supported, invoking...");
+                                element.Patterns.Invoke.Pattern.Invoke();
+                                global::System.Diagnostics.Debug.WriteLine("[ClickElement] Invoke completed successfully");
+                            }
                         }
                         else
                         {
@@ -433,6 +467,40 @@ namespace FleetAutomate.Model.Actions.UIAutomation
             // Should not reach here, but just in case
             State = ActionState.Failed;
             return false;
+        }
+
+        private static async Task StartInvokeWithoutWaitingAsync(AutomationElement element, CancellationToken cancellationToken)
+        {
+            var invokePattern = element.Patterns.Invoke.Pattern;
+            var startedTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var invokeThread = new Thread(() =>
+            {
+                try
+                {
+                    startedTcs.TrySetResult();
+                    invokePattern.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    if (!startedTcs.Task.IsCompleted)
+                    {
+                        startedTcs.TrySetException(ex);
+                        return;
+                    }
+
+                    Logger.Warn(ex, "[ClickElement] InvokeWithoutWaiting failed after dispatch");
+                }
+            })
+            {
+                IsBackground = true,
+                Name = "FleetAutomate-InvokePattern"
+            };
+
+            invokeThread.SetApartmentState(ApartmentState.STA);
+            invokeThread.Start();
+
+            await startedTcs.Task.WaitAsync(cancellationToken);
         }
     }
 }

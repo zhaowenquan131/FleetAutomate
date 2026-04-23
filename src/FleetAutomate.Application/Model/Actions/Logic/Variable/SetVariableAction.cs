@@ -1,12 +1,17 @@
-﻿using FleetAutomate.Model.Flow;
+using FleetAutomate.Model.Flow;
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace FleetAutomate.Model.Actions.Logic
 {
     [DataContract]
-    public partial class SetVariableAction<TResult> : ILogicAction
+    public partial class SetVariableAction<TResult> : ILogicAction, INotifyPropertyChanged
     {
+        private ActionState _state = ActionState.Ready;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public SetVariableAction() { }
         public SetVariableAction(string name, TResult value)
         {
@@ -43,7 +48,18 @@ namespace FleetAutomate.Model.Actions.Logic
         public Variable Variable { get; set; }
         
         [IgnoreDataMember]
-        public ActionState State { get; set; } = ActionState.Ready;
+        public ActionState State
+        {
+            get => _state;
+            set
+            {
+                if (_state != value)
+                {
+                    _state = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(State)));
+                }
+            }
+        }
 
         public string Name => $"Set {Variable.ShortTypeName} {Variable.Name} = {Variable.Value}";
 
@@ -63,7 +79,7 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public void Cancel()
         {
-            throw new NotImplementedException();
+            // Variable assignment is atomic and doesn't support in-flight cancellation.
         }
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
@@ -74,7 +90,20 @@ namespace FleetAutomate.Model.Actions.Logic
 
             try
             {
-                Environment.Variables.Add(Variable);
+                var existingVariable = Environment.Variables.FirstOrDefault(v =>
+                    string.Equals(v.Name, Variable.Name, StringComparison.Ordinal));
+
+                if (existingVariable != null)
+                {
+                    existingVariable.Value = Variable.Value;
+                    existingVariable.Type = Variable.Type;
+                    Variable = existingVariable;
+                }
+                else
+                {
+                    Environment.Variables.Add(Variable);
+                }
+
                 State = ActionState.Completed;
                 return true;
             }

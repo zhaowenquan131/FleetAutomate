@@ -32,6 +32,12 @@ namespace FleetAutomate
 
         // Dictionary to map LayoutDocuments to their corresponding ObservableFlows
         private readonly Dictionary<AvalonDock.Layout.LayoutDocument, ObservableFlow> _documentFlowMap = new();
+        private System.Windows.Point _toolboxDragStartPoint;
+        private System.Windows.Point _testFlowDragStartPoint;
+        private Model.ActionTemplate? _pendingToolboxDragTemplate;
+        private Model.IAction? _pendingTestFlowDragAction;
+        private const string ToolboxActionTemplateFormat = "FleetAutomate.ActionTemplate";
+        private const string TestFlowActionFormat = "FleetAutomate.TestFlowAction";
 
         public MainWindow()
         {
@@ -46,6 +52,15 @@ namespace FleetAutomate
 
             // Set up AvalonDock document management
             Loaded += (s, e) => SetupDocumentManagement();
+            Loaded += OnMainWindowLoaded;
+        }
+
+        private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
+        {
+            if (System.Windows.Application.Current is FleetAutomate.App app)
+            {
+                app.EnsureUiSessionHost(this);
+            }
         }
 
         private void SetupUIEventHandlers()
@@ -146,7 +161,7 @@ namespace FleetAutomate
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.RetryTimes, dialog.RetryDelayMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
+                    return (dialog.ElementIdentifier, dialog.IdentifierType, dialog.IsDoubleClick, dialog.UseInvoke, dialog.InvokeWithoutWaiting, dialog.RetryTimes, dialog.RetryDelayMilliseconds, dialog.SearchScope, dialog.AddToGlobalDictionary);
                 }
 
                 return null; // User cancelled
@@ -383,6 +398,31 @@ namespace FleetAutomate
             }
         }
 
+        private void ActionsToolBox_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _toolboxDragStartPoint = e.GetPosition(this);
+            _pendingToolboxDragTemplate = FindAncestor<System.Windows.Controls.TreeViewItem>(e.OriginalSource as DependencyObject)?.DataContext as Model.ActionTemplate;
+        }
+
+        private void ActionsToolBox_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (_pendingToolboxDragTemplate == null || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            var currentPosition = e.GetPosition(this);
+            if (Math.Abs(currentPosition.X - _toolboxDragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPosition.Y - _toolboxDragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            var data = new System.Windows.DataObject(ToolboxActionTemplateFormat, _pendingToolboxDragTemplate);
+            System.Windows.DragDrop.DoDragDrop(ActionsToolBox, data, System.Windows.DragDropEffects.Copy);
+            _pendingToolboxDragTemplate = null;
+        }
+
         private void ActionsToolBox_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (sender is not System.Windows.Controls.TreeView treeView)
@@ -462,14 +502,86 @@ namespace FleetAutomate
                     return match;
                 }
 
-                current = VisualTreeHelper.GetParent(current);
+                current = current switch
+                {
+                    Visual visual => VisualTreeHelper.GetParent(visual),
+                    System.Windows.Media.Media3D.Visual3D visual3D => VisualTreeHelper.GetParent(visual3D),
+                    FrameworkContentElement contentElement => contentElement.Parent,
+                    _ => null
+                };
             }
 
             return null;
         }
 
+        private Model.IAction? ResolveDropTarget(System.Windows.Controls.TreeView treeView, DependencyObject? originalSource, System.Windows.Point fallbackPoint)
+        {
+            var treeViewItem = FindAncestor<System.Windows.Controls.TreeViewItem>(originalSource);
+            if (treeViewItem?.DataContext is Model.IAction action)
+            {
+                return action;
+            }
+
+            var hit = VisualTreeHelper.HitTest(treeView, fallbackPoint);
+            return FindAncestor<System.Windows.Controls.TreeViewItem>(hit?.VisualHit as DependencyObject)?.DataContext as Model.IAction;
+        }
+
+        private bool IsDescendantDropTarget(Model.IAction draggedAction, Model.IAction? dropTarget)
+        {
+            if (dropTarget == null || ReferenceEquals(draggedAction, dropTarget))
+            {
+                return false;
+            }
+
+            if (draggedAction is not Model.ICompositeAction compositeAction)
+            {
+                return false;
+            }
+
+            return ContainsActionRecursive(compositeAction.GetChildActions(), dropTarget);
+        }
+
+        private bool ContainsActionRecursive(IEnumerable<Model.IAction> actions, Model.IAction target)
+        {
+            foreach (var action in actions)
+            {
+                if (ReferenceEquals(action, target))
+                {
+                    return true;
+                }
+
+                if (action is Model.ICompositeAction compositeAction &&
+                    ContainsActionRecursive(compositeAction.GetChildActions(), target))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void MoveDraggedAction(ObservableFlow flow, Model.IAction draggedAction, Model.IAction? dropTarget)
+        {
+            if (ViewModel.ActiveTestFlow != flow)
+            {
+                return;
+            }
+
+            if (!ViewModel.RemoveAction(draggedAction))
+            {
+                return;
+            }
+
+            ViewModel.InsertAction(draggedAction, dropTarget);
+        }
+
         private void TestFlowActionsTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
+            if (sender is System.Windows.Controls.TreeView treeView && treeView.DataContext is ObservableFlow flow)
+            {
+                ViewModel.ActiveTestFlow = flow;
+            }
+
             // Update the SelectedAction in the ViewModel
             if (e.NewValue is Model.IAction action)
             {
@@ -503,6 +615,9 @@ namespace FleetAutomate
 
         private void TestFlowActionsTreeView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
+            _testFlowDragStartPoint = e.GetPosition(this);
+            _pendingTestFlowDragAction = FindAncestor<System.Windows.Controls.TreeViewItem>(e.OriginalSource as DependencyObject)?.DataContext as Model.IAction;
+
             // Check if we clicked on empty space in the TreeView
             var treeView = sender as System.Windows.Controls.TreeView;
             if (treeView == null) return;
@@ -532,6 +647,69 @@ namespace FleetAutomate
                 // Clicked on empty space (no TreeViewItem in the visual hierarchy)
                 ViewModel.SelectedAction = null;
             }
+        }
+
+        private void TestFlowActionsTreeView_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (_pendingTestFlowDragAction == null || _pendingTestFlowDragAction is Model.ActionBlock || e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            var currentPosition = e.GetPosition(this);
+            if (Math.Abs(currentPosition.X - _testFlowDragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
+                Math.Abs(currentPosition.Y - _testFlowDragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+
+            if (sender is not System.Windows.Controls.TreeView treeView || treeView.DataContext is not ObservableFlow)
+            {
+                return;
+            }
+
+            var data = new System.Windows.DataObject(TestFlowActionFormat, _pendingTestFlowDragAction);
+            System.Windows.DragDrop.DoDragDrop(treeView, data, System.Windows.DragDropEffects.Move);
+            _pendingTestFlowDragAction = null;
+        }
+
+        private void TestFlowActionsTreeView_DragOver(object sender, System.Windows.DragEventArgs e)
+        {
+            e.Effects = e.Data.GetDataPresent(ToolboxActionTemplateFormat)
+                ? System.Windows.DragDropEffects.Copy
+                : e.Data.GetDataPresent(TestFlowActionFormat) ? System.Windows.DragDropEffects.Move : System.Windows.DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void TestFlowActionsTreeView_Drop(object sender, System.Windows.DragEventArgs e)
+        {
+            if (sender is not System.Windows.Controls.TreeView treeView || treeView.DataContext is not ObservableFlow flow)
+            {
+                return;
+            }
+
+            ViewModel.ActiveTestFlow = flow;
+
+            var dropTarget = ResolveDropTarget(treeView, e.OriginalSource as DependencyObject, e.GetPosition(treeView));
+
+            if (e.Data.GetDataPresent(ToolboxActionTemplateFormat))
+            {
+                if (e.Data.GetData(ToolboxActionTemplateFormat) is Model.ActionTemplate actionTemplate)
+                {
+                    ViewModel.AddActionFromTemplate(actionTemplate, dropTarget);
+                }
+            }
+            else if (e.Data.GetDataPresent(TestFlowActionFormat))
+            {
+                if (e.Data.GetData(TestFlowActionFormat) is Model.IAction draggedAction &&
+                    draggedAction != dropTarget &&
+                    !IsDescendantDropTarget(draggedAction, dropTarget))
+                {
+                    MoveDraggedAction(flow, draggedAction, dropTarget);
+                }
+            }
+
+            e.Handled = true;
         }
 
         private void TestFlowActionsTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -751,6 +929,7 @@ namespace FleetAutomate
             string identifierType = clickAction.IdentifierType;
             bool isDoubleClick = clickAction.IsDoubleClick;
             bool useInvoke = clickAction.UseInvoke;
+            bool invokeWithoutWaiting = clickAction.InvokeWithoutWaiting;
             int retryTimes = clickAction.RetryTimes;
             int retryDelayMilliseconds = clickAction.RetryDelayMilliseconds;
             string? searchScope = clickAction.SearchScope;
@@ -761,7 +940,7 @@ namespace FleetAutomate
 
             // Create and show the ClickElementDialog with pre-populated values
             var dialog = new ClickElementDialog(
-                elementIdentifier, identifierType, isDoubleClick, useInvoke,
+                elementIdentifier, identifierType, isDoubleClick, useInvoke, invokeWithoutWaiting,
                 retryTimes, retryDelayMilliseconds, searchScope, addToGlobalDictionary, scopeKeys)
             {
                 Owner = this
@@ -774,11 +953,12 @@ namespace FleetAutomate
                 clickAction.IdentifierType = dialog.IdentifierType;
                 clickAction.IsDoubleClick = dialog.IsDoubleClick;
                 clickAction.UseInvoke = dialog.UseInvoke;
+                clickAction.InvokeWithoutWaiting = dialog.UseInvoke && dialog.InvokeWithoutWaiting;
                 clickAction.RetryTimes = dialog.RetryTimes;
                 clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
                 clickAction.SearchScope = dialog.SearchScope;
                 clickAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? " (invoke)" : "")} (retry:{dialog.RetryTimes}x)";
+                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? (dialog.InvokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)") : "")} (retry:{dialog.RetryTimes}x)";
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
                 if (dialog.AddToGlobalDictionary)
@@ -1322,6 +1502,66 @@ namespace FleetAutomate
                 BorderThickness = new Thickness(0, 0, 0, 1)
             };
             var toolbarStack = new StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+            var visibilityBinding = new System.Windows.Data.Binding(nameof(MainViewModel.HasSelectedAction))
+            {
+                Source = ViewModel,
+                Converter = new BooleanToVisibilityConverter()
+            };
+            var moveUpButton = new Wpf.Ui.Controls.Button
+            {
+                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowUp20 },
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Move selected action up",
+                Command = ViewModel.MoveSelectedActionUpCommand
+            };
+            moveUpButton.SetBinding(VisibilityProperty, visibilityBinding);
+            toolbarStack.Children.Add(moveUpButton);
+
+            var moveDownButton = new Wpf.Ui.Controls.Button
+            {
+                Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.ArrowDown20 },
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Move selected action down",
+                Command = ViewModel.MoveSelectedActionDownCommand
+            };
+            moveDownButton.SetBinding(VisibilityProperty, visibilityBinding);
+            toolbarStack.Children.Add(moveDownButton);
+
+            var stepButton = new Wpf.Ui.Controls.Button
+            {
+                Content = "Step",
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Execute selected action",
+                Command = ViewModel.ExecuteStepCommand
+            };
+            stepButton.SetBinding(VisibilityProperty, visibilityBinding);
+            toolbarStack.Children.Add(stepButton);
+
+            var runFromButton = new Wpf.Ui.Controls.Button
+            {
+                Content = "Run From",
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Execute TestFlow starting from selected action",
+                Command = ViewModel.ExecuteFromThisStepCommand
+            };
+            runFromButton.SetBinding(VisibilityProperty, visibilityBinding);
+            toolbarStack.Children.Add(runFromButton);
+
+            var skipFailedButton = new Wpf.Ui.Controls.Button
+            {
+                Content = "Skip Failed",
+                Margin = new Thickness(0, 0, 5, 0),
+                ToolTip = "Skip current failed action and continue",
+                Command = ViewModel.SkipFailedActionCommand
+            };
+            var skipFailedVisibilityBinding = new System.Windows.Data.Binding(nameof(MainViewModel.CanSkipFailedAction))
+            {
+                Source = ViewModel,
+                Converter = new BooleanToVisibilityConverter()
+            };
+            skipFailedButton.SetBinding(VisibilityProperty, skipFailedVisibilityBinding);
+            toolbarStack.Children.Add(skipFailedButton);
+
             var deleteButton = new Wpf.Ui.Controls.Button
             {
                 Icon = new Wpf.Ui.Controls.SymbolIcon { Symbol = Wpf.Ui.Controls.SymbolRegular.Delete20 },
@@ -1340,6 +1580,7 @@ namespace FleetAutomate
             {
                 DataContext = flow
             };
+            treeView.AllowDrop = true;
             var selectedBackgroundBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255));
             treeView.Resources[System.Windows.SystemColors.HighlightBrushKey] = selectedBackgroundBrush;
             treeView.Resources[System.Windows.SystemColors.InactiveSelectionHighlightBrushKey] = selectedBackgroundBrush;
@@ -1349,8 +1590,11 @@ namespace FleetAutomate
             treeView.SelectedItemChanged += TestFlowActionsTreeView_SelectedItemChanged;
             treeView.KeyDown += TestFlowActionsTreeView_KeyDown;
             treeView.PreviewMouseDown += TestFlowActionsTreeView_PreviewMouseDown;
+            treeView.PreviewMouseMove += TestFlowActionsTreeView_PreviewMouseMove;
             treeView.PreviewMouseRightButtonDown += TestFlowActionsTreeView_PreviewMouseRightButtonDown;
             treeView.MouseDoubleClick += TestFlowActionsTreeView_MouseDoubleClick;
+            treeView.DragOver += TestFlowActionsTreeView_DragOver;
+            treeView.Drop += TestFlowActionsTreeView_Drop;
 
             // Context menu
             var contextMenu = new System.Windows.Controls.ContextMenu();
@@ -1388,7 +1632,13 @@ namespace FleetAutomate
 
             // Status icon
             var statusIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
-            statusIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding("State") { Converter = (IValueConverter)this.FindResource("ActionStateToIconConverter") });
+            var statusIconBinding = new MultiBinding
+            {
+                Converter = (IMultiValueConverter)this.FindResource("ActionStateToIconConverter")
+            };
+            statusIconBinding.Bindings.Add(new System.Windows.Data.Binding("."));
+            statusIconBinding.Bindings.Add(new System.Windows.Data.Binding("State"));
+            statusIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, statusIconBinding);
             statusIcon.SetBinding(System.Windows.Controls.TextBlock.ForegroundProperty, new System.Windows.Data.Binding("State") { Converter = (IValueConverter)this.FindResource("ActionStateToColorConverter") });
             statusIcon.SetValue(System.Windows.Controls.TextBlock.FontFamilyProperty, new System.Windows.Media.FontFamily("Segoe UI Symbol"));
             statusIcon.SetValue(System.Windows.Controls.TextBlock.FontWeightProperty, FontWeights.Bold);

@@ -55,6 +55,8 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public bool HasUnsavedChanges => ProjectManager?.HasUnsavedChanges ?? false;
 
+        public bool HasAnyUnsavedFlowChanges => ActiveProject?.TestFlows.Any(flow => flow.HasUnsavedChanges) == true;
+
         /// <summary>
         /// Gets the current project file path.
         /// </summary>
@@ -89,12 +91,20 @@ namespace FleetAutomate.ViewModel
                         _activeTestFlow.PropertyChanged += ActiveTestFlow_PropertyChanged;
                     }
 
+                    RefreshCurrentRuntimeVariables();
+
                     // Update command states
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+                    OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+                    OnPropertyChanged(nameof(CurrentBreakReasonText));
+                    OnPropertyChanged(nameof(CurrentActionSummary));
+                    OnPropertyChanged(nameof(LastFailedActionSummary));
+                    OnPropertyChanged(nameof(CanSkipFailedAction));
                 }
             }
         }
@@ -114,6 +124,7 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)RunTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                 }
             }
@@ -138,6 +149,7 @@ namespace FleetAutomate.ViewModel
                     OnPropertyChanged(nameof(IsTestFlowNotPaused));
                     ((RelayCommand)PauseTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                 }
             }
         }
@@ -158,14 +170,27 @@ namespace FleetAutomate.ViewModel
             {
                 if (SetProperty(ref _selectedAction, value))
                 {
+                    OnPropertyChanged(nameof(HasSelectedAction));
                     // Update command states
                     ((RelayCommand)DeleteActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ToggleElseBlockCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ExecuteStepCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)ExecuteFromThisStepCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)MoveSelectedActionUpCommand).NotifyCanExecuteChanged();
+                    ((RelayCommand)MoveSelectedActionDownCommand).NotifyCanExecuteChanged();
                 }
             }
         }
+
+        public bool HasSelectedAction => SelectedAction != null;
+
+        public bool CanSkipFailedAction => ActiveTestFlow?.State == ActionState.Failed && ActiveTestFlow?.CurrentAction != null;
+
+        public string CurrentBreakReasonText => ActiveTestFlow?.BreakReason.ToString() ?? TestFlowBreakReason.None.ToString();
+
+        public string CurrentActionSummary => ActiveTestFlow?.CurrentAction?.Name ?? "-";
+
+        public string LastFailedActionSummary => ActiveTestFlow?.LastFailedAction?.Name ?? "-";
 
         /// <summary>
         /// Gets the hierarchical action categories for the ToolBox TreeView.
@@ -235,7 +260,7 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Click Element" dialog.
         /// Should return the element click parameters, or null if cancelled.
         /// </summary>
-        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)?>? OnPromptClickElement;
+        public event Func<(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, bool invokeWithoutWaiting, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)?>? OnPromptClickElement;
 
         /// <summary>
         /// Event fired when UI needs to show a "Set Text" dialog.
@@ -312,6 +337,11 @@ namespace FleetAutomate.ViewModel
         public ICommand ContinueTestFlowCommand { get; }
 
         /// <summary>
+        /// Command to skip the current failed action and continue execution.
+        /// </summary>
+        public ICommand SkipFailedActionCommand { get; }
+
+        /// <summary>
         /// Command to stop the currently running TestFlow.
         /// </summary>
         public ICommand StopTestFlowCommand { get; }
@@ -341,6 +371,16 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public ICommand CloseTestFlowTabCommand { get; }
 
+        /// <summary>
+        /// Command to move the selected action up within its current collection.
+        /// </summary>
+        public ICommand MoveSelectedActionUpCommand { get; }
+
+        /// <summary>
+        /// Command to move the selected action down within its current collection.
+        /// </summary>
+        public ICommand MoveSelectedActionDownCommand { get; }
+
         public MainViewModel()
         {
             _projectManager = new TestProjectManager();
@@ -351,7 +391,7 @@ namespace FleetAutomate.ViewModel
             // Initialize commands
             CreateNewProjectCommand = new RelayCommand(CreateNewProject);
             OpenProjectCommand = new RelayCommand<string>(OpenProject);
-            SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded && ActiveTestFlow?.HasUnsavedChanges == true);
+            SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded && (HasUnsavedChanges || HasAnyUnsavedFlowChanges));
             SaveProjectAsCommand = new RelayCommand(SaveProjectAs, () => IsProjectLoaded);
             CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectLoaded);
             DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && ActiveTestFlow != null);
@@ -359,12 +399,15 @@ namespace FleetAutomate.ViewModel
             RunTestFlowCommand = new RelayCommand(RunTestFlow, () => ActiveTestFlow != null && !IsTestFlowRunning);
             PauseTestFlowCommand = new RelayCommand(PauseTestFlow, () => IsTestFlowRunning && !IsTestFlowPaused);
             ContinueTestFlowCommand = new RelayCommand(ContinueTestFlow, () => IsTestFlowPaused);
+            SkipFailedActionCommand = new RelayCommand(SkipFailedActionAndContinue, () => CanSkipFailedAction);
             StopTestFlowCommand = new RelayCommand(StopTestFlow, () => IsTestFlowRunning);
             ExecuteStepCommand = new RelayCommand(ExecuteStep, () => SelectedAction != null);
             ExecuteFromThisStepCommand = new RelayCommand(ExecuteFromThisStep, () => SelectedAction != null && ActiveTestFlow != null);
             AddExistingTestFlowCommand = new RelayCommand(AddExistingTestFlow, () => IsProjectLoaded);
             OpenTestFlowInTabCommand = new RelayCommand<ObservableFlow>(OpenTestFlowInTab);
             CloseTestFlowTabCommand = new RelayCommand<ObservableFlow>(CloseTestFlowTab);
+            MoveSelectedActionUpCommand = new RelayCommand(MoveSelectedActionUp, CanMoveSelectedActionUp);
+            MoveSelectedActionDownCommand = new RelayCommand(MoveSelectedActionDown, CanMoveSelectedActionDown);
 
             // Initialize action categories for toolbox
             InitializeActionCategories();
@@ -394,6 +437,7 @@ namespace FleetAutomate.ViewModel
                 ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)AddExistingTestFlowCommand).NotifyCanExecuteChanged();
+                OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
                 ActiveProject = project == null ? null : new ObservableProject(project);
 
                 SubscribeToProjectRuntimeStateEvents();
@@ -407,6 +451,9 @@ namespace FleetAutomate.ViewModel
             ProjectManager.OnUnsavedChangesChanged += (hasChanges) =>
             {
                 OnPropertyChanged(nameof(HasUnsavedChanges));
+                ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
             };
 
             ProjectManager.OnOperationFailed += (message, exception) =>
@@ -450,6 +497,7 @@ namespace FleetAutomate.ViewModel
             foreach (var flow in ActiveProject.TestFlows)
             {
                 flow.RuntimeStateChanged += ObservableFlow_RuntimeStateChanged;
+                flow.PropertyChanged += ObservableFlow_PropertyChanged;
             }
         }
 
@@ -464,6 +512,7 @@ namespace FleetAutomate.ViewModel
             foreach (var flow in ActiveProject.TestFlows)
             {
                 flow.RuntimeStateChanged -= ObservableFlow_RuntimeStateChanged;
+                flow.PropertyChanged -= ObservableFlow_PropertyChanged;
             }
         }
 
@@ -474,6 +523,7 @@ namespace FleetAutomate.ViewModel
                 foreach (ObservableFlow flow in e.NewItems)
                 {
                     flow.RuntimeStateChanged += ObservableFlow_RuntimeStateChanged;
+                    flow.PropertyChanged += ObservableFlow_PropertyChanged;
                 }
             }
 
@@ -482,15 +532,39 @@ namespace FleetAutomate.ViewModel
                 foreach (ObservableFlow flow in e.OldItems)
                 {
                     flow.RuntimeStateChanged -= ObservableFlow_RuntimeStateChanged;
+                    flow.PropertyChanged -= ObservableFlow_PropertyChanged;
                 }
+            }
+
+            ProjectManager.SaveRuntimeState();
+            OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+            ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+        }
+
+        private void ObservableFlow_RuntimeStateChanged(ObservableFlow flow)
+        {
+            if (ReferenceEquals(flow, ActiveTestFlow))
+            {
+                RefreshCurrentRuntimeVariables();
             }
 
             ProjectManager.SaveRuntimeState();
         }
 
-        private void ObservableFlow_RuntimeStateChanged(ObservableFlow flow)
+        private void ObservableFlow_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            ProjectManager.SaveRuntimeState();
+            if (e.PropertyName == nameof(ObservableFlow.HasUnsavedChanges))
+            {
+                if (sender is ObservableFlow flow && flow.HasUnsavedChanges)
+                {
+                    ProjectManager.MarkAsModified();
+                }
+
+                OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+                ((RelayCommand)SaveProjectAsCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
+                ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+            }
         }
 
         /// <summary>
@@ -971,6 +1045,11 @@ namespace FleetAutomate.ViewModel
         /// <param name="actionTemplate">The action template to create an instance from.</param>
         public void AddActionFromTemplate(ActionTemplate actionTemplate)
         {
+            AddActionFromTemplate(actionTemplate, SelectedAction);
+        }
+
+        public void AddActionFromTemplate(ActionTemplate actionTemplate, IAction? insertionTarget)
+        {
             if (ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No TestFlow Selected", "Please select a TestFlow before adding actions.");
@@ -1040,7 +1119,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.retryTimes, result.Value.retryDelayMilliseconds, result.Value.searchScope, result.Value.addToGlobalDictionary);
+                    action = CreateClickElementAction(result.Value.elementIdentifier, result.Value.identifierType, result.Value.isDoubleClick, result.Value.useInvoke, result.Value.invokeWithoutWaiting, result.Value.retryTimes, result.Value.retryDelayMilliseconds, result.Value.searchScope, result.Value.addToGlobalDictionary);
                 }
                 // Special handling for SetTextAction - prompt user for element and text parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.SetTextAction))
@@ -1106,26 +1185,7 @@ namespace FleetAutomate.ViewModel
 
                 if (action != null)
                 {
-                    // Check if an ActionBlock is selected (pseudo-node for action blocks)
-                    if (SelectedAction is ActionBlock actionBlock)
-                    {
-                        // Add to the managed collection of the action block
-                        actionBlock.ManagedCollection.Add(action);
-                    }
-                    // Check if a composite action is selected
-                    else if (SelectedAction is ICompositeAction compositeAction)
-                    {
-                        // Add to the child actions of the selected composite action
-                        compositeAction.GetChildActions().Add(action);
-                    }
-                    else
-                    {
-                        // Add to the root TestFlow Actions collection
-                        ActiveTestFlow.Actions.Add(action);
-                    }
-
-                    // Select the newly added action
-                    SelectedAction = action;
+                    InsertAction(action, insertionTarget);
                 }
             }
             catch (Exception ex)
@@ -1409,7 +1469,7 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a ClickElementAction with the given parameters.
         /// </summary>
-        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)
+        private IAction? CreateClickElementAction(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, bool invokeWithoutWaiting, int retryTimes, int retryDelayMilliseconds, string? searchScope, bool addToGlobalDictionary)
         {
             try
             {
@@ -1419,11 +1479,12 @@ namespace FleetAutomate.ViewModel
                     IdentifierType = identifierType,
                     IsDoubleClick = isDoubleClick,
                     UseInvoke = useInvoke,
+                    InvokeWithoutWaiting = useInvoke && invokeWithoutWaiting,
                     RetryTimes = retryTimes,
                     RetryDelayMilliseconds = retryDelayMilliseconds,
                     SearchScope = searchScope,
                     AddToGlobalDictionary = addToGlobalDictionary,
-                    Description = $"{FormatElementDescription(elementIdentifier, identifierType)}{(isDoubleClick ? " (double)" : "")}{(useInvoke ? " (invoke)" : "")} (retry:{retryTimes}x)"
+                    Description = BuildClickElementDescription(elementIdentifier, identifierType, isDoubleClick, useInvoke, useInvoke && invokeWithoutWaiting, retryTimes)
                 };
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
@@ -1439,6 +1500,13 @@ namespace FleetAutomate.ViewModel
                 OnShowError?.Invoke("Error", $"Failed to create click element action: {ex.Message}");
                 return null;
             }
+        }
+
+        private string BuildClickElementDescription(string elementIdentifier, string identifierType, bool isDoubleClick, bool useInvoke, bool invokeWithoutWaiting, int retryTimes)
+        {
+            return $"{FormatElementDescription(elementIdentifier, identifierType)}" +
+                   $"{(isDoubleClick ? " (double)" : "")}" +
+                   $"{(useInvoke ? invokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)" : "")} (retry:{retryTimes}x)";
         }
 
         /// <summary>
@@ -1514,6 +1582,57 @@ namespace FleetAutomate.ViewModel
             };
         }
 
+        public void InsertAction(IAction action, IAction? insertionTarget)
+        {
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
+
+            if (ActiveTestFlow == null)
+                throw new InvalidOperationException("No active TestFlow.");
+
+            if (insertionTarget is ActionBlock actionBlock)
+            {
+                actionBlock.ManagedCollection.Add(action);
+                ActiveTestFlow.HasUnsavedChanges = true;
+            }
+            else if (insertionTarget != null && TryGetParentCollection(insertionTarget, out var parentCollection, out var insertionIndex))
+            {
+                InsertIntoCollection(parentCollection, insertionIndex + 1, action);
+            }
+            else
+            {
+                ActiveTestFlow.AddAction(action);
+            }
+
+            SelectedAction = action;
+        }
+
+        public bool RemoveAction(IAction action)
+        {
+            if (ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            var removed = ActiveTestFlow.RemoveAction(action);
+            if (!removed)
+            {
+                removed = RemoveActionFromNested(ActiveTestFlow.Actions, action);
+            }
+
+            if (removed && ReferenceEquals(SelectedAction, action))
+            {
+                SelectedAction = null;
+            }
+
+            if (removed && ActiveTestFlow != null)
+            {
+                ActiveTestFlow.HasUnsavedChanges = true;
+            }
+
+            return removed;
+        }
+
         /// <summary>
         /// Deletes the currently selected action from the selected TestFlow.
         /// </summary>
@@ -1527,14 +1646,7 @@ namespace FleetAutomate.ViewModel
 
             try
             {
-                // Try to remove from root first
-                var removed = ActiveTestFlow.RemoveAction(SelectedAction);
-
-                if (!removed)
-                {
-                    // If not found in root, search in nested collections (composite actions)
-                    removed = RemoveActionFromNested(ActiveTestFlow.Actions, SelectedAction);
-                }
+                var removed = RemoveAction(SelectedAction);
 
                 if (removed)
                 {
@@ -1579,6 +1691,122 @@ namespace FleetAutomate.ViewModel
             }
 
             return false;
+        }
+
+        private bool TryGetParentCollection(IAction targetAction, out ObservableCollection<IAction> parentCollection, out int index)
+        {
+            parentCollection = null!;
+            index = -1;
+
+            if (ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            return TryFindInCollection(ActiveTestFlow.Actions, targetAction, out parentCollection, out index);
+        }
+
+        private bool TryFindInCollection(ObservableCollection<IAction> actions, IAction targetAction, out ObservableCollection<IAction> parentCollection, out int index)
+        {
+            index = actions.IndexOf(targetAction);
+            if (index >= 0)
+            {
+                parentCollection = actions;
+                return true;
+            }
+
+            foreach (var action in actions)
+            {
+                if (action is not ICompositeAction compositeAction)
+                {
+                    continue;
+                }
+
+                if (TryFindInCollection(compositeAction.GetChildActions(), targetAction, out parentCollection, out index))
+                {
+                    return true;
+                }
+            }
+
+            parentCollection = null!;
+            index = -1;
+            return false;
+        }
+
+        private void InsertIntoCollection(ObservableCollection<IAction> collection, int index, IAction action)
+        {
+            index = Math.Max(0, Math.Min(index, collection.Count));
+
+            if (ReferenceEquals(collection, ActiveTestFlow?.Actions))
+            {
+                ActiveTestFlow.InsertAction(index, action);
+            }
+            else
+            {
+                collection.Insert(index, action);
+                ActiveTestFlow!.HasUnsavedChanges = true;
+            }
+        }
+
+        private bool CanMoveSelectedActionUp()
+        {
+            return CanMoveSelectedAction(-1);
+        }
+
+        private bool CanMoveSelectedActionDown()
+        {
+            return CanMoveSelectedAction(1);
+        }
+
+        private bool CanMoveSelectedAction(int offset)
+        {
+            if (SelectedAction == null || SelectedAction is ActionBlock || ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            return TryGetParentCollection(SelectedAction, out var parentCollection, out var index)
+                && index + offset >= 0
+                && index + offset < parentCollection.Count;
+        }
+
+        private void MoveSelectedActionUp()
+        {
+            MoveSelectedAction(-1);
+        }
+
+        private void MoveSelectedActionDown()
+        {
+            MoveSelectedAction(1);
+        }
+
+        private void MoveSelectedAction(int offset)
+        {
+            if (SelectedAction == null || SelectedAction is ActionBlock || ActiveTestFlow == null)
+            {
+                return;
+            }
+
+            if (!TryGetParentCollection(SelectedAction, out var parentCollection, out var index))
+            {
+                return;
+            }
+
+            var newIndex = index + offset;
+            if (newIndex < 0 || newIndex >= parentCollection.Count)
+            {
+                return;
+            }
+
+            if (ReferenceEquals(parentCollection, ActiveTestFlow.Actions))
+            {
+                ActiveTestFlow.MoveAction(index, newIndex);
+            }
+            else
+            {
+                parentCollection.Move(index, newIndex);
+                ActiveTestFlow.HasUnsavedChanges = true;
+            }
         }
 
         /// <summary>
@@ -1659,41 +1887,22 @@ namespace FleetAutomate.ViewModel
 
             try
             {
-                // Set running state
-                IsTestFlowRunning = true;
-                IsTestFlowPaused = false;
-
                 // Sync the observable flow to the model before execution
                 ActiveTestFlow.SyncToModel();
 
-                // Execute the test flow
-                var result = await ActiveTestFlow.Model.ExecuteAsync(CancellationToken.None);
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = false;
 
-                // Update state based on TestFlow state
-                if (ActiveTestFlow.Model.State == ActionState.Paused)
-                {
-                    // TestFlow was paused - keep running flag true, set paused flag true
-                    IsTestFlowPaused = true;
-                    // Don't show error message for pause
-                }
-                else
-                {
-                    // TestFlow completed, failed, or stopped - reset both flags
-                    IsTestFlowRunning = false;
-                    IsTestFlowPaused = false;
-
-                    if (!result)
-                    {
-                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
-                    }
-                    // Success - no message shown
-                }
+                var result = await ActiveTestFlow.StartAsync(CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
             }
             catch (Exception ex)
             {
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
-                OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Execution Error", PrependActionSummaryToError(
+                    $"An error occurred while executing the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1709,13 +1918,18 @@ namespace FleetAutomate.ViewModel
 
             try
             {
-                // Request cancellation to pause
-                ActiveTestFlow.Model.Cancel();
-                IsTestFlowPaused = true;
+                ActiveTestFlow.Pause();
+                RefreshCurrentRuntimeVariables();
+
+                // A pause request may only take effect after the current atomic action finishes.
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = ActiveTestFlow.State == ActionState.Paused;
             }
             catch (Exception ex)
             {
-                OnShowError?.Invoke("Pause Error", $"An error occurred while pausing the TestFlow: {ex.Message}");
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Pause Error", PrependActionSummaryToError(
+                    $"An error occurred while pausing the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1731,40 +1945,44 @@ namespace FleetAutomate.ViewModel
 
             try
             {
-                // Reset paused state and continue execution
+                IsTestFlowRunning = true;
                 IsTestFlowPaused = false;
 
-                // DON'T sync to model here - we want to preserve the paused state and CurrentAction
-                // Syncing would reset the state from Paused to Ready and lose our position
-
-                // Execute the test flow from where it was paused
-                var result = await ActiveTestFlow.Model.ExecuteAsync(CancellationToken.None);
-
-                // Update state based on TestFlow state
-                if (ActiveTestFlow.Model.State == ActionState.Paused)
-                {
-                    // TestFlow was paused again - keep running flag true, set paused flag true
-                    IsTestFlowPaused = true;
-                    // Don't show error message for pause
-                }
-                else
-                {
-                    // TestFlow completed, failed, or stopped - reset both flags
-                    IsTestFlowRunning = false;
-                    IsTestFlowPaused = false;
-
-                    if (!result)
-                    {
-                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
-                    }
-                    // Success - no message shown
-                }
+                var result = await ActiveTestFlow.ContinueAsync(CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
             }
             catch (Exception ex)
             {
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
-                OnShowError?.Invoke("Continue Error", $"An error occurred while continuing the TestFlow: {ex.Message}");
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Continue Error", PrependActionSummaryToError(
+                    $"An error occurred while continuing the TestFlow: {ex.Message}"));
+            }
+        }
+
+        private async void SkipFailedActionAndContinue()
+        {
+            if (ActiveTestFlow == null || !CanSkipFailedAction)
+            {
+                return;
+            }
+
+            try
+            {
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = false;
+
+                var result = await ActiveTestFlow.SkipFailedActionAndContinueAsync(CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed after skipping the current failed action.");
+            }
+            catch (Exception ex)
+            {
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Skip Failed Action Error", PrependActionSummaryToError(
+                    $"An error occurred while skipping the failed action: {ex.Message}"));
             }
         }
 
@@ -1780,18 +1998,14 @@ namespace FleetAutomate.ViewModel
 
             try
             {
-                // Request cancellation to stop
-                ActiveTestFlow.Model.Cancel();
-
-                // Reset the TestFlow state to Ready so it doesn't try to resume
-                ActiveTestFlow.Model.State = ActionState.Ready;
-
-                IsTestFlowRunning = false;
-                IsTestFlowPaused = false;
+                ActiveTestFlow.Stop();
+                ApplyExecutionStateAfterRun(true, string.Empty, string.Empty);
             }
             catch (Exception ex)
             {
-                OnShowError?.Invoke("Stop Error", $"An error occurred while stopping the TestFlow: {ex.Message}");
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Stop Error", PrependActionSummaryToError(
+                    $"An error occurred while stopping the TestFlow: {ex.Message}"));
             }
         }
 
@@ -1800,38 +2014,31 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private async void ExecuteStep()
         {
-            if (SelectedAction == null)
+            if (SelectedAction == null || ActiveTestFlow == null)
             {
                 OnShowError?.Invoke("No Action Selected", "Please select an action to execute.");
                 return;
             }
 
+            var selectedAction = SelectedAction;
+
             try
             {
-                // For ILogicAction, ensure it has an environment
-                if (SelectedAction is ILogicAction logicAction && ActiveTestFlow != null)
-                {
-                    logicAction.Environment = ActiveTestFlow.Model.Environment;
-                }
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = false;
 
-                // Keep single-step execution consistent with full flow execution.
-                if (SelectedAction is Model.Actions.UIAutomation.IUIElementAction uiElementAction && ActiveTestFlow != null)
-                {
-                    uiElementAction.ElementDictionary = ActiveTestFlow.Model.GlobalElementDictionary;
-                }
-
-                // Execute the action
-                var result = await SelectedAction.ExecuteAsync(CancellationToken.None);
-
-                if (!result)
-                {
-                    OnShowError?.Invoke("Step Execution Failed", $"Action '{SelectedAction.Name}' execution failed or was cancelled.");
-                }
-                // Success - no message shown, but state should be visible in the tree
+                ActiveTestFlow.SyncToModel();
+                var result = await ActiveTestFlow.StepActionAsync(selectedAction, CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Step Execution Failed", $"Action '{selectedAction.Name}' execution failed or was cancelled.");
             }
             catch (Exception ex)
             {
-                OnShowError?.Invoke("Step Execution Error", $"An error occurred while executing the action: {ex.Message}");
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Step Execution Error", PrependActionSummaryToError(
+                    $"An error occurred while executing the action: {ex.Message}",
+                    selectedAction));
             }
         }
 
@@ -1852,44 +2059,88 @@ namespace FleetAutomate.ViewModel
                 return;
             }
 
+            var selectedAction = SelectedAction;
+
             try
             {
-                // Set running state
+                ActiveTestFlow.SyncToModel();
                 IsTestFlowRunning = true;
                 IsTestFlowPaused = false;
 
-                // Sync the observable flow to the model before execution
-                ActiveTestFlow.SyncToModel();
-
-                // Execute the test flow starting from the selected action
-                var result = await ActiveTestFlow.Model.ExecuteFromAction(SelectedAction, CancellationToken.None);
-
-                // Update state based on TestFlow state
-                if (ActiveTestFlow.Model.State == ActionState.Paused)
-                {
-                    // TestFlow was paused - keep running flag true, set paused flag true
-                    IsTestFlowPaused = true;
-                    // Don't show error message for pause
-                }
-                else
-                {
-                    // TestFlow completed, failed, or stopped - reset both flags
-                    IsTestFlowRunning = false;
-                    IsTestFlowPaused = false;
-
-                    if (!result)
-                    {
-                        OnShowError?.Invoke("Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
-                    }
-                    // Success - no message shown
-                }
+                var result = await ActiveTestFlow.StartFromActionAsync(selectedAction, CancellationToken.None);
+                ApplyExecutionStateAfterRun(result, "Execution Failed", $"TestFlow '{ActiveTestFlow.Name}' execution failed or was cancelled.");
             }
             catch (Exception ex)
             {
                 IsTestFlowRunning = false;
                 IsTestFlowPaused = false;
-                OnShowError?.Invoke("Execution Error", $"An error occurred while executing the TestFlow: {ex.Message}");
+                RefreshCurrentRuntimeVariables();
+                OnShowError?.Invoke("Execution Error", PrependActionSummaryToError(
+                    $"An error occurred while executing the TestFlow: {ex.Message}",
+                    selectedAction));
             }
+        }
+
+        [ObservableProperty]
+        private IReadOnlyDictionary<string, object?> _currentRuntimeVariables = new Dictionary<string, object?>();
+
+        private void ApplyExecutionStateAfterRun(bool result, string errorTitle, string errorMessage)
+        {
+            if (ActiveTestFlow == null)
+            {
+                IsTestFlowRunning = false;
+                IsTestFlowPaused = false;
+                CurrentRuntimeVariables = new Dictionary<string, object?>();
+                return;
+            }
+
+            RefreshCurrentRuntimeVariables();
+
+            if (ActiveTestFlow.State == ActionState.Paused)
+            {
+                IsTestFlowRunning = true;
+                IsTestFlowPaused = true;
+                return;
+            }
+
+            IsTestFlowRunning = false;
+            IsTestFlowPaused = false;
+
+            if (!result)
+            {
+                OnShowError?.Invoke(errorTitle, errorMessage);
+            }
+        }
+
+        private void RefreshCurrentRuntimeVariables()
+        {
+            CurrentRuntimeVariables = ActiveTestFlow?.RuntimeVariables
+                ?? new Dictionary<string, object?>();
+            OnPropertyChanged(nameof(CurrentBreakReasonText));
+            OnPropertyChanged(nameof(CurrentActionSummary));
+            OnPropertyChanged(nameof(LastFailedActionSummary));
+            OnPropertyChanged(nameof(CanSkipFailedAction));
+            ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
+        }
+
+        private string PrependActionSummaryToError(string message, IAction? fallbackAction = null)
+        {
+            var action = ActiveTestFlow?.LastFailedAction
+                ?? ActiveTestFlow?.CurrentAction
+                ?? fallbackAction;
+
+            if (action == null)
+            {
+                return message;
+            }
+
+            var summary = action.Name;
+            if (string.IsNullOrWhiteSpace(summary))
+            {
+                summary = action.GetType().Name;
+            }
+
+            return $"Action: {summary}{System.Environment.NewLine}{System.Environment.NewLine}{message}";
         }
 
         /// <summary>
@@ -1901,6 +2152,15 @@ namespace FleetAutomate.ViewModel
             if (e.PropertyName == nameof(ObservableFlow.HasUnsavedChanges))
             {
                 ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+            }
+
+            if (e.PropertyName == nameof(ObservableFlow.RuntimeVariables) ||
+                e.PropertyName == nameof(ObservableFlow.CurrentAction) ||
+                e.PropertyName == nameof(ObservableFlow.State) ||
+                e.PropertyName == nameof(ObservableFlow.BreakReason) ||
+                e.PropertyName == nameof(ObservableFlow.LastFailedAction))
+            {
+                RefreshCurrentRuntimeVariables();
             }
         }
     }

@@ -21,6 +21,8 @@ namespace FleetAutomate.Model.Actions.Logic
     [KnownType(typeof(UIAutomation.WaitForElementAction))]
     [KnownType(typeof(UIAutomation.ClickElementAction))]
     [KnownType(typeof(Expression.UIElementExistsExpression))]
+    [KnownType(typeof(Expression.EqualExpression))]
+    [KnownType(typeof(Expression.NotEqualExpression))]
     [KnownType(typeof(Expression.GreaterThanExpression))]
     [KnownType(typeof(Expression.GreaterThanOrEqualExpression))]
     [KnownType(typeof(Expression.SmallerThanExpression))]
@@ -286,7 +288,7 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public void Cancel()
         {
-            throw new NotImplementedException();
+            // Composite cancellation is coordinated by child actions via the shared flow token.
         }
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)

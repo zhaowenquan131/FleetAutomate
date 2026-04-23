@@ -8,3 +8,10 @@ CLAUDE.md
 .claude/settings.local.json
 src/FleetAutomate.Application/logs
 AGENTS.md
+src/FleetAutomate.Cli/obj
+src/FleetAutomate.Cli/bin
+src/FleetAutomate.Tests/bin
+src/FleetAutomate.Tests/obj
+src/FleetAutomate.Tests/TestResults
+src/.dotnet-cli
+src/.dotnet-home
