@@ -13,3 +13,5 @@ src/FleetAutomate.Cli/bin
 src/FleetAutomate.Tests/bin
 src/FleetAutomate.Tests/obj
 src/FleetAutomate.Tests/TestResults
+src/.dotnet-cli
+src/.dotnet-home

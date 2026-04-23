@@ -60,5 +60,10 @@ internal sealed class CliArgumentParser
     {
         return GetOption(name) ?? throw new CliUsageException($"Missing required option '--{name}'.");
     }
+
+    public IReadOnlyDictionary<string, string?> GetAllOptions()
+    {
+        return new Dictionary<string, string?>(_options, StringComparer.OrdinalIgnoreCase);
+    }
 }
 

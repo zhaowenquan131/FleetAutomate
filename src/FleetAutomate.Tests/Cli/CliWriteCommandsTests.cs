@@ -4,6 +4,7 @@ using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.UIAutomation;
 using FleetAutomate.Model.Project;
 using FleetAutomate.Utilities;
+using System.Text.Json;
 
 namespace FleetAutomate.Tests.Cli;
 
@@ -204,6 +205,28 @@ public sealed class CliWriteCommandsTests : IDisposable
         Assert.True(wait.AddToGlobalDictionary);
     }
 
+    [Fact]
+    public async Task RunAsync_ProjectSave_SucceedsInOfflineModeAndWritesModeField()
+    {
+        CreateProject();
+
+        var (exitCode, stdout, stderr) = await RunProgramAsync(
+            "project",
+            "save",
+            "--project",
+            _projectPath,
+            "--format",
+            "json");
+
+        Assert.Equal(0, exitCode);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+
+        using var json = JsonDocument.Parse(stdout);
+        Assert.True(json.RootElement.GetProperty("ok").GetBoolean());
+        Assert.Equal("offline", json.RootElement.GetProperty("mode").GetString());
+        Assert.Equal(Path.GetFullPath(_projectPath), json.RootElement.GetProperty("payload").GetProperty("projectPath").GetString());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))
@@ -228,5 +251,27 @@ public sealed class CliWriteCommandsTests : IDisposable
         };
 
         project.SaveProjectAndTestFlows(_projectPath);
+    }
+
+    private static async Task<(int ExitCode, string StdOut, string StdErr)> RunProgramAsync(params string[] args)
+    {
+        var originalOut = Console.Out;
+        var originalError = Console.Error;
+        await using var stdout = new StringWriter();
+        await using var stderr = new StringWriter();
+
+        Console.SetOut(stdout);
+        Console.SetError(stderr);
+
+        try
+        {
+            var exitCode = await CliProgram.RunAsync(args);
+            return (exitCode, stdout.ToString(), stderr.ToString());
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+            Console.SetError(originalError);
+        }
     }
 }

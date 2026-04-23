@@ -52,6 +52,15 @@ namespace FleetAutomate
 
             // Set up AvalonDock document management
             Loaded += (s, e) => SetupDocumentManagement();
+            Loaded += OnMainWindowLoaded;
+        }
+
+        private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
+        {
+            if (System.Windows.Application.Current is FleetAutomate.App app)
+            {
+                app.EnsureUiSessionHost(this);
+            }
         }
 
         private void SetupUIEventHandlers()

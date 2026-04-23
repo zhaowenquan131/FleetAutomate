@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using FleetAutomate.Application.Commanding;
 
 namespace FleetAutomate.Cli.Output;
 
@@ -12,7 +13,7 @@ internal enum OutputFormat
 internal sealed class CliOutputWriter
 {
     private readonly OutputFormat _format;
-    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     public CliOutputWriter(OutputFormat format)
     {
@@ -30,6 +31,43 @@ internal sealed class CliOutputWriter
         foreach (var property in value.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
         {
             Console.WriteLine($"{property.Name}: {property.GetValue(value)}");
+        }
+    }
+
+    public void WriteCommandResult(CommandResult result)
+    {
+        if (_format == OutputFormat.Json)
+        {
+            Console.WriteLine(JsonSerializer.Serialize(new
+            {
+                ok = result.Ok,
+                mode = result.Mode == CommandExecutionMode.UiSession ? "ui-session" : "offline",
+                sessionId = result.SessionId,
+                payload = result.Payload,
+                error = result.Error == null ? null : new
+                {
+                    code = result.Error.Code,
+                    message = result.Error.Message
+                }
+            }, JsonOptions));
+            return;
+        }
+
+        Console.WriteLine($"ok: {result.Ok}");
+        Console.WriteLine($"mode: {(result.Mode == CommandExecutionMode.UiSession ? "ui-session" : "offline")}");
+        if (!string.IsNullOrWhiteSpace(result.SessionId))
+        {
+            Console.WriteLine($"sessionId: {result.SessionId}");
+        }
+
+        if (result.Payload != null)
+        {
+            WriteObject(result.Payload);
+        }
+
+        if (result.Error != null)
+        {
+            Console.Error.WriteLine($"{result.Error.Code}: {result.Error.Message}");
         }
     }
 
@@ -73,7 +111,7 @@ internal sealed class CliOutputWriter
     {
         if (_format == OutputFormat.Json)
         {
-            Console.WriteLine(JsonSerializer.Serialize(new { ok = false, errorCode = code, message }, JsonOptions));
+            Console.WriteLine(JsonSerializer.Serialize(new { ok = false, error = new { code, message } }, JsonOptions));
         }
         else
         {

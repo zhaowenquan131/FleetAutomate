@@ -1,4 +1,5 @@
 using FleetAutomate.Cli.Output;
+using FleetAutomate.Application.Commanding;
 
 namespace FleetAutomate.Cli.Infrastructure;
 
@@ -24,9 +25,14 @@ internal static class CliProgram
             var projectPath = parser.GetRequiredOption("project");
             var resource = parser.Positionals[0].ToLowerInvariant();
             var verb = parser.Positionals[1].ToLowerInvariant();
-
-            var dispatcher = new CliCommandDispatcher(writer);
-            return await dispatcher.DispatchAsync(resource, verb, projectPath, parser);
+            var command = CliCommandDispatcher.BuildEnvelope(resource, verb, projectPath, parser);
+            var router = new CliCommandRouter(
+                new NamedPipeUiSessionClient(),
+                new FileSystemUiSessionDiscovery(),
+                new OfflineCliCommandExecutor());
+            var result = await router.RouteAsync(command);
+            writer.WriteCommandResult(result);
+            return result.Ok ? 0 : 1;
         }
         catch (CliUsageException ex)
         {
