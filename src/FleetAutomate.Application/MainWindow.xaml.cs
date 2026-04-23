@@ -604,13 +604,13 @@ namespace FleetAutomate
                 : DropPlacement.After;
         }
 
-        private static ViewModel.ActionInsertionMode GetInsertionMode(DropPlacement placement)
+        private static FleetAutomate.ViewModel.ActionInsertionMode GetInsertionMode(DropPlacement placement)
         {
             return placement switch
             {
-                DropPlacement.Before => ViewModel.ActionInsertionMode.Before,
-                DropPlacement.Into => ViewModel.ActionInsertionMode.Into,
-                _ => ViewModel.ActionInsertionMode.After
+                DropPlacement.Before => FleetAutomate.ViewModel.ActionInsertionMode.Before,
+                DropPlacement.Into => FleetAutomate.ViewModel.ActionInsertionMode.Into,
+                _ => FleetAutomate.ViewModel.ActionInsertionMode.After
             };
         }
 
@@ -685,7 +685,7 @@ namespace FleetAutomate
             return false;
         }
 
-        private void MoveDraggedAction(ObservableFlow flow, Model.IAction draggedAction, Model.IAction? dropTarget, ViewModel.ActionInsertionMode insertionMode)
+        private void MoveDraggedAction(ObservableFlow flow, Model.IAction draggedAction, Model.IAction? dropTarget, FleetAutomate.ViewModel.ActionInsertionMode insertionMode)
         {
             if (ViewModel.ActiveTestFlow != flow)
             {
