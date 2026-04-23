@@ -96,6 +96,57 @@ dotnet run --project src/FleetAutomate.Application/FleetAutomate.csproj
    - Click "Run" or press `F5`
    - Watch the execution in real-time
 
+## CLI Usage (fleetctl / FleetAutomate.Cli.exe)
+
+FleetAutomate includes a CLI executable (`FleetAutomate.Cli.exe`). In docs and examples this command is shown as `fleetctl`; use either based on your local setup.
+
+### Build and run the CLI
+
+```bash
+dotnet build src/FleetAutomate.Cli/FleetAutomate.Cli.csproj
+dotnet run --project src/FleetAutomate.Cli/FleetAutomate.Cli.csproj -- --help
+```
+
+### Command format
+
+```bash
+fleetctl <resource> <verb> --project <path> [options]
+```
+
+Examples:
+
+```bash
+fleetctl testproj show --project D:\demo\sample.testproj --format json
+fleetctl testflow create --project D:\demo\sample.testproj --name calculator_flow --format json
+fleetctl action add --project D:\demo\sample.testproj --flow calculator_flow --type LaunchApplicationAction --format json
+fleetctl action set --project D:\demo\sample.testproj --flow calculator_flow --path 0 --property ExecutablePath --value calc.exe --format json
+fleetctl project save --project D:\demo\sample.testproj --format json
+```
+
+> If you do not have a `fleetctl` alias installed, run the built executable directly (for example `.\FleetAutomate.Cli.exe ...`) with the same arguments.
+
+### How UI-session mode works
+
+- Start `FleetAutomate.Application` and open your `.testproj`.
+- Run CLI commands with the same `--project` path.
+- If the CLI can reach a live UI session, response `mode` will be `ui-session`; otherwise it falls back to `offline`.
+- Write commands can return `BUSY` when a test flow is currently running in the UI.
+
+### Check which project is currently open in the UI process
+
+With the project path:
+
+```bash
+fleetctl testproj show --project D:\demo\sample.testproj --format json
+```
+
+Read `projectPath` in the result payload.
+
+Without a known project path:
+
+- Inspect `%LocalAppData%\FleetAutomate\Sessions\*.json`
+- Each session metadata file includes the active `ProjectPath` and `LastActiveUtc`
+
 ## Project Structure
 
 ```
