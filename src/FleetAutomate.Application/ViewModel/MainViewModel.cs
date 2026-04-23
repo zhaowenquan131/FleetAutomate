@@ -26,6 +26,13 @@ using System.Windows.Input;
 
 namespace FleetAutomate.ViewModel
 {
+    public enum ActionInsertionMode
+    {
+        After,
+        Before,
+        Into
+    }
+
     public partial class MainViewModel : ObservableObject
     {
         private TestProjectManager _projectManager;
@@ -1048,7 +1055,7 @@ namespace FleetAutomate.ViewModel
             AddActionFromTemplate(actionTemplate, SelectedAction);
         }
 
-        public void AddActionFromTemplate(ActionTemplate actionTemplate, IAction? insertionTarget)
+        public void AddActionFromTemplate(ActionTemplate actionTemplate, IAction? insertionTarget, ActionInsertionMode insertionMode = ActionInsertionMode.After)
         {
             if (ActiveTestFlow == null)
             {
@@ -1185,7 +1192,7 @@ namespace FleetAutomate.ViewModel
 
                 if (action != null)
                 {
-                    InsertAction(action, insertionTarget);
+                    InsertAction(action, insertionTarget, insertionMode);
                 }
             }
             catch (Exception ex)
@@ -1582,7 +1589,7 @@ namespace FleetAutomate.ViewModel
             };
         }
 
-        public void InsertAction(IAction action, IAction? insertionTarget)
+        public void InsertAction(IAction action, IAction? insertionTarget, ActionInsertionMode insertionMode = ActionInsertionMode.After)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -1590,10 +1597,35 @@ namespace FleetAutomate.ViewModel
             if (ActiveTestFlow == null)
                 throw new InvalidOperationException("No active TestFlow.");
 
-            if (insertionTarget is ActionBlock actionBlock)
+            if (insertionMode == ActionInsertionMode.Into)
+            {
+                if (insertionTarget is ActionBlock actionBlock)
+                {
+                    actionBlock.ManagedCollection.Add(action);
+                    ActiveTestFlow.HasUnsavedChanges = true;
+                }
+                else if (insertionTarget is ICompositeAction compositeAction)
+                {
+                    compositeAction.GetChildActions().Add(action);
+                    ActiveTestFlow.HasUnsavedChanges = true;
+                }
+                else if (insertionTarget != null && TryGetParentCollection(insertionTarget, out var parentCollection, out var insertionIndex))
+                {
+                    InsertIntoCollection(parentCollection, insertionIndex + 1, action);
+                }
+                else
+                {
+                    ActiveTestFlow.AddAction(action);
+                }
+            }
+            else if (insertionTarget is ActionBlock actionBlock)
             {
                 actionBlock.ManagedCollection.Add(action);
                 ActiveTestFlow.HasUnsavedChanges = true;
+            }
+            else if (insertionMode == ActionInsertionMode.Before && insertionTarget != null && TryGetParentCollection(insertionTarget, out var beforeCollection, out var beforeIndex))
+            {
+                InsertIntoCollection(beforeCollection, beforeIndex, action);
             }
             else if (insertionTarget != null && TryGetParentCollection(insertionTarget, out var parentCollection, out var insertionIndex))
             {
