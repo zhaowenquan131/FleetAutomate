@@ -25,7 +25,7 @@
         <d3p1:Actions z:Id="15" z:Size="0" />
         <d3p1:Variables z:Id="16" z:Size="0" />
       </d3p1:Environment>
-      <d3p1:IfBlockArray z:Id="17" z:Size="5">
+      <d3p1:IfBlockArray z:Id="17" z:Size="6">
         <d2p1:anyType z:Id="18" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
           <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
           <d5p1:_description z:Id="19">AutomationId: num1Button (invoke no-wait) (retry:3x)</d5p1:_description>
@@ -54,16 +54,16 @@
         </d2p1:anyType>
         <d2p1:anyType z:Id="26" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
           <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="27">AutomationId: num2Button (invoke no-wait) (retry:3x)</d5p1:_description>
+          <d5p1:_description z:Id="27">AutomationId: num2Button (retry:3x)</d5p1:_description>
           <d5p1:_elementIdentifier z:Id="28">num2Button</d5p1:_elementIdentifier>
           <d5p1:_globalDictionaryKey i:nil="true" />
           <d5p1:_identifierType z:Id="29">AutomationId</d5p1:_identifierType>
-          <d5p1:_invokeWithoutWaiting>true</d5p1:_invokeWithoutWaiting>
+          <d5p1:_invokeWithoutWaiting>false</d5p1:_invokeWithoutWaiting>
           <d5p1:_isDoubleClick>false</d5p1:_isDoubleClick>
           <d5p1:_retryDelayMilliseconds>500</d5p1:_retryDelayMilliseconds>
           <d5p1:_retryTimes>3</d5p1:_retryTimes>
           <d5p1:_searchScope i:nil="true" />
-          <d5p1:_useInvoke>true</d5p1:_useInvoke>
+          <d5p1:_useInvoke>false</d5p1:_useInvoke>
         </d2p1:anyType>
         <d2p1:anyType z:Id="30" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
           <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
@@ -78,12 +78,16 @@
           <d5p1:_searchScope i:nil="true" />
           <d5p1:_useInvoke>true</d5p1:_useInvoke>
         </d2p1:anyType>
-        <d2p1:anyType z:Id="34" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:WaitForElementAction">
+        <d2p1:anyType z:Id="34" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.System" i:type="d5p1:WaitDurationAction">
+          <d5p1:Duration>20</d5p1:Duration>
+          <d5p1:Unit>Seconds</d5p1:Unit>
+        </d2p1:anyType>
+        <d2p1:anyType z:Id="35" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:WaitForElementAction">
           <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="35">Wait for result text to show 3</d5p1:_description>
-          <d5p1:_elementIdentifier z:Id="36">显示为 3</d5p1:_elementIdentifier>
+          <d5p1:_description z:Id="36">Wait for result text to show 3</d5p1:_description>
+          <d5p1:_elementIdentifier z:Id="37">显示为 3</d5p1:_elementIdentifier>
           <d5p1:_globalDictionaryKey i:nil="true" />
-          <d5p1:_identifierType z:Id="37">Name</d5p1:_identifierType>
+          <d5p1:_identifierType z:Id="38">Name</d5p1:_identifierType>
           <d5p1:_pollingIntervalMilliseconds>100</d5p1:_pollingIntervalMilliseconds>
           <d5p1:_searchScope i:nil="true" />
           <d5p1:_timeoutMilliseconds>5000</d5p1:_timeoutMilliseconds>
@@ -92,11 +96,11 @@
       <d3p1:IsEnabled>true</d3p1:IsEnabled>
     </d2p1:anyType>
   </ActionsArray>
-  <Description z:Id="38">Launch Calculator, click 1 + 2 =, then verify the result contains 3.</Description>
+  <Description z:Id="39">Launch Calculator, click 1 + 2 =, then verify the result contains 3.</Description>
   <Environment xmlns:d2p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.Logic" z:Ref="14" i:nil="true" />
-  <GlobalElementDictionary z:Id="39">
-    <RegisteredKeys xmlns:d3p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="40" z:Size="0" />
+  <GlobalElementDictionary z:Id="40">
+    <RegisteredKeys xmlns:d3p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="41" z:Size="0" />
   </GlobalElementDictionary>
   <IsEnabled>true</IsEnabled>
-  <Name z:Id="41">calculator_add_1_plus_2</Name>
+  <Name z:Id="42">calculator_add_1_plus_2</Name>
 </TestFlow>
