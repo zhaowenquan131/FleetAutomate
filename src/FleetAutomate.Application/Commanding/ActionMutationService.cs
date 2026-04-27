@@ -15,6 +15,8 @@ public class ActionMutationService
     private static readonly Dictionary<string, Func<IAction>> ActionFactories = new(StringComparer.OrdinalIgnoreCase)
     {
         ["LaunchApplicationAction"] = () => new LaunchApplicationAction(),
+        ["WaitDurationAction"] = () => new WaitDurationAction(),
+        ["WaitAction"] = () => new WaitDurationAction(),
         ["WaitForElementAction"] = () => new WaitForElementAction(),
         ["ClickElementAction"] = () => new ClickElementAction(),
         ["SetTextAction"] = () => new SetTextAction(),
@@ -163,6 +165,11 @@ public class ActionMutationService
             : $"{target.ParentPath}.{target.ContainerName}";
 
         return $"{prefix}.{insertIndex.ToString(CultureInfo.InvariantCulture)}";
+    }
+
+    public object? ConvertPropertyValue(string rawValue, Type propertyType)
+    {
+        return ConvertValue(rawValue, propertyType);
     }
 
     private static object? ConvertValue(string rawValue, Type propertyType)

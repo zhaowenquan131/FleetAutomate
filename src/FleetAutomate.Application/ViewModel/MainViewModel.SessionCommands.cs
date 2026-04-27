@@ -30,6 +30,7 @@ public partial class MainViewModel
                 return false;
             }
 
+            MarkAllFlowUndoCheckpoints();
             NotifySessionUiStateChanged();
             return true;
         }

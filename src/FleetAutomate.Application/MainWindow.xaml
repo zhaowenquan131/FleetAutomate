@@ -17,6 +17,10 @@
     <ui:FluentWindow.DataContext>
         <vm:MainViewModel/>
     </ui:FluentWindow.DataContext>
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoTestFlowCommand}"/>
+        <KeyBinding Key="Y" Modifiers="Control" Command="{Binding RedoTestFlowCommand}"/>
+    </ui:FluentWindow.InputBindings>
     <ui:FluentWindow.Resources>
         <converters:ProjectToTitleConverter x:Key="ProjectToTitleConverter"/>
         <converters:ProjectToStatusConverter x:Key="ProjectToStatusConverter"/>
@@ -27,6 +31,7 @@
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
         <converters:ActionTypeToSymbolConverter x:Key="ActionTypeToSymbolConverter"/>
         <converters:ActionTypeToIconVisibilityConverter x:Key="ActionTypeToIconVisibilityConverter"/>
+        <converters:ActionToChildActionsConverter x:Key="ActionToChildActionsConverter"/>
         <converters:ActionToFormattedNameConverter x:Key="ActionToFormattedNameConverter"/>
 
         <!-- Easing function for smooth pulsing animation -->
@@ -76,6 +81,12 @@
             <ui:MenuItem Header="Save" Icon="{ui:SymbolIcon Save20}"
                         Command="{Binding SaveProjectCommand}"
                         ToolTip="Save Project (Ctrl+S)"/>
+            <ui:MenuItem Header="Undo" Icon="{ui:SymbolIcon ArrowUndo20}"
+                        Command="{Binding UndoTestFlowCommand}"
+                        ToolTip="Undo TestFlow edit (Ctrl+Z)"/>
+            <ui:MenuItem Header="Redo" Icon="{ui:SymbolIcon ArrowRedo20}"
+                        Command="{Binding RedoTestFlowCommand}"
+                        ToolTip="Redo TestFlow edit (Ctrl+Y)"/>
             <!-- Execute button - visible when not running -->
             <ui:MenuItem Header="Execute" Icon="{ui:SymbolIcon Play20}"
                         Command="{Binding RunTestFlowCommand}"
@@ -154,8 +165,8 @@
                 </ui:MenuItem.Style>
             </ui:MenuItem>
             <ui:MenuItem Header="Edit" Icon="{ui:SymbolIcon DocumentEdit20}">
-                <MenuItem Header="Undo" InputGestureText="Ctrl+Z" IsEnabled="False"/>
-                <MenuItem Header="Redo" InputGestureText="Ctrl+Y" IsEnabled="False"/>
+                <MenuItem Header="Undo" Command="{Binding UndoTestFlowCommand}" InputGestureText="Ctrl+Z"/>
+                <MenuItem Header="Redo" Command="{Binding RedoTestFlowCommand}" InputGestureText="Ctrl+Y"/>
                 <Separator />
                 <MenuItem Header="Cut" InputGestureText="Ctrl+X" IsEnabled="False"/>
                 <MenuItem Header="Copy" InputGestureText="Ctrl+C" IsEnabled="False"/>

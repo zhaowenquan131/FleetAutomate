@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 using FleetAutomate.Model;
 using FleetAutomate.Model.Flow;
+using FleetAutomate.UndoRedo;
 
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -42,6 +43,7 @@ namespace FleetAutomate.ViewModel
             _instanceId = ++_instanceCounter;
             Debug.WriteLine($"[ELSE_BLOCK] ***** ObservableFlow CONSTRUCTOR: instanceId={_instanceId} *****");
             Actions = [];
+            UndoRedoService = new FlowUndoRedoService(this);
 
             // Subscribe to Actions collection changes BEFORE RefreshFromModel
             // so we catch all the IfAction subscriptions during initial load
@@ -81,6 +83,20 @@ namespace FleetAutomate.ViewModel
         private IReadOnlyDictionary<string, object?> _runtimeVariables = new Dictionary<string, object?>();
 
         public ObservableCollection<IAction> Actions { get; }
+
+        public FlowUndoRedoService UndoRedoService { get; }
+
+        [ObservableProperty]
+        private bool _canUndo;
+
+        [ObservableProperty]
+        private bool _canRedo;
+
+        [ObservableProperty]
+        private string _undoDisplayName = string.Empty;
+
+        [ObservableProperty]
+        private string _redoDisplayName = string.Empty;
 
         /// <summary>
         /// Gets the underlying model for serialization and business logic.
@@ -666,12 +682,12 @@ namespace FleetAutomate.ViewModel
             _isRefreshingFromModel = false;
             // Reset HasUnsavedChanges after refresh since we just loaded from model
             HasUnsavedChanges = false;
+            UndoRedoService.Clear();
         }
 
         /// <summary>
         /// Synchronizes changes back to the model.
         /// Filters out Else Block pseudo-nodes so only real actions are saved.
-        /// Resets the HasUnsavedChanges flag after syncing.
         /// </summary>
         public void SyncToModel()
         {
@@ -691,9 +707,49 @@ namespace FleetAutomate.ViewModel
                     _model.Actions.Add(action);
                 }
             }
+        }
 
-            // Reset unsaved changes flag after syncing to model
-            HasUnsavedChanges = false;
+        public void SyncStructureToModelPreservingDirty()
+        {
+            _model.CurrentAction = CurrentAction;
+            _model.Name = Name;
+            _model.Description = Description;
+            _model.FileName = FileName;
+            _model.State = State;
+            _model.IsEnabled = IsEnabled;
+
+            _model.Actions.Clear();
+            foreach (var action in Actions)
+            {
+                if (action is not ActionBlock)
+                {
+                    _model.Actions.Add(action);
+                }
+            }
+        }
+
+        public void Undo()
+        {
+            UndoRedoService.Undo();
+        }
+
+        public void Redo()
+        {
+            UndoRedoService.Redo();
+        }
+
+        public void MarkSavedCheckpoint()
+        {
+            UndoRedoService.MarkSavedCheckpoint();
+        }
+
+        public void RefreshUndoRedoState()
+        {
+            CanUndo = UndoRedoService.CanUndo;
+            CanRedo = UndoRedoService.CanRedo;
+            UndoDisplayName = UndoRedoService.UndoDisplayName;
+            RedoDisplayName = UndoRedoService.RedoDisplayName;
+            HasUnsavedChanges = !UndoRedoService.IsAtSavedCheckpoint;
         }
 
         /// <summary>

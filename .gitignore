@@ -15,3 +15,5 @@ src/FleetAutomate.Tests/obj
 src/FleetAutomate.Tests/TestResults
 src/.dotnet-cli
 src/.dotnet-home
+src/.dotnet
+src/SampleProjects/WindowsCalculatorCli/.fleet

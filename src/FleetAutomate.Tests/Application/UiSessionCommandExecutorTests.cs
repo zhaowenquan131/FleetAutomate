@@ -41,6 +41,42 @@ public sealed class UiSessionCommandExecutorTests : IDisposable
     }
 
     [Fact]
+    public async Task ExecuteAsync_ActionAdd_RecordsUndoInUiSession()
+    {
+        var viewModel = CreateLoadedViewModel();
+        var executor = new UiSessionCommandExecutor(viewModel, "session-test");
+
+        await executor.ExecuteAsync(new CommandEnvelope(
+            Command: "testflow.create",
+            Arguments: new Dictionary<string, string?>
+            {
+                ["name"] = "calculator_flow"
+            },
+            ProjectPath: _projectPath,
+            RequestId: "req-add-flow"));
+
+        var addResult = await executor.ExecuteAsync(new CommandEnvelope(
+            Command: "action.add",
+            Arguments: new Dictionary<string, string?>
+            {
+                ["flow"] = "calculator_flow",
+                ["type"] = "LogAction"
+            },
+            ProjectPath: _projectPath,
+            RequestId: "req-add-action"));
+
+        Assert.True(addResult.Ok);
+        var flow = Assert.Single(viewModel.ActiveProject!.TestFlows);
+        var action = Assert.Single(flow.Actions);
+        Assert.Equal("Log", action.Name);
+        Assert.True(flow.CanUndo);
+
+        flow.Undo();
+
+        Assert.Empty(flow.Actions);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ProjectSave_PersistsPendingUiSessionChanges()
     {
         var viewModel = CreateLoadedViewModel();

@@ -5,6 +5,7 @@ using Canvas.TestRunner.Model.Actions;
 using FleetAutomate.Model.Flow;
 using FleetAutomate.Model.Project;
 using FleetAutomate.Services;
+using FleetAutomate.UndoRedo;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,6 +20,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +28,13 @@ using System.Windows.Input;
 
 namespace FleetAutomate.ViewModel
 {
+    public enum ActionInsertionMode
+    {
+        After,
+        Before,
+        Into
+    }
+
     public partial class MainViewModel : ObservableObject
     {
         private TestProjectManager _projectManager;
@@ -100,6 +109,7 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+                    RefreshUndoRedoCommandStates();
                     OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
                     OnPropertyChanged(nameof(CurrentBreakReasonText));
                     OnPropertyChanged(nameof(CurrentActionSummary));
@@ -126,6 +136,7 @@ namespace FleetAutomate.ViewModel
                     ((RelayCommand)ContinueTestFlowCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)SkipFailedActionCommand).NotifyCanExecuteChanged();
                     ((RelayCommand)StopTestFlowCommand).NotifyCanExecuteChanged();
+                    RefreshUndoRedoCommandStates();
                 }
             }
         }
@@ -251,6 +262,12 @@ namespace FleetAutomate.ViewModel
         public event Func<(string executablePath, string arguments, string workingDirectory, bool waitForCompletion, int timeoutMs)?>? OnPromptLaunchApplication;
 
         /// <summary>
+        /// Event fired when UI needs to show a "Wait" dialog.
+        /// Should return the wait duration and unit, or null if cancelled.
+        /// </summary>
+        public event Func<(int duration, Model.Actions.System.WaitDurationUnit unit)?>? OnPromptWaitDuration;
+
+        /// <summary>
         /// Event fired when UI needs to show a "Wait for Element" dialog.
         /// Should return the element search parameters, or null if cancelled.
         /// </summary>
@@ -315,6 +332,10 @@ namespace FleetAutomate.ViewModel
         /// Command to delete the selected action.
         /// </summary>
         public ICommand DeleteActionCommand { get; }
+
+        public ICommand UndoTestFlowCommand { get; }
+
+        public ICommand RedoTestFlowCommand { get; }
 
         /// <summary>
         /// Command to toggle the ElseBlock visibility on the selected IfAction.
@@ -394,7 +415,9 @@ namespace FleetAutomate.ViewModel
             SaveProjectCommand = new RelayCommand(SaveProject, () => IsProjectLoaded && (HasUnsavedChanges || HasAnyUnsavedFlowChanges));
             SaveProjectAsCommand = new RelayCommand(SaveProjectAs, () => IsProjectLoaded);
             CloseProjectCommand = new RelayCommand(CloseProject, () => IsProjectLoaded);
-            DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && ActiveTestFlow != null);
+            DeleteActionCommand = new RelayCommand(DeleteSelectedAction, () => SelectedAction != null && ActiveTestFlow != null && !IsTestFlowRunning);
+            UndoTestFlowCommand = new RelayCommand(UndoTestFlow, CanUndoTestFlow);
+            RedoTestFlowCommand = new RelayCommand(RedoTestFlow, CanRedoTestFlow);
             ToggleElseBlockCommand = new RelayCommand(ToggleElseBlock, CanToggleElseBlock);
             RunTestFlowCommand = new RelayCommand(RunTestFlow, () => ActiveTestFlow != null && !IsTestFlowRunning);
             PauseTestFlowCommand = new RelayCommand(PauseTestFlow, () => IsTestFlowRunning && !IsTestFlowPaused);
@@ -565,6 +588,69 @@ namespace FleetAutomate.ViewModel
                 ((RelayCommand)CloseProjectCommand).NotifyCanExecuteChanged();
                 ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
             }
+            else if (e.PropertyName == nameof(ObservableFlow.CanUndo) ||
+                     e.PropertyName == nameof(ObservableFlow.CanRedo))
+            {
+                if (ReferenceEquals(sender, ActiveTestFlow))
+                {
+                    RefreshUndoRedoCommandStates();
+                }
+            }
+        }
+
+        private void RefreshUndoRedoCommandStates()
+        {
+            ((RelayCommand)UndoTestFlowCommand).NotifyCanExecuteChanged();
+            ((RelayCommand)RedoTestFlowCommand).NotifyCanExecuteChanged();
+        }
+
+        private bool CanUndoTestFlow()
+        {
+            return ActiveTestFlow?.CanUndo == true && !IsTestFlowRunning;
+        }
+
+        private bool CanRedoTestFlow()
+        {
+            return ActiveTestFlow?.CanRedo == true && !IsTestFlowRunning;
+        }
+
+        private void UndoTestFlow()
+        {
+            if (!CanUndoTestFlow())
+            {
+                return;
+            }
+
+            ActiveTestFlow!.Undo();
+            RefreshUndoRedoCommandStates();
+        }
+
+        private void RedoTestFlow()
+        {
+            if (!CanRedoTestFlow())
+            {
+                return;
+            }
+
+            ActiveTestFlow!.Redo();
+            RefreshUndoRedoCommandStates();
+        }
+
+        internal void MarkAllFlowUndoCheckpoints()
+        {
+            if (ActiveProject == null)
+            {
+                return;
+            }
+
+            foreach (var flow in ActiveProject.TestFlows)
+            {
+                flow.MarkSavedCheckpoint();
+            }
+
+            OnPropertyChanged(nameof(HasAnyUnsavedFlowChanges));
+            ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+            RefreshUndoRedoCommandStates();
         }
 
         /// <summary>
@@ -600,7 +686,7 @@ namespace FleetAutomate.ViewModel
 
                 if (success)
                 {
-                    // Success - no message shown
+                    MarkAllFlowUndoCheckpoints();
                 }
                 else
                 {
@@ -637,7 +723,7 @@ namespace FleetAutomate.ViewModel
 
                 if (success)
                 {
-                    // Success - no message shown
+                    MarkAllFlowUndoCheckpoints();
                 }
                 else
                 {
@@ -670,7 +756,7 @@ namespace FleetAutomate.ViewModel
 
                 if (success)
                 {
-                    // Success - no message shown
+                    MarkAllFlowUndoCheckpoints();
                 }
                 else
                 {
@@ -719,7 +805,7 @@ namespace FleetAutomate.ViewModel
 
                 if (success)
                 {
-                    // Success - no message shown
+                    MarkAllFlowUndoCheckpoints();
                 }
                 else
                 {
@@ -929,6 +1015,8 @@ namespace FleetAutomate.ViewModel
             var system = new ActionCategory("System", "💻");
             system.Actions.Add(new ActionTemplate("Launch Application", "System", "🚀",
                 typeof(Model.Actions.System.LaunchApplicationAction), "Launch an application"));
+            system.Actions.Add(new ActionTemplate("Wait", "System", "⏱️",
+                typeof(Model.Actions.System.WaitDurationAction), "Wait for a specified duration"));
             system.Actions.Add(new ActionTemplate("Log", "System", "📝",
                 typeof(Model.Actions.System.LogAction), "Log a message to output"));
             system.Actions.Add(new ActionTemplate("If Process Exists", "System", "🔍",
@@ -1048,7 +1136,7 @@ namespace FleetAutomate.ViewModel
             AddActionFromTemplate(actionTemplate, SelectedAction);
         }
 
-        public void AddActionFromTemplate(ActionTemplate actionTemplate, IAction? insertionTarget)
+        public void AddActionFromTemplate(ActionTemplate actionTemplate, IAction? insertionTarget, ActionInsertionMode insertionMode = ActionInsertionMode.After)
         {
             if (ActiveTestFlow == null)
             {
@@ -1096,6 +1184,18 @@ namespace FleetAutomate.ViewModel
                     }
 
                     action = CreateLaunchApplicationAction(result.Value.executablePath, result.Value.arguments, result.Value.workingDirectory, result.Value.waitForCompletion, result.Value.timeoutMs);
+                }
+                // Special handling for WaitDurationAction - prompt user for duration
+                else if (actionTemplate.ActionType == typeof(Model.Actions.System.WaitDurationAction))
+                {
+                    var result = OnPromptWaitDuration?.Invoke();
+                    if (result == null)
+                    {
+                        // User cancelled
+                        return;
+                    }
+
+                    action = CreateWaitDurationAction(result.Value.duration, result.Value.unit);
                 }
                 // Special handling for WaitForElementAction - prompt user for element search parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.WaitForElementAction))
@@ -1185,7 +1285,7 @@ namespace FleetAutomate.ViewModel
 
                 if (action != null)
                 {
-                    InsertAction(action, insertionTarget);
+                    InsertAction(action, insertionTarget, insertionMode);
                 }
             }
             catch (Exception ex)
@@ -1362,6 +1462,23 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Error", $"Failed to create log action: {ex.Message}");
+                return null;
+            }
+        }
+
+        private IAction? CreateWaitDurationAction(int duration, Model.Actions.System.WaitDurationUnit unit)
+        {
+            try
+            {
+                return new Model.Actions.System.WaitDurationAction
+                {
+                    Duration = duration,
+                    Unit = unit
+                };
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Error", $"Failed to create wait action: {ex.Message}");
                 return null;
             }
         }
@@ -1582,7 +1699,7 @@ namespace FleetAutomate.ViewModel
             };
         }
 
-        public void InsertAction(IAction action, IAction? insertionTarget)
+        public void InsertAction(IAction action, IAction? insertionTarget, ActionInsertionMode insertionMode = ActionInsertionMode.After)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -1590,18 +1707,41 @@ namespace FleetAutomate.ViewModel
             if (ActiveTestFlow == null)
                 throw new InvalidOperationException("No active TestFlow.");
 
-            if (insertionTarget is ActionBlock actionBlock)
+            if (insertionMode == ActionInsertionMode.Into)
             {
-                actionBlock.ManagedCollection.Add(action);
-                ActiveTestFlow.HasUnsavedChanges = true;
+                if (insertionTarget is ActionBlock actionBlock)
+                {
+                    ExecuteAddAction(actionBlock.ManagedCollection, actionBlock.ManagedCollection.Count, action);
+                }
+                else if (insertionTarget is ICompositeAction compositeAction)
+                {
+                    var childActions = compositeAction.GetChildActions();
+                    ExecuteAddAction(childActions, childActions.Count, action);
+                }
+                else if (insertionTarget != null && TryGetParentCollection(insertionTarget, out var parentCollection, out var insertionIndex))
+                {
+                    ExecuteAddAction(parentCollection, insertionIndex + 1, action);
+                }
+                else
+                {
+                    ExecuteAddAction(ActiveTestFlow.Actions, ActiveTestFlow.Actions.Count, action);
+                }
+            }
+            else if (insertionTarget is ActionBlock actionBlock)
+            {
+                ExecuteAddAction(actionBlock.ManagedCollection, actionBlock.ManagedCollection.Count, action);
+            }
+            else if (insertionMode == ActionInsertionMode.Before && insertionTarget != null && TryGetParentCollection(insertionTarget, out var beforeCollection, out var beforeIndex))
+            {
+                ExecuteAddAction(beforeCollection, beforeIndex, action);
             }
             else if (insertionTarget != null && TryGetParentCollection(insertionTarget, out var parentCollection, out var insertionIndex))
             {
-                InsertIntoCollection(parentCollection, insertionIndex + 1, action);
+                ExecuteAddAction(parentCollection, insertionIndex + 1, action);
             }
             else
             {
-                ActiveTestFlow.AddAction(action);
+                ExecuteAddAction(ActiveTestFlow.Actions, ActiveTestFlow.Actions.Count, action);
             }
 
             SelectedAction = action;
@@ -1614,23 +1754,20 @@ namespace FleetAutomate.ViewModel
                 return false;
             }
 
-            var removed = ActiveTestFlow.RemoveAction(action);
-            if (!removed)
+            if (!TryGetParentCollection(action, out var parentCollection, out var index) ||
+                !TryGetCollectionRef(parentCollection, out var collectionRef))
             {
-                removed = RemoveActionFromNested(ActiveTestFlow.Actions, action);
+                return false;
             }
 
-            if (removed && ReferenceEquals(SelectedAction, action))
+            ActiveTestFlow.UndoRedoService.Execute(new RemoveActionEdit(collectionRef, index, action));
+
+            if (ReferenceEquals(SelectedAction, action))
             {
                 SelectedAction = null;
             }
 
-            if (removed && ActiveTestFlow != null)
-            {
-                ActiveTestFlow.HasUnsavedChanges = true;
-            }
-
-            return removed;
+            return true;
         }
 
         /// <summary>
@@ -1733,19 +1870,16 @@ namespace FleetAutomate.ViewModel
             return false;
         }
 
-        private void InsertIntoCollection(ObservableCollection<IAction> collection, int index, IAction action)
+        private void ExecuteAddAction(ObservableCollection<IAction> collection, int index, IAction action)
         {
             index = Math.Max(0, Math.Min(index, collection.Count));
 
-            if (ReferenceEquals(collection, ActiveTestFlow?.Actions))
+            if (ActiveTestFlow == null || !TryGetCollectionRef(collection, out var collectionRef))
             {
-                ActiveTestFlow.InsertAction(index, action);
+                return;
             }
-            else
-            {
-                collection.Insert(index, action);
-                ActiveTestFlow!.HasUnsavedChanges = true;
-            }
+
+            ActiveTestFlow.UndoRedoService.Execute(new AddActionEdit(collectionRef, index, action));
         }
 
         private bool CanMoveSelectedActionUp()
@@ -1798,15 +1932,12 @@ namespace FleetAutomate.ViewModel
                 return;
             }
 
-            if (ReferenceEquals(parentCollection, ActiveTestFlow.Actions))
+            if (!TryGetCollectionRef(parentCollection, out var collectionRef))
             {
-                ActiveTestFlow.MoveAction(index, newIndex);
+                return;
             }
-            else
-            {
-                parentCollection.Move(index, newIndex);
-                ActiveTestFlow.HasUnsavedChanges = true;
-            }
+
+            ActiveTestFlow.UndoRedoService.Execute(new MoveActionEdit(collectionRef, index, collectionRef, newIndex));
         }
 
         /// <summary>
@@ -1814,7 +1945,7 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private bool CanToggleElseBlock()
         {
-            return SelectedAction is IfAction;
+            return SelectedAction is IfAction && ActiveTestFlow != null && !IsTestFlowRunning;
         }
 
         /// <summary>
@@ -1822,10 +1953,171 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void ToggleElseBlock()
         {
-            if (SelectedAction is IfAction ifAction)
+            if (SelectedAction is IfAction ifAction && ActiveTestFlow != null && TryGetActionPath(ifAction, out var actionPath))
             {
-                ifAction.ShowElseBlock = !ifAction.ShowElseBlock;
+                ActiveTestFlow.UndoRedoService.Execute(new ActionPropertyEdit(
+                    actionPath,
+                    nameof(IfAction.ShowElseBlock),
+                    ifAction.ShowElseBlock,
+                    !ifAction.ShowElseBlock,
+                    "Toggle else block"));
             }
+        }
+
+        public bool ApplyActionPropertyChanges(IAction action, string displayName, params (string propertyName, object? newValue)[] changes)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            ArgumentNullException.ThrowIfNull(changes);
+
+            if (ActiveTestFlow == null || !TryGetActionPath(action, out var actionPath))
+            {
+                return false;
+            }
+
+            var edits = new List<IUndoableFlowEdit>();
+            foreach (var (propertyName, newValue) in changes)
+            {
+                var property = action.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
+                    ?? throw new InvalidOperationException($"Action property '{propertyName}' was not found.");
+
+                var oldValue = property.GetValue(action);
+                if (Equals(oldValue, newValue))
+                {
+                    continue;
+                }
+
+                edits.Add(new ActionPropertyEdit(actionPath, property.Name, oldValue, newValue, $"Set {property.Name}"));
+            }
+
+            if (edits.Count == 0)
+            {
+                return false;
+            }
+
+            ActiveTestFlow.UndoRedoService.Execute(edits.Count == 1 ? edits[0] : new BatchFlowEdit(edits, displayName));
+            return true;
+        }
+
+        private bool TryGetCollectionRef(ObservableCollection<IAction> collection, out ActionCollectionRef collectionRef)
+        {
+            collectionRef = ActionCollectionRef.Root;
+
+            if (ActiveTestFlow == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(collection, ActiveTestFlow.Actions))
+            {
+                return true;
+            }
+
+            return TryFindCollectionRef(ActiveTestFlow.Actions, Array.Empty<int>(), collection, out collectionRef);
+        }
+
+        private bool TryFindCollectionRef(ObservableCollection<IAction> searchCollection, int[] currentPath, ObservableCollection<IAction> targetCollection, out ActionCollectionRef collectionRef)
+        {
+            for (var i = 0; i < searchCollection.Count; i++)
+            {
+                var action = searchCollection[i];
+                var actionPath = currentPath.Concat([i]).ToArray();
+
+                if (action is IfAction ifAction)
+                {
+                    if (ReferenceEquals(ifAction.IfBlock, targetCollection))
+                    {
+                        collectionRef = ActionCollectionRef.ForIfBlock(actionPath);
+                        return true;
+                    }
+
+                    if (ReferenceEquals(ifAction.ElseBlock, targetCollection))
+                    {
+                        collectionRef = ActionCollectionRef.ForElseBlock(actionPath);
+                        return true;
+                    }
+
+                    if (TryFindCollectionRef(ifAction.IfBlock, actionPath, targetCollection, out collectionRef) ||
+                        TryFindCollectionRef(ifAction.ElseBlock, actionPath, targetCollection, out collectionRef))
+                    {
+                        return true;
+                    }
+                }
+                else if (action is WhileLoopAction whileLoop)
+                {
+                    if (ReferenceEquals(whileLoop.Body, targetCollection))
+                    {
+                        collectionRef = ActionCollectionRef.ForLoopBody(actionPath);
+                        return true;
+                    }
+
+                    if (TryFindCollectionRef(whileLoop.Body, actionPath, targetCollection, out collectionRef))
+                    {
+                        return true;
+                    }
+                }
+                else if (action is ForLoopAction forLoop)
+                {
+                    if (ReferenceEquals(forLoop.Body, targetCollection))
+                    {
+                        collectionRef = ActionCollectionRef.ForLoopBody(actionPath);
+                        return true;
+                    }
+
+                    if (TryFindCollectionRef(forLoop.Body, actionPath, targetCollection, out collectionRef))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            collectionRef = ActionCollectionRef.Root;
+            return false;
+        }
+
+        private bool TryGetActionPath(IAction targetAction, out int[] actionPath)
+        {
+            actionPath = Array.Empty<int>();
+            return ActiveTestFlow != null && TryFindActionPath(ActiveTestFlow.Actions, Array.Empty<int>(), targetAction, out actionPath);
+        }
+
+        private bool TryFindActionPath(ObservableCollection<IAction> searchCollection, int[] currentPath, IAction targetAction, out int[] actionPath)
+        {
+            for (var i = 0; i < searchCollection.Count; i++)
+            {
+                var action = searchCollection[i];
+                var candidatePath = currentPath.Concat([i]).ToArray();
+                if (ReferenceEquals(action, targetAction))
+                {
+                    actionPath = candidatePath;
+                    return true;
+                }
+
+                if (action is IfAction ifAction)
+                {
+                    if (TryFindActionPath(ifAction.IfBlock, candidatePath, targetAction, out actionPath) ||
+                        TryFindActionPath(ifAction.ElseBlock, candidatePath, targetAction, out actionPath))
+                    {
+                        return true;
+                    }
+                }
+                else if (action is WhileLoopAction whileLoop)
+                {
+                    if (TryFindActionPath(whileLoop.Body, candidatePath, targetAction, out actionPath))
+                    {
+                        return true;
+                    }
+                }
+                else if (action is ForLoopAction forLoop)
+                {
+                    if (TryFindActionPath(forLoop.Body, candidatePath, targetAction, out actionPath))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            actionPath = [];
+            return false;
         }
 
         /// <summary>
@@ -2152,6 +2444,11 @@ namespace FleetAutomate.ViewModel
             if (e.PropertyName == nameof(ObservableFlow.HasUnsavedChanges))
             {
                 ((RelayCommand)SaveProjectCommand).NotifyCanExecuteChanged();
+            }
+            else if (e.PropertyName == nameof(ObservableFlow.CanUndo) ||
+                     e.PropertyName == nameof(ObservableFlow.CanRedo))
+            {
+                RefreshUndoRedoCommandStates();
             }
 
             if (e.PropertyName == nameof(ObservableFlow.RuntimeVariables) ||

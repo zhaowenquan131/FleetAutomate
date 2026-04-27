@@ -36,8 +36,23 @@ namespace FleetAutomate
         private System.Windows.Point _testFlowDragStartPoint;
         private Model.ActionTemplate? _pendingToolboxDragTemplate;
         private Model.IAction? _pendingTestFlowDragAction;
+        private System.Windows.Controls.TreeViewItem? _activeDropHighlightItem;
+        private DropPlacement? _activeDropPlacement;
         private const string ToolboxActionTemplateFormat = "FleetAutomate.ActionTemplate";
         private const string TestFlowActionFormat = "FleetAutomate.TestFlowAction";
+
+        private enum DropPlacement
+        {
+            Before,
+            Into,
+            After
+        }
+
+        private sealed record DropInstruction(
+            Model.IAction? InsertionTarget,
+            Model.IAction? ValidationTarget,
+            DropPlacement Placement,
+            System.Windows.Controls.TreeViewItem? HighlightItem);
 
         public MainWindow()
         {
@@ -128,6 +143,22 @@ namespace FleetAutomate
                 if (dialog.ShowDialog() == true)
                 {
                     return (dialog.ExecutablePath, dialog.Arguments, dialog.WorkingDirectory, dialog.WaitForCompletion, dialog.TimeoutMilliseconds);
+                }
+
+                return null; // User cancelled
+            };
+
+            // Handle wait duration prompt
+            ViewModel.OnPromptWaitDuration += () =>
+            {
+                var dialog = new WaitDurationDialog
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    return (dialog.Duration, dialog.Unit);
                 }
 
                 return null; // User cancelled
@@ -318,7 +349,17 @@ namespace FleetAutomate
 
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        protected override void OnClosed(System.EventArgs e)
+        {
+            base.OnClosed(e);
+
+            if (System.Windows.Application.Current?.ShutdownMode != ShutdownMode.OnExplicitShutdown)
+            {
+                System.Windows.Application.Current?.Shutdown();
+            }
         }
 
         private void AddTestFlowMenuItem_Click(object sender, RoutedEventArgs e)
@@ -514,16 +555,126 @@ namespace FleetAutomate
             return null;
         }
 
-        private Model.IAction? ResolveDropTarget(System.Windows.Controls.TreeView treeView, DependencyObject? originalSource, System.Windows.Point fallbackPoint)
+        private System.Windows.Controls.TreeViewItem? ResolveDropTargetItem(System.Windows.Controls.TreeView treeView, DependencyObject? originalSource, System.Windows.Point fallbackPoint)
         {
             var treeViewItem = FindAncestor<System.Windows.Controls.TreeViewItem>(originalSource);
-            if (treeViewItem?.DataContext is Model.IAction action)
+            if (treeViewItem != null)
             {
-                return action;
+                return treeViewItem;
             }
 
             var hit = VisualTreeHelper.HitTest(treeView, fallbackPoint);
-            return FindAncestor<System.Windows.Controls.TreeViewItem>(hit?.VisualHit as DependencyObject)?.DataContext as Model.IAction;
+            return FindAncestor<System.Windows.Controls.TreeViewItem>(hit?.VisualHit as DependencyObject);
+        }
+
+        private DropInstruction ResolveDropInstruction(System.Windows.Controls.TreeView treeView, DependencyObject? originalSource, System.Windows.Point fallbackPoint)
+        {
+            var dropTargetItem = ResolveDropTargetItem(treeView, originalSource, fallbackPoint);
+            if (dropTargetItem?.DataContext is not Model.IAction dropTarget)
+            {
+                return new DropInstruction(null, null, DropPlacement.After, null);
+            }
+
+            var placement = ResolveDropPlacement(dropTargetItem, fallbackPoint);
+
+            if (dropTarget is Model.ActionBlock actionBlock)
+            {
+                return new DropInstruction(actionBlock, actionBlock.ParentIfAction, DropPlacement.Into, dropTargetItem);
+            }
+
+            if (placement == DropPlacement.Into && dropTarget is Model.Actions.Logic.IfAction ifAction)
+            {
+                var syntheticIfBlock = new Model.ActionBlock
+                {
+                    ParentIfAction = ifAction,
+                    ManagedCollection = ifAction.IfBlock,
+                    Name = "If Block",
+                    Description = "If block"
+                };
+
+                return new DropInstruction(syntheticIfBlock, ifAction, DropPlacement.Into, dropTargetItem);
+            }
+
+            return new DropInstruction(dropTarget, dropTarget, placement, dropTargetItem);
+        }
+
+        private static DropPlacement ResolveDropPlacement(System.Windows.Controls.TreeViewItem targetItem, System.Windows.Point treePoint)
+        {
+            if (targetItem.DataContext is Model.ActionBlock)
+            {
+                return DropPlacement.Into;
+            }
+
+            var localPoint = targetItem.TranslatePoint(treePoint, targetItem);
+            var height = Math.Max(1.0, targetItem.ActualHeight);
+            var topZone = height * 0.25;
+            var bottomZone = height * 0.75;
+
+            if (targetItem.DataContext is Model.Actions.Logic.IfAction)
+            {
+                if (localPoint.Y < topZone)
+                {
+                    return DropPlacement.Before;
+                }
+
+                if (localPoint.Y > bottomZone)
+                {
+                    return DropPlacement.After;
+                }
+
+                return DropPlacement.Into;
+            }
+
+            return localPoint.Y < height * 0.5
+                ? DropPlacement.Before
+                : DropPlacement.After;
+        }
+
+        private static FleetAutomate.ViewModel.ActionInsertionMode GetInsertionMode(DropPlacement placement)
+        {
+            return placement switch
+            {
+                DropPlacement.Before => FleetAutomate.ViewModel.ActionInsertionMode.Before,
+                DropPlacement.Into => FleetAutomate.ViewModel.ActionInsertionMode.Into,
+                _ => FleetAutomate.ViewModel.ActionInsertionMode.After
+            };
+        }
+
+        private void SetActiveDropHighlight(System.Windows.Controls.TreeViewItem? targetItem, DropPlacement placement)
+        {
+            if (ReferenceEquals(_activeDropHighlightItem, targetItem) && _activeDropPlacement == placement)
+            {
+                return;
+            }
+
+            if (_activeDropHighlightItem != null)
+            {
+                _activeDropHighlightItem.ClearValue(FrameworkElement.TagProperty);
+            }
+
+            _activeDropHighlightItem = targetItem;
+            _activeDropPlacement = placement;
+
+            if (_activeDropHighlightItem != null)
+            {
+                _activeDropHighlightItem.Tag = placement switch
+                {
+                    DropPlacement.Before => "DropBefore",
+                    DropPlacement.Into => "DropInto",
+                    _ => "DropAfter"
+                };
+            }
+        }
+
+        private void ClearActiveDropHighlight()
+        {
+            if (_activeDropHighlightItem != null)
+            {
+                _activeDropHighlightItem.ClearValue(FrameworkElement.TagProperty);
+            }
+
+            _activeDropHighlightItem = null;
+            _activeDropPlacement = null;
         }
 
         private bool IsDescendantDropTarget(Model.IAction draggedAction, Model.IAction? dropTarget)
@@ -560,7 +711,7 @@ namespace FleetAutomate
             return false;
         }
 
-        private void MoveDraggedAction(ObservableFlow flow, Model.IAction draggedAction, Model.IAction? dropTarget)
+        private void MoveDraggedAction(ObservableFlow flow, Model.IAction draggedAction, Model.IAction? dropTarget, FleetAutomate.ViewModel.ActionInsertionMode insertionMode)
         {
             if (ViewModel.ActiveTestFlow != flow)
             {
@@ -572,7 +723,7 @@ namespace FleetAutomate
                 return;
             }
 
-            ViewModel.InsertAction(draggedAction, dropTarget);
+            ViewModel.InsertAction(draggedAction, dropTarget, insertionMode);
         }
 
         private void TestFlowActionsTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -669,15 +820,35 @@ namespace FleetAutomate
             }
 
             var data = new System.Windows.DataObject(TestFlowActionFormat, _pendingTestFlowDragAction);
-            System.Windows.DragDrop.DoDragDrop(treeView, data, System.Windows.DragDropEffects.Move);
-            _pendingTestFlowDragAction = null;
+            try
+            {
+                System.Windows.DragDrop.DoDragDrop(treeView, data, System.Windows.DragDropEffects.Move);
+            }
+            finally
+            {
+                _pendingTestFlowDragAction = null;
+                ClearActiveDropHighlight();
+            }
         }
 
         private void TestFlowActionsTreeView_DragOver(object sender, System.Windows.DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(ToolboxActionTemplateFormat)
+            var acceptsToolbox = e.Data.GetDataPresent(ToolboxActionTemplateFormat);
+            var acceptsReorder = e.Data.GetDataPresent(TestFlowActionFormat);
+            e.Effects = acceptsToolbox
                 ? System.Windows.DragDropEffects.Copy
-                : e.Data.GetDataPresent(TestFlowActionFormat) ? System.Windows.DragDropEffects.Move : System.Windows.DragDropEffects.None;
+                : acceptsReorder ? System.Windows.DragDropEffects.Move : System.Windows.DragDropEffects.None;
+
+            if (sender is System.Windows.Controls.TreeView treeView && e.Effects != System.Windows.DragDropEffects.None)
+            {
+                var instruction = ResolveDropInstruction(treeView, e.OriginalSource as DependencyObject, e.GetPosition(treeView));
+                SetActiveDropHighlight(instruction.HighlightItem, instruction.Placement);
+            }
+            else
+            {
+                ClearActiveDropHighlight();
+            }
+
             e.Handled = true;
         }
 
@@ -690,26 +861,33 @@ namespace FleetAutomate
 
             ViewModel.ActiveTestFlow = flow;
 
-            var dropTarget = ResolveDropTarget(treeView, e.OriginalSource as DependencyObject, e.GetPosition(treeView));
+            var instruction = ResolveDropInstruction(treeView, e.OriginalSource as DependencyObject, e.GetPosition(treeView));
+            var insertionMode = GetInsertionMode(instruction.Placement);
 
             if (e.Data.GetDataPresent(ToolboxActionTemplateFormat))
             {
                 if (e.Data.GetData(ToolboxActionTemplateFormat) is Model.ActionTemplate actionTemplate)
                 {
-                    ViewModel.AddActionFromTemplate(actionTemplate, dropTarget);
+                    ViewModel.AddActionFromTemplate(actionTemplate, instruction.InsertionTarget, insertionMode);
                 }
             }
             else if (e.Data.GetDataPresent(TestFlowActionFormat))
             {
                 if (e.Data.GetData(TestFlowActionFormat) is Model.IAction draggedAction &&
-                    draggedAction != dropTarget &&
-                    !IsDescendantDropTarget(draggedAction, dropTarget))
+                    draggedAction != instruction.ValidationTarget &&
+                    !IsDescendantDropTarget(draggedAction, instruction.ValidationTarget))
                 {
-                    MoveDraggedAction(flow, draggedAction, dropTarget);
+                    MoveDraggedAction(flow, draggedAction, instruction.InsertionTarget, insertionMode);
                 }
             }
 
+            ClearActiveDropHighlight();
             e.Handled = true;
+        }
+
+        private void TestFlowActionsTreeView_DragLeave(object sender, System.Windows.DragEventArgs e)
+        {
+            ClearActiveDropHighlight();
         }
 
         private void TestFlowActionsTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -789,6 +967,11 @@ namespace FleetAutomate
                         else if (action is Model.Actions.System.LogAction logAction)
                         {
                             EditLogAction(logAction);
+                        }
+                        // Special handling for WaitDurationAction - use WaitDurationDialog for editing
+                        else if (action is Model.Actions.System.WaitDurationAction waitDurationAction)
+                        {
+                            EditWaitDurationAction(waitDurationAction);
                         }
                         // Special handling for SetVariableAction<T> - use SetVariableDialog for editing
                         else if (IsSetVariableAction(action))
@@ -894,31 +1077,34 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the IfAction with new values
+                object? condition = ifAction.Condition;
+                string description = ifAction.Description;
                 if (dialog.ConditionType == "Expression")
                 {
                     var parsedCondition = Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
                     if (parsedCondition != null)
                     {
-                        ifAction.Condition = parsedCondition;
-                        ifAction.Description = $"If {dialog.ConditionExpression}";
+                        condition = parsedCondition;
+                        description = $"If {dialog.ConditionExpression}";
                     }
                 }
                 else if (dialog.ConditionType == "UIElementExists")
                 {
-                    ifAction.Condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
+                    condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
                         dialog.ElementIdentifier,
                         dialog.IdentifierType,
                         1000,
                         dialog.RetryTimes
                     );
-                    ifAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (retry:{dialog.RetryTimes}x)";
+                    description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (retry:{dialog.RetryTimes}x)";
                 }
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                ViewModel.ApplyActionPropertyChanges(ifAction, "Edit if action", [
+                    (nameof(Model.Actions.Logic.IfAction.Condition), condition),
+                    (nameof(Model.Actions.Logic.IfAction.Description), description)
+                ]);
+
+                RefreshActiveTestFlow();
             }
         }
 
@@ -948,17 +1134,20 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the ClickElementAction with new values
-                clickAction.ElementIdentifier = dialog.ElementIdentifier;
-                clickAction.IdentifierType = dialog.IdentifierType;
-                clickAction.IsDoubleClick = dialog.IsDoubleClick;
-                clickAction.UseInvoke = dialog.UseInvoke;
-                clickAction.InvokeWithoutWaiting = dialog.UseInvoke && dialog.InvokeWithoutWaiting;
-                clickAction.RetryTimes = dialog.RetryTimes;
-                clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
-                clickAction.SearchScope = dialog.SearchScope;
-                clickAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? (dialog.InvokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)") : "")} (retry:{dialog.RetryTimes}x)";
+                var invokeWithoutWaitingValue = dialog.UseInvoke && dialog.InvokeWithoutWaiting;
+                var description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? (dialog.InvokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)") : "")} (retry:{dialog.RetryTimes}x)";
+                ViewModel.ApplyActionPropertyChanges(clickAction, "Edit click action", [
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.ElementIdentifier), dialog.ElementIdentifier),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.IsDoubleClick), dialog.IsDoubleClick),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.UseInvoke), dialog.UseInvoke),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.InvokeWithoutWaiting), invokeWithoutWaitingValue),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.RetryTimes), dialog.RetryTimes),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.RetryDelayMilliseconds), dialog.RetryDelayMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.SearchScope), dialog.SearchScope),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.AddToGlobalDictionary), dialog.AddToGlobalDictionary),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.Description), description)
+                ]);
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
                 if (dialog.AddToGlobalDictionary)
@@ -967,10 +1156,7 @@ namespace FleetAutomate
                     activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
                 }
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -991,13 +1177,15 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                waitAction.ElementIdentifier = dialog.ElementIdentifier;
-                waitAction.IdentifierType = dialog.IdentifierType;
-                waitAction.TimeoutMilliseconds = dialog.TimeoutMilliseconds;
-                waitAction.PollingIntervalMilliseconds = dialog.PollingIntervalMilliseconds;
-                waitAction.SearchScope = dialog.SearchScope;
-                waitAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                waitAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (timeout:{dialog.TimeoutMilliseconds}ms)";
+                ViewModel.ApplyActionPropertyChanges(waitAction, "Edit wait action", [
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.ElementIdentifier), dialog.ElementIdentifier),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.TimeoutMilliseconds), dialog.TimeoutMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.PollingIntervalMilliseconds), dialog.PollingIntervalMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.SearchScope), dialog.SearchScope),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.AddToGlobalDictionary), dialog.AddToGlobalDictionary),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.Description), $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (timeout:{dialog.TimeoutMilliseconds}ms)")
+                ]);
 
                 if (dialog.AddToGlobalDictionary)
                 {
@@ -1034,16 +1222,17 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the SetTextAction with new values
-                setTextAction.ElementIdentifier = dialog.ElementIdentifier;
-                setTextAction.IdentifierType = dialog.IdentifierType;
-                setTextAction.TextToSet = dialog.TextToSet;
-                setTextAction.ClearExistingText = dialog.ClearExistingText;
-                setTextAction.RetryTimes = dialog.RetryTimes;
-                setTextAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
-                setTextAction.SearchScope = dialog.SearchScope;
-                setTextAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                setTextAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
+                ViewModel.ApplyActionPropertyChanges(setTextAction, "Edit set text action", [
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.ElementIdentifier), dialog.ElementIdentifier),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.TextToSet), dialog.TextToSet),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.ClearExistingText), dialog.ClearExistingText),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.RetryTimes), dialog.RetryTimes),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.RetryDelayMilliseconds), dialog.RetryDelayMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.SearchScope), dialog.SearchScope),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.AddToGlobalDictionary), dialog.AddToGlobalDictionary),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.Description), $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)")
+                ]);
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
                 if (dialog.AddToGlobalDictionary)
@@ -1052,10 +1241,7 @@ namespace FleetAutomate
                     activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
                 }
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1076,18 +1262,16 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the IfWindowContainsTextAction with new values
-                windowTextAction.WindowIdentifier = dialog.WindowIdentifier;
-                windowTextAction.IdentifierType = dialog.IdentifierType;
-                windowTextAction.SearchText = dialog.SearchText;
-                windowTextAction.CaseSensitive = dialog.CaseSensitive;
-                windowTextAction.DeepSearch = dialog.DeepSearch;
-                windowTextAction.Description = $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}";
+                ViewModel.ApplyActionPropertyChanges(windowTextAction, "Edit window text action", [
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.WindowIdentifier), dialog.WindowIdentifier),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.SearchText), dialog.SearchText),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.CaseSensitive), dialog.CaseSensitive),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.DeepSearch), dialog.DeepSearch),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.Description), $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}")
+                ]);
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1108,13 +1292,6 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the LaunchApplicationAction with new values
-                launchAction.ExecutablePath = dialog.ExecutablePath;
-                launchAction.Arguments = dialog.Arguments;
-                launchAction.WorkingDirectory = dialog.WorkingDirectory;
-                launchAction.WaitForCompletion = dialog.WaitForCompletion;
-                launchAction.TimeoutMilliseconds = dialog.TimeoutMilliseconds;
-
                 // Update description with relevant details
                 string description = $"Launch: {dialog.ExecutablePath}";
                 if (!string.IsNullOrWhiteSpace(dialog.Arguments))
@@ -1125,12 +1302,17 @@ namespace FleetAutomate
                 {
                     description += $" (wait {dialog.TimeoutMilliseconds}ms)";
                 }
-                launchAction.Description = description;
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                ViewModel.ApplyActionPropertyChanges(launchAction, "Edit launch action", [
+                    (nameof(Model.Actions.System.LaunchApplicationAction.ExecutablePath), dialog.ExecutablePath),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.Arguments), dialog.Arguments),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.WorkingDirectory), dialog.WorkingDirectory),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.WaitForCompletion), dialog.WaitForCompletion),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.TimeoutMilliseconds), dialog.TimeoutMilliseconds),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.Description), description)
+                ]);
+
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1148,15 +1330,31 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the LogAction with new values
-                logAction.LogLevel = dialog.LogLevel;
-                logAction.Message = dialog.Message;
-                logAction.Description = $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}";
+                ViewModel.ApplyActionPropertyChanges(logAction, "Edit log action", [
+                    (nameof(Model.Actions.System.LogAction.LogLevel), dialog.LogLevel),
+                    (nameof(Model.Actions.System.LogAction.Message), dialog.Message),
+                    (nameof(Model.Actions.System.LogAction.Description), $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}")
+                ]);
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
+            }
+        }
+
+        private void EditWaitDurationAction(Model.Actions.System.WaitDurationAction waitAction)
+        {
+            var dialog = new WaitDurationDialog(waitAction.Duration, waitAction.Unit)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                ViewModel.ApplyActionPropertyChanges(waitAction, "Edit wait action", [
+                    (nameof(Model.Actions.System.WaitDurationAction.Duration), dialog.Duration),
+                    (nameof(Model.Actions.System.WaitDurationAction.Unit), dialog.Unit)
+                ]);
+
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1212,9 +1410,11 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.SelectedFlowName))
             {
-                subFlowAction.TargetFlowName = dialog.SelectedFlowName;
-                subFlowAction.Description = $"Execute sub-flow: {dialog.SelectedFlowName}";
-                subFlowAction.TestProject = ViewModel.ActiveProject?.Model;
+                ViewModel.ApplyActionPropertyChanges(subFlowAction, "Edit sub-flow action", [
+                    (nameof(Model.Actions.Logic.SubFlowAction.TargetFlowName), dialog.SelectedFlowName),
+                    (nameof(Model.Actions.Logic.SubFlowAction.Description), $"Execute sub-flow: {dialog.SelectedFlowName}"),
+                    (nameof(Model.Actions.Logic.SubFlowAction.TestProject), ViewModel.ActiveProject?.Model)
+                ]);
 
                 RefreshActiveTestFlow();
             }
@@ -1595,6 +1795,7 @@ namespace FleetAutomate
             treeView.MouseDoubleClick += TestFlowActionsTreeView_MouseDoubleClick;
             treeView.DragOver += TestFlowActionsTreeView_DragOver;
             treeView.Drop += TestFlowActionsTreeView_Drop;
+            treeView.DragLeave += TestFlowActionsTreeView_DragLeave;
 
             // Context menu
             var contextMenu = new System.Windows.Controls.ContextMenu();
@@ -1739,28 +1940,57 @@ namespace FleetAutomate
             {
                 VisualTree = factory
             };
-            template.ItemsSource = new System.Windows.Data.Binding("ChildActions") { Mode = System.Windows.Data.BindingMode.OneWay };
+            template.ItemsSource = new System.Windows.Data.Binding(".")
+            {
+                Converter = (IValueConverter)this.FindResource("ActionToChildActionsConverter"),
+                Mode = System.Windows.Data.BindingMode.OneWay
+            };
             treeView.ItemTemplate = template;
 
             // Create ItemContainerStyle to highlight executing actions
             var itemContainerStyle = new Style(typeof(System.Windows.Controls.TreeViewItem));
+            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
+            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1)));
 
             // Bind Background to State with ActionStateToBackgroundConverter
             var backgroundBinding = new System.Windows.Data.Binding("State")
             {
                 Converter = (IValueConverter)this.FindResource("ActionStateToBackgroundConverter")
             };
-            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, backgroundBinding));
+            itemContainerStyle.Setters.Add(new Setter(BackgroundProperty, backgroundBinding));
             itemContainerStyle.Triggers.Add(new Trigger
             {
                 Property = System.Windows.Controls.TreeViewItem.IsSelectedProperty,
                 Value = true,
                 Setters =
                 {
-                    new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255))),
-                    new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black)
+                    new Setter(BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255))),
+                    new Setter(ForegroundProperty, System.Windows.Media.Brushes.Black)
                 }
             });
+            var dropIntoTrigger = new MultiTrigger();
+            dropIntoTrigger.Conditions.Add(new Condition(FrameworkElement.TagProperty, "DropInto"));
+            dropIntoTrigger.Conditions.Add(new Condition(System.Windows.Controls.TreeViewItem.IsSelectedProperty, false));
+            dropIntoTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 248, 225))));
+            dropIntoTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7))));
+            dropIntoTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black));
+            itemContainerStyle.Triggers.Add(dropIntoTrigger);
+
+            var dropBeforeTrigger = new MultiTrigger();
+            dropBeforeTrigger.Conditions.Add(new Condition(FrameworkElement.TagProperty, "DropBefore"));
+            dropBeforeTrigger.Conditions.Add(new Condition(System.Windows.Controls.TreeViewItem.IsSelectedProperty, false));
+            dropBeforeTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7))));
+            dropBeforeTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1, 2, 1, 1)));
+            dropBeforeTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black));
+            itemContainerStyle.Triggers.Add(dropBeforeTrigger);
+
+            var dropAfterTrigger = new MultiTrigger();
+            dropAfterTrigger.Conditions.Add(new Condition(FrameworkElement.TagProperty, "DropAfter"));
+            dropAfterTrigger.Conditions.Add(new Condition(System.Windows.Controls.TreeViewItem.IsSelectedProperty, false));
+            dropAfterTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7))));
+            dropAfterTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1, 1, 1, 2)));
+            dropAfterTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black));
+            itemContainerStyle.Triggers.Add(dropAfterTrigger);
 
             treeView.ItemContainerStyle = itemContainerStyle;
 

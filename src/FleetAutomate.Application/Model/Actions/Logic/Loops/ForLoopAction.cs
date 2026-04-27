@@ -35,8 +35,10 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
     [KnownType(typeof(Expression.LiteralExpression<int>))]
     [KnownType(typeof(Expression.LiteralExpression<double>))]
     [KnownType(typeof(Expression.LiteralExpression<string>))]
-    public class ForLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction, INotifyPropertyChanged
+    public class ForLoopAction : ILogicAction, ISyntaxValidator, ICompositeAction, INotifyPropertyChanged, IPauseAwareAction
     {
+        public ActionPauseBehavior PauseBehavior => ActionPauseBehavior.Cooperative;
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         [DataMember]
@@ -203,6 +205,7 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
                 await initAction.ExecuteAsync(cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    State = ActionState.Paused;
                     return false;
                 }
             }
@@ -235,8 +238,11 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
                     await action.ExecuteAsync(cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
+                        State = ActionState.Paused;
                         return false;
                     }
+
+                    await Task.Yield();
                 }
 
                 // Execute increment
@@ -245,11 +251,15 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
                     await incrementAction.ExecuteAsync(cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
+                        State = ActionState.Paused;
                         return false;
                     }
+
+                    await Task.Yield();
                 }
             }
 
+            State = ActionState.Completed;
             return true;
         }
 

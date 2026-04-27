@@ -31,8 +31,10 @@ namespace FleetAutomate.Model.Actions.Logic
     [KnownType(typeof(Expression.LiteralExpression<int>))]
     [KnownType(typeof(Expression.LiteralExpression<double>))]
     [KnownType(typeof(Expression.LiteralExpression<string>))]
-    public partial class IfAction : ILogicAction, ICompositeAction
+    public partial class IfAction : ILogicAction, ICompositeAction, IPauseAwareAction
     {
+        public ActionPauseBehavior PauseBehavior => ActionPauseBehavior.Cooperative;
+
         public IfAction()
         {
             if (ElseIfs.Count > 1)
@@ -160,6 +162,18 @@ namespace FleetAutomate.Model.Actions.Logic
         /// </summary>
         private NotifyCollectionChangedEventHandler? _ifBlockCollectionChangedHandler;
 
+        [IgnoreDataMember]
+        private IfResumeBranch? _resumeBranch;
+
+        [IgnoreDataMember]
+        private int _resumeIndex;
+
+        private enum IfResumeBranch
+        {
+            If,
+            Else
+        }
+
 
         /// <summary>
         /// XML serialization property for IfBlock collection.
@@ -280,9 +294,8 @@ namespace FleetAutomate.Model.Actions.Logic
             // Re-initialize child actions to ensure ChildActions is populated
             RefreshChildActions();
 
-            // Reconnect the collection change handler in case it was lost
-            IfBlock.CollectionChanged -= (s, e) => RefreshChildActions();
-            IfBlock.CollectionChanged += (s, e) => RefreshChildActions();
+            // Reconnect the stored collection change handler in case it was lost.
+            EnsureIfBlockHandlerAttached();
         }
 
 
@@ -293,61 +306,90 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
-            // Evaluate condition without replacing it
-            bool conditionResult;
+            ObservableCollection<IAction> actionsToExecute;
+            IfResumeBranch activeBranch;
+            int startIndex;
 
-            if (Condition is ExpressionBase<bool> boolExp)
+            if (State == ActionState.Paused && _resumeBranch.HasValue)
             {
-                // Set Environment on expression so it can resolve variables
-                boolExp.Environment = Environment;
-                boolExp.Evaluate();
-                conditionResult = boolExp.Result;
-                // IMPORTANT: Don't replace Condition - keep expression for re-evaluation
-            }
-            else if (Condition is bool boolValue)
-            {
-                conditionResult = boolValue;
+                activeBranch = _resumeBranch.Value;
+                actionsToExecute = activeBranch == IfResumeBranch.If ? IfBlock : ElseBlock;
+                startIndex = Math.Clamp(_resumeIndex, 0, actionsToExecute.Count);
             }
             else
             {
-                State = ActionState.Failed;
-                throw new InvalidOperationException("Condition must be an Expression<bool> or a boolean value.");
+                ClearResumePoint();
+
+                // Evaluate condition without replacing it
+                bool conditionResult;
+
+                if (Condition is ExpressionBase<bool> boolExp)
+                {
+                    // Some expressions, such as UI element existence checks, perform blocking UIA work.
+                    // Evaluate them off the UI thread so the shell remains responsive to pause requests.
+                    conditionResult = await Task.Run(() =>
+                    {
+                        boolExp.Environment = Environment;
+                        boolExp.Evaluate();
+                        return boolExp.Result;
+                    }, cancellationToken);
+
+                    // IMPORTANT: Don't replace Condition - keep expression for re-evaluation
+                }
+                else if (Condition is bool boolValue)
+                {
+                    conditionResult = boolValue;
+                }
+                else
+                {
+                    State = ActionState.Failed;
+                    throw new InvalidOperationException("Condition must be an Expression<bool> or a boolean value.");
+                }
+
+                activeBranch = conditionResult ? IfResumeBranch.If : IfResumeBranch.Else;
+                actionsToExecute = conditionResult ? IfBlock : ElseBlock;
+                startIndex = 0;
             }
 
-            // Execute based on condition result
-            if (conditionResult)
+            for (int index = startIndex; index < actionsToExecute.Count; index++)
             {
-                foreach (var action in IfBlock)
+                var action = actionsToExecute[index];
+                if (action.IsEnabled)
                 {
-                    if (action.IsEnabled)
+                    var rst = await action.ExecuteAsync(cancellationToken);
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        var rst = await action.ExecuteAsync(cancellationToken);
-                        if (cancellationToken.IsCancellationRequested || !rst)
-                        {
-                            State = ActionState.Failed;
-                            return false; // Stop execution if cancellation is requested
-                        }
+                        SetResumePoint(activeBranch, rst ? index + 1 : index);
+                        State = ActionState.Paused;
+                        return false;
                     }
-                }
-            }
-            else
-            {
-                foreach (var action in ElseBlock)
-                {
-                    if (action.IsEnabled)
+
+                    if (!rst)
                     {
-                        var rst = await action.ExecuteAsync(cancellationToken);
-                        if (cancellationToken.IsCancellationRequested || !rst)
-                        {
-                            State = ActionState.Failed;
-                            return false; // Stop execution if cancellation is requested
-                        }
+                        ClearResumePoint();
+                        State = ActionState.Failed;
+                        return false;
                     }
+
+                    await Task.Yield();
                 }
             }
 
+            ClearResumePoint();
             State = ActionState.Completed;
             return true;
+        }
+
+        private void SetResumePoint(IfResumeBranch branch, int nextIndex)
+        {
+            _resumeBranch = branch;
+            _resumeIndex = nextIndex;
+        }
+
+        private void ClearResumePoint()
+        {
+            _resumeBranch = null;
+            _resumeIndex = 0;
         }
 
     }

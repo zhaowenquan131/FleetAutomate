@@ -1,8 +1,16 @@
 using FleetAutomate.Model.Flow;
+using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.UndoRedo;
 using FleetAutomate.ViewModel;
 using NLog;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Windows.Threading;
 
 namespace FleetAutomate.Application.Commanding;
@@ -214,16 +222,20 @@ public sealed class UiSessionCommandExecutor
     private CommandResult AddAction(CommandEnvelope command)
     {
         var flow = RequireFlow(GetRequiredArgument(command, "flow"));
-        flow.SyncToModel();
 
         var action = _actionMutationService.CreateAction(GetRequiredArgument(command, "type"));
-        var path = _actionMutationService.AddAction(
-            flow.Model,
-            action,
+        var target = ResolveTargetCollection(
+            flow,
             GetOptionalArgument(command, "parent-path"),
-            GetOptionalArgument(command, "container"),
-            TryParseOptionalInt(GetOptionalArgument(command, "index"), "index"));
+            GetOptionalArgument(command, "container"));
+        var insertIndex = TryParseOptionalInt(GetOptionalArgument(command, "index"), "index") ?? target.Actions.Count;
+        if (insertIndex < 0 || insertIndex > target.Actions.Count)
+        {
+            throw new InvalidOperationException($"Insert index {insertIndex} is out of range for container '{target.ContainerName}'.");
+        }
 
+        flow.UndoRedoService.Execute(new AddActionEdit(target.CollectionRef, insertIndex, action));
+        var path = GetPathForInsertedAction(target, insertIndex);
         RefreshFlowAfterMutation(flow);
         return CommandResult.Success(CommandExecutionMode.UiSession, new
         {
@@ -238,23 +250,37 @@ public sealed class UiSessionCommandExecutor
     private CommandResult SetAction(CommandEnvelope command)
     {
         var flow = RequireFlow(GetRequiredArgument(command, "flow"));
-        flow.SyncToModel();
 
         var path = GetRequiredArgument(command, "path");
         var property = GetRequiredArgument(command, "property");
         var value = GetRequiredArgument(command, "value");
-        _actionMutationService.SetProperty(flow.Model, path, property, value);
+        var node = ResolveActionLocation(flow, path);
+        var propertyInfo = node.Action.GetType().GetProperty(property, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase)
+            ?? throw new InvalidOperationException($"Property '{property}' does not exist on action type '{node.Action.GetType().Name}'.");
 
+        if (!propertyInfo.CanWrite || propertyInfo.SetMethod == null || !propertyInfo.SetMethod.IsPublic)
+        {
+            throw new InvalidOperationException($"Property '{propertyInfo.Name}' on action type '{node.Action.GetType().Name}' is not writable.");
+        }
+
+        if (propertyInfo.GetCustomAttribute<IgnoreDataMemberAttribute>() != null)
+        {
+            throw new InvalidOperationException($"Property '{propertyInfo.Name}' cannot be set because it is runtime-only.");
+        }
+
+        var oldValue = propertyInfo.GetValue(node.Action);
+        var converted = _actionMutationService.ConvertPropertyValue(value, propertyInfo.PropertyType);
+        flow.UndoRedoService.Execute(new ActionPropertyEdit(node.ActionPath, propertyInfo.Name, oldValue, converted, $"Set {propertyInfo.Name}"));
         RefreshFlowAfterMutation(flow);
-        var node = _pathResolver.Resolve(flow.Model, path);
-        var config = _pathResolver.ExtractConfig(node.Action);
-        config.TryGetValue(property, out var storedValue);
+        var updated = _pathResolver.Resolve(flow.Model, path);
+        var config = _pathResolver.ExtractConfig(updated.Action);
+        config.TryGetValue(propertyInfo.Name, out var storedValue);
 
         return CommandResult.Success(CommandExecutionMode.UiSession, new
         {
             flow = flow.Name,
-            path = node.Path,
-            property,
+            path = updated.Path,
+            property = propertyInfo.Name,
             value = storedValue
         }, _sessionId);
     }
@@ -262,10 +288,10 @@ public sealed class UiSessionCommandExecutor
     private CommandResult RemoveAction(CommandEnvelope command)
     {
         var flow = RequireFlow(GetRequiredArgument(command, "flow"));
-        flow.SyncToModel();
 
         var path = GetRequiredArgument(command, "path");
-        _actionMutationService.RemoveAction(flow.Model, path);
+        var location = ResolveActionLocation(flow, path);
+        flow.UndoRedoService.Execute(new RemoveActionEdit(location.CollectionRef, location.Index, location.Action));
         RefreshFlowAfterMutation(flow);
 
         return CommandResult.Success(CommandExecutionMode.UiSession, new
@@ -295,11 +321,126 @@ public sealed class UiSessionCommandExecutor
 
     private void RefreshFlowAfterMutation(ObservableFlow flow)
     {
-        flow.RefreshFromModel();
-        flow.HasUnsavedChanges = true;
+        flow.SyncStructureToModelPreservingDirty();
+        flow.RefreshUndoRedoState();
         _viewModel.ProjectManager.MarkAsModified();
         _viewModel.NotifySessionUiStateChanged();
     }
+
+    private TargetCollection ResolveTargetCollection(ObservableFlow flow, string? parentPath, string? containerName)
+    {
+        if (string.IsNullOrWhiteSpace(parentPath))
+        {
+            var rootContainer = string.IsNullOrWhiteSpace(containerName) ? "root" : containerName;
+            if (!rootContainer.Equals("root", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Container can only be 'root' when parent-path is omitted.");
+            }
+
+            return new TargetCollection(flow.Actions, ActionCollectionRef.Root, "root", null);
+        }
+
+        var parent = ResolveActionLocation(flow, parentPath);
+        var container = string.IsNullOrWhiteSpace(containerName) ? "children" : containerName;
+
+        return parent.Action switch
+        {
+            IfAction ifAction => container.ToLowerInvariant() switch
+            {
+                "if" => new TargetCollection(ifAction.IfBlock, ActionCollectionRef.ForIfBlock(parent.ActionPath), "if", parent.Path),
+                "else" => new TargetCollection(ifAction.ElseBlock, ActionCollectionRef.ForElseBlock(parent.ActionPath), "else", parent.Path),
+                "children" => new TargetCollection(ifAction.GetChildActions(), ActionCollectionRef.ForIfBlock(parent.ActionPath), "children", parent.Path),
+                _ => throw new InvalidOperationException($"Container '{container}' is not supported for IfAction. Use if, else, or children.")
+            },
+            WhileLoopAction whileLoop when container.Equals("children", StringComparison.OrdinalIgnoreCase)
+                => new TargetCollection(whileLoop.Body, ActionCollectionRef.ForLoopBody(parent.ActionPath), "children", parent.Path),
+            ForLoopAction forLoop when container.Equals("children", StringComparison.OrdinalIgnoreCase)
+                => new TargetCollection(forLoop.Body, ActionCollectionRef.ForLoopBody(parent.ActionPath), "children", parent.Path),
+            ICompositeAction
+                => throw new InvalidOperationException($"Container '{container}' is not supported for composite action '{parent.Type}'. Use children."),
+            _ => throw new InvalidOperationException($"Action '{parent.Path}' of type '{parent.Type}' does not contain child action collections.")
+        };
+    }
+
+    private ActionLocation ResolveActionLocation(ObservableFlow flow, string path)
+    {
+        var parts = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+        {
+            throw new InvalidOperationException($"Action path '{path}' is invalid.");
+        }
+
+        ObservableCollection<IAction> collection = flow.Actions;
+        var collectionRef = ActionCollectionRef.Root;
+        var actionPath = new List<int>();
+        IAction? action = null;
+        var index = -1;
+
+        for (var i = 0; i < parts.Length; i++)
+        {
+            if (!int.TryParse(parts[i], out index))
+            {
+                throw new InvalidOperationException($"Action path '{path}' is invalid.");
+            }
+
+            if (index < 0 || index >= collection.Count)
+            {
+                throw new InvalidOperationException($"Action path '{path}' does not exist.");
+            }
+
+            action = collection[index];
+            actionPath.Add(index);
+
+            if (i == parts.Length - 1)
+            {
+                return new ActionLocation(collection, collectionRef, index, actionPath.ToArray(), action, path, action.GetType().Name);
+            }
+
+            var marker = parts[++i];
+            switch (action)
+            {
+                case IfAction ifAction when marker.Equals("if", StringComparison.OrdinalIgnoreCase) ||
+                                            marker.Equals("children", StringComparison.OrdinalIgnoreCase):
+                    collection = ifAction.IfBlock;
+                    collectionRef = ActionCollectionRef.ForIfBlock(actionPath.ToArray());
+                    break;
+                case IfAction ifAction when marker.Equals("else", StringComparison.OrdinalIgnoreCase):
+                    collection = ifAction.ElseBlock;
+                    collectionRef = ActionCollectionRef.ForElseBlock(actionPath.ToArray());
+                    break;
+                case WhileLoopAction whileLoop when marker.Equals("children", StringComparison.OrdinalIgnoreCase):
+                    collection = whileLoop.Body;
+                    collectionRef = ActionCollectionRef.ForLoopBody(actionPath.ToArray());
+                    break;
+                case ForLoopAction forLoop when marker.Equals("children", StringComparison.OrdinalIgnoreCase):
+                    collection = forLoop.Body;
+                    collectionRef = ActionCollectionRef.ForLoopBody(actionPath.ToArray());
+                    break;
+                default:
+                    throw new InvalidOperationException($"Container '{marker}' is not supported for action path '{path}'.");
+            }
+        }
+
+        throw new InvalidOperationException($"Action path '{path}' is invalid.");
+    }
+
+    private static string GetPathForInsertedAction(TargetCollection target, int insertIndex)
+    {
+        if (string.IsNullOrEmpty(target.ParentPath))
+        {
+            return insertIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var prefix = target.ContainerName.Equals("children", StringComparison.OrdinalIgnoreCase)
+            ? $"{target.ParentPath}.children"
+            : $"{target.ParentPath}.{target.ContainerName}";
+
+        return $"{prefix}.{insertIndex.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+    }
+
+    private sealed record TargetCollection(ObservableCollection<IAction> Actions, ActionCollectionRef CollectionRef, string ContainerName, string? ParentPath);
+
+    private sealed record ActionLocation(ObservableCollection<IAction> Actions, ActionCollectionRef CollectionRef, int Index, int[] ActionPath, IAction Action, string Path, string Type);
 
     private ObservableProject RequireProject()
     {

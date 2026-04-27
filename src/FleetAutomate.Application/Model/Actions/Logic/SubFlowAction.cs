@@ -14,8 +14,10 @@ using NLog;
 namespace FleetAutomate.Model.Actions.Logic
 {
     [DataContract]
-    public class SubFlowAction : ILogicAction, ICompositeAction, ISyntaxValidator, INotifyPropertyChanged
+    public class SubFlowAction : ILogicAction, ICompositeAction, ISyntaxValidator, INotifyPropertyChanged, IPauseAwareAction
     {
+        public ActionPauseBehavior PauseBehavior => ActionPauseBehavior.Cooperative;
+
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public event PropertyChangedEventHandler? PropertyChanged;
