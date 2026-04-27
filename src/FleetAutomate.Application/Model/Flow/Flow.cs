@@ -88,6 +88,12 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(SendKeysAction))]
     [KnownType(typeof(SendKeyDownAction))]
     [KnownType(typeof(SendKeyUpAction))]
+    [KnownType(typeof(IfWindowContainsElementAction))]
+    [KnownType(typeof(SetFocusOnElementAction))]
+    [KnownType(typeof(SelectRadioButtonAction))]
+    [KnownType(typeof(SetCheckBoxStateAction))]
+    [KnownType(typeof(SelectComboBoxItemAction))]
+    [KnownType(typeof(SelectTabItemAction))]
     public partial class TestFlow : ILogicAction
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

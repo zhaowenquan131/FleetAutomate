@@ -6,6 +6,7 @@ using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.Text;
 using FleetAutomate.Model.Actions.MouseAndKeyboard;
+using FleetAutomate.Model.Actions.UIAutomation;
 
 namespace FleetAutomate.Tests.Cli;
 
@@ -92,7 +93,19 @@ public sealed class ActionMutationServiceTests
         { "SendKeyDownAction", typeof(SendKeyDownAction) },
         { "Send Key Down", typeof(SendKeyDownAction) },
         { "SendKeyUpAction", typeof(SendKeyUpAction) },
-        { "Send Key Up", typeof(SendKeyUpAction) }
+        { "Send Key Up", typeof(SendKeyUpAction) },
+        { "IfWindowContainsElementAction", typeof(IfWindowContainsElementAction) },
+        { "If Window Contains Element", typeof(IfWindowContainsElementAction) },
+        { "SetFocusOnElementAction", typeof(SetFocusOnElementAction) },
+        { "Set Focus on Element", typeof(SetFocusOnElementAction) },
+        { "SelectRadioButtonAction", typeof(SelectRadioButtonAction) },
+        { "Select Radio Button", typeof(SelectRadioButtonAction) },
+        { "SetCheckBoxStateAction", typeof(SetCheckBoxStateAction) },
+        { "Set CheckBox State", typeof(SetCheckBoxStateAction) },
+        { "SelectComboBoxItemAction", typeof(SelectComboBoxItemAction) },
+        { "Select Item in ComboBox", typeof(SelectComboBoxItemAction) },
+        { "SelectTabItemAction", typeof(SelectTabItemAction) },
+        { "Select Tab Item", typeof(SelectTabItemAction) }
     };
 
     [Theory]

@@ -1039,19 +1039,19 @@ namespace FleetAutomate.ViewModel
             uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Text", "UIAutomation", "🔍",
                 typeof(Model.Actions.UIAutomation.IfWindowContainsTextAction), "Check if window contains text"));
             uiAutomation.Actions.Add(new ActionTemplate("If Window Contains Element", "UIAutomation", "🔎",
-                typeof(NotImplementedAction), "Check if window contains element"));
+                typeof(Model.Actions.UIAutomation.IfWindowContainsElementAction), "Check if window contains element"));
             uiAutomation.Actions.Add(new ActionTemplate("Set Text to Input", "UIAutomation", "⌨️",
                 typeof(Model.Actions.UIAutomation.SetTextAction), "Type text into input field"));
             uiAutomation.Actions.Add(new ActionTemplate("Set Focus on Element", "UIAutomation", "🎯",
-                typeof(NotImplementedAction), "Focus on UI element"));
+                typeof(Model.Actions.UIAutomation.SetFocusOnElementAction), "Focus on UI element"));
             uiAutomation.Actions.Add(new ActionTemplate("Select Radio Button", "UIAutomation", "🔘",
-                typeof(NotImplementedAction), "Select radio button"));
+                typeof(Model.Actions.UIAutomation.SelectRadioButtonAction), "Select radio button"));
             uiAutomation.Actions.Add(new ActionTemplate("Set CheckBox State", "UIAutomation", "☑️",
-                typeof(NotImplementedAction), "Check/uncheck checkbox"));
+                typeof(Model.Actions.UIAutomation.SetCheckBoxStateAction), "Check/uncheck checkbox"));
             uiAutomation.Actions.Add(new ActionTemplate("Select Item in ComboBox", "UIAutomation", "📋",
-                typeof(NotImplementedAction), "Select combobox item"));
+                typeof(Model.Actions.UIAutomation.SelectComboBoxItemAction), "Select combobox item"));
             uiAutomation.Actions.Add(new ActionTemplate("Select Tab Item", "UIAutomation", "📑",
-                typeof(NotImplementedAction), "Switch to tab"));
+                typeof(Model.Actions.UIAutomation.SelectTabItemAction), "Switch to tab"));
 
             // 4. Scripts Category (5 actions)
             var scripts = new ActionCategory("Scripts", "📜");

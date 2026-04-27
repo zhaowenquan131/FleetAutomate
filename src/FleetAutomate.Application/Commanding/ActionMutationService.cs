@@ -96,6 +96,18 @@ public class ActionMutationService
         ["Send Key Down"] = () => new SendKeyDownAction(),
         ["SendKeyUpAction"] = () => new SendKeyUpAction(),
         ["Send Key Up"] = () => new SendKeyUpAction(),
+        ["IfWindowContainsElementAction"] = () => new IfWindowContainsElementAction(),
+        ["If Window Contains Element"] = () => new IfWindowContainsElementAction(),
+        ["SetFocusOnElementAction"] = () => new SetFocusOnElementAction(),
+        ["Set Focus on Element"] = () => new SetFocusOnElementAction(),
+        ["SelectRadioButtonAction"] = () => new SelectRadioButtonAction(),
+        ["Select Radio Button"] = () => new SelectRadioButtonAction(),
+        ["SetCheckBoxStateAction"] = () => new SetCheckBoxStateAction(),
+        ["Set CheckBox State"] = () => new SetCheckBoxStateAction(),
+        ["SelectComboBoxItemAction"] = () => new SelectComboBoxItemAction(),
+        ["Select Item in ComboBox"] = () => new SelectComboBoxItemAction(),
+        ["SelectTabItemAction"] = () => new SelectTabItemAction(),
+        ["Select Tab Item"] = () => new SelectTabItemAction(),
         ["IfAction"] = () => new IfAction
         {
             Environment = new FleetAutomate.Model.Actions.Logic.Environment(),
