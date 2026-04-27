@@ -1020,15 +1020,15 @@ namespace FleetAutomate.ViewModel
             system.Actions.Add(new ActionTemplate("Log", "System", "📝",
                 typeof(Model.Actions.System.LogAction), "Log a message to output"));
             system.Actions.Add(new ActionTemplate("If Process Exists", "System", "🔍",
-                typeof(NotImplementedAction), "Check if process is running"));
+                typeof(Model.Actions.System.IfProcessExistsAction), "Check if process is running"));
             system.Actions.Add(new ActionTemplate("Kill Process", "System", "❌",
-                typeof(NotImplementedAction), "Terminate a process"));
+                typeof(Model.Actions.System.KillProcessAction), "Terminate a process"));
             system.Actions.Add(new ActionTemplate("Get Screenshot", "System", "📸",
-                typeof(NotImplementedAction), "Capture screen to file"));
+                typeof(Model.Actions.System.GetScreenshotAction), "Capture screen to file"));
             system.Actions.Add(new ActionTemplate("Set Clipboard", "System", "📋",
-                typeof(NotImplementedAction), "Set clipboard text"));
+                typeof(Model.Actions.System.SetClipboardAction), "Set clipboard text"));
             system.Actions.Add(new ActionTemplate("Play Sound", "System", "🔊",
-                typeof(NotImplementedAction), "Play audio file"));
+                typeof(Model.Actions.System.PlaySoundAction), "Play audio file"));
 
             // 3. UI Automation Category (10 actions)
             var uiAutomation = new ActionCategory("UI Automation", "🖱️");
@@ -1056,44 +1056,44 @@ namespace FleetAutomate.ViewModel
             // 4. Scripts Category (5 actions)
             var scripts = new ActionCategory("Scripts", "📜");
             scripts.Actions.Add(new ActionTemplate("Run CMD", "Scripts", "💻",
-                typeof(NotImplementedAction), "Execute command prompt command"));
+                typeof(Model.Actions.Scripts.RunCommandAction), "Execute command prompt command"));
             scripts.Actions.Add(new ActionTemplate("Run PowerShell Command", "Scripts", "🔷",
-                typeof(NotImplementedAction), "Execute PowerShell command"));
+                typeof(Model.Actions.Scripts.RunPowerShellCommandAction), "Execute PowerShell command"));
             scripts.Actions.Add(new ActionTemplate("Run Batch Script", "Scripts", "📜",
-                typeof(NotImplementedAction), "Execute batch file"));
+                typeof(Model.Actions.Scripts.RunBatchScriptAction), "Execute batch file"));
             scripts.Actions.Add(new ActionTemplate("Run PowerShell Script", "Scripts", "📘",
-                typeof(NotImplementedAction), "Execute PowerShell script file"));
+                typeof(Model.Actions.Scripts.RunPowerShellScriptAction), "Execute PowerShell script file"));
             scripts.Actions.Add(new ActionTemplate("Run Python Script", "Scripts", "🐍",
-                typeof(NotImplementedAction), "Execute Python script"));
+                typeof(Model.Actions.Scripts.RunPythonScriptAction), "Execute Python script"));
 
             // 5. File System Category (13 actions)
             var fileSystem = new ActionCategory("File System", "📁");
             fileSystem.Actions.Add(new ActionTemplate("If File Exists", "FileSystem", "📄",
-                typeof(NotImplementedAction), "Check if file exists"));
+                typeof(Model.Actions.FileSystem.IfFileExistsAction), "Check if file exists"));
             fileSystem.Actions.Add(new ActionTemplate("If Directory Exists", "FileSystem", "📁",
-                typeof(NotImplementedAction), "Check if directory exists"));
+                typeof(Model.Actions.FileSystem.IfDirectoryExistsAction), "Check if directory exists"));
             fileSystem.Actions.Add(new ActionTemplate("Create Directory", "FileSystem", "📁+",
-                typeof(NotImplementedAction), "Create new directory"));
+                typeof(Model.Actions.FileSystem.CreateDirectoryAction), "Create new directory"));
             fileSystem.Actions.Add(new ActionTemplate("Clear Directory", "FileSystem", "🗑️",
-                typeof(NotImplementedAction), "Delete all files in directory"));
+                typeof(Model.Actions.FileSystem.ClearDirectoryAction), "Delete all files in directory"));
             fileSystem.Actions.Add(new ActionTemplate("Delete Directory", "FileSystem", "❌",
-                typeof(NotImplementedAction), "Remove directory"));
+                typeof(Model.Actions.FileSystem.DeleteDirectoryAction), "Remove directory"));
             fileSystem.Actions.Add(new ActionTemplate("Wait for File", "FileSystem", "⏱️",
-                typeof(NotImplementedAction), "Wait until file exists"));
+                typeof(Model.Actions.FileSystem.WaitForFileAction), "Wait until file exists"));
             fileSystem.Actions.Add(new ActionTemplate("Copy File", "FileSystem", "📋",
-                typeof(NotImplementedAction), "Copy file to destination"));
+                typeof(Model.Actions.FileSystem.CopyFileAction), "Copy file to destination"));
             fileSystem.Actions.Add(new ActionTemplate("Move File", "FileSystem", "➡️",
-                typeof(NotImplementedAction), "Move file to destination"));
+                typeof(Model.Actions.FileSystem.MoveFileAction), "Move file to destination"));
             fileSystem.Actions.Add(new ActionTemplate("Delete File", "FileSystem", "🗑️",
-                typeof(NotImplementedAction), "Delete file"));
+                typeof(Model.Actions.FileSystem.DeleteFileAction), "Delete file"));
             fileSystem.Actions.Add(new ActionTemplate("Rename File", "FileSystem", "✏️",
-                typeof(NotImplementedAction), "Rename file"));
+                typeof(Model.Actions.FileSystem.RenameFileAction), "Rename file"));
             fileSystem.Actions.Add(new ActionTemplate("Read Text from File", "FileSystem", "📖",
-                typeof(NotImplementedAction), "Read file content"));
+                typeof(Model.Actions.FileSystem.ReadTextFromFileAction), "Read file content"));
             fileSystem.Actions.Add(new ActionTemplate("Write Text to File", "FileSystem", "💾",
-                typeof(NotImplementedAction), "Write text to file"));
+                typeof(Model.Actions.FileSystem.WriteTextToFileAction), "Write text to file"));
             fileSystem.Actions.Add(new ActionTemplate("Get Directory of File", "FileSystem", "📂",
-                typeof(NotImplementedAction), "Extract directory path"));
+                typeof(Model.Actions.FileSystem.GetDirectoryOfFileAction), "Extract directory path"));
 
             // 6. Mouse & Keyboard Category (6 actions)
             var mouseAndKeyboard = new ActionCategory("Mouse & Keyboard", "⌨️");

@@ -1,6 +1,8 @@
 ﻿using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.UIAutomation;
 using Canvas.TestRunner.Model.Actions;
@@ -48,6 +50,29 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(IfWindowContainsTextAction))]
     [KnownType(typeof(NotImplementedAction))]
     [KnownType(typeof(LogAction))]
+    [KnownType(typeof(IfFileExistsAction))]
+    [KnownType(typeof(IfDirectoryExistsAction))]
+    [KnownType(typeof(CreateDirectoryAction))]
+    [KnownType(typeof(ClearDirectoryAction))]
+    [KnownType(typeof(DeleteDirectoryAction))]
+    [KnownType(typeof(WaitForFileAction))]
+    [KnownType(typeof(CopyFileAction))]
+    [KnownType(typeof(MoveFileAction))]
+    [KnownType(typeof(DeleteFileAction))]
+    [KnownType(typeof(RenameFileAction))]
+    [KnownType(typeof(ReadTextFromFileAction))]
+    [KnownType(typeof(WriteTextToFileAction))]
+    [KnownType(typeof(GetDirectoryOfFileAction))]
+    [KnownType(typeof(RunCommandAction))]
+    [KnownType(typeof(RunPowerShellCommandAction))]
+    [KnownType(typeof(RunBatchScriptAction))]
+    [KnownType(typeof(RunPowerShellScriptAction))]
+    [KnownType(typeof(RunPythonScriptAction))]
+    [KnownType(typeof(IfProcessExistsAction))]
+    [KnownType(typeof(KillProcessAction))]
+    [KnownType(typeof(GetScreenshotAction))]
+    [KnownType(typeof(SetClipboardAction))]
+    [KnownType(typeof(PlaySoundAction))]
     public partial class TestFlow : ILogicAction
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
