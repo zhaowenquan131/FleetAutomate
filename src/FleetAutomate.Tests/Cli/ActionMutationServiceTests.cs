@@ -1,8 +1,10 @@
 using FleetAutomate.Application.Commanding;
 using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.DateAndTime;
 using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.Text;
 
 namespace FleetAutomate.Tests.Cli;
 
@@ -65,7 +67,19 @@ public sealed class ActionMutationServiceTests
         { "SetClipboardAction", typeof(SetClipboardAction) },
         { "Set Clipboard", typeof(SetClipboardAction) },
         { "PlaySoundAction", typeof(PlaySoundAction) },
-        { "Play Sound", typeof(PlaySoundAction) }
+        { "Play Sound", typeof(PlaySoundAction) },
+        { "ChangeTextCaseAction", typeof(ChangeTextCaseAction) },
+        { "Change Text Case", typeof(ChangeTextCaseAction) },
+        { "ReplaceTextAction", typeof(ReplaceTextAction) },
+        { "Replace Text", typeof(ReplaceTextAction) },
+        { "SubstringAction", typeof(SubstringAction) },
+        { "Substring", typeof(SubstringAction) },
+        { "GetCurrentDateTimeAction", typeof(GetCurrentDateTimeAction) },
+        { "Get Current Date/Time", typeof(GetCurrentDateTimeAction) },
+        { "FormatDateTimeAction", typeof(FormatDateTimeAction) },
+        { "Format Date/Time", typeof(FormatDateTimeAction) },
+        { "AddDateTimeAction", typeof(AddDateTimeAction) },
+        { "Add to Date/Time", typeof(AddDateTimeAction) }
     };
 
     [Theory]

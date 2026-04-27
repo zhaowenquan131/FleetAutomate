@@ -1,8 +1,10 @@
 using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.DateAndTime;
 using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.Text;
 using FleetAutomate.Model.Actions.UIAutomation;
 using FleetAutomate.Model.Flow;
 using System.ComponentModel;
@@ -69,6 +71,18 @@ public class ActionMutationService
         ["Set Clipboard"] = () => new SetClipboardAction(),
         ["PlaySoundAction"] = () => new PlaySoundAction(),
         ["Play Sound"] = () => new PlaySoundAction(),
+        ["ChangeTextCaseAction"] = () => new ChangeTextCaseAction(),
+        ["Change Text Case"] = () => new ChangeTextCaseAction(),
+        ["ReplaceTextAction"] = () => new ReplaceTextAction(),
+        ["Replace Text"] = () => new ReplaceTextAction(),
+        ["SubstringAction"] = () => new SubstringAction(),
+        ["Substring"] = () => new SubstringAction(),
+        ["GetCurrentDateTimeAction"] = () => new GetCurrentDateTimeAction(),
+        ["Get Current Date/Time"] = () => new GetCurrentDateTimeAction(),
+        ["FormatDateTimeAction"] = () => new FormatDateTimeAction(),
+        ["Format Date/Time"] = () => new FormatDateTimeAction(),
+        ["AddDateTimeAction"] = () => new AddDateTimeAction(),
+        ["Add to Date/Time"] = () => new AddDateTimeAction(),
         ["IfAction"] = () => new IfAction
         {
             Environment = new FleetAutomate.Model.Actions.Logic.Environment(),

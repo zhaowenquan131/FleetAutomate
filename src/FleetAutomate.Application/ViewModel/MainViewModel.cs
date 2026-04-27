@@ -1110,11 +1110,23 @@ namespace FleetAutomate.ViewModel
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Key Up", "MouseAndKeyboard", "⬆️",
                 typeof(NotImplementedAction), "Release key"));
 
-            // 7. Text Category (pending - empty for now)
+            // 7. Text Category
             var text = new ActionCategory("Text", "📝");
+            text.Actions.Add(new ActionTemplate("Change Text Case", "Text", "Aa",
+                typeof(Model.Actions.Text.ChangeTextCaseAction), "Convert text to upper, lower, or title case"));
+            text.Actions.Add(new ActionTemplate("Replace Text", "Text", "↔️",
+                typeof(Model.Actions.Text.ReplaceTextAction), "Replace matching text"));
+            text.Actions.Add(new ActionTemplate("Substring", "Text", "✂️",
+                typeof(Model.Actions.Text.SubstringAction), "Extract part of text"));
 
-            // 8. Date & Time Category (pending - empty for now)
+            // 8. Date & Time Category
             var dateAndTime = new ActionCategory("Date & Time", "🕐");
+            dateAndTime.Actions.Add(new ActionTemplate("Get Current Date/Time", "DateAndTime", "🕐",
+                typeof(Model.Actions.DateAndTime.GetCurrentDateTimeAction), "Get current date and time"));
+            dateAndTime.Actions.Add(new ActionTemplate("Format Date/Time", "DateAndTime", "📅",
+                typeof(Model.Actions.DateAndTime.FormatDateTimeAction), "Format a date and time value"));
+            dateAndTime.Actions.Add(new ActionTemplate("Add to Date/Time", "DateAndTime", "+🕐",
+                typeof(Model.Actions.DateAndTime.AddDateTimeAction), "Add time to a date and time value"));
 
             // Add all categories to collection
             ActionCategories.Add(logicAndFlow);

@@ -1,9 +1,11 @@
 ﻿using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.DateAndTime;
 using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Loops;
 using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.Text;
 using FleetAutomate.Model.Actions.UIAutomation;
 using Canvas.TestRunner.Model.Actions;
 using FleetAutomate.Model.Flow;
@@ -73,6 +75,12 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(GetScreenshotAction))]
     [KnownType(typeof(SetClipboardAction))]
     [KnownType(typeof(PlaySoundAction))]
+    [KnownType(typeof(ChangeTextCaseAction))]
+    [KnownType(typeof(ReplaceTextAction))]
+    [KnownType(typeof(SubstringAction))]
+    [KnownType(typeof(GetCurrentDateTimeAction))]
+    [KnownType(typeof(FormatDateTimeAction))]
+    [KnownType(typeof(AddDateTimeAction))]
     public partial class TestFlow : ILogicAction
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
