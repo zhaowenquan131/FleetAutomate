@@ -1098,17 +1098,17 @@ namespace FleetAutomate.ViewModel
             // 6. Mouse & Keyboard Category (6 actions)
             var mouseAndKeyboard = new ActionCategory("Mouse & Keyboard", "⌨️");
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Move Mouse To", "MouseAndKeyboard", "🖱️",
-                typeof(NotImplementedAction), "Move mouse to coordinates"));
+                typeof(Model.Actions.MouseAndKeyboard.MoveMouseToAction), "Move mouse to coordinates"));
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Mouse Single Click", "MouseAndKeyboard", "👆",
-                typeof(NotImplementedAction), "Perform mouse click"));
+                typeof(Model.Actions.MouseAndKeyboard.MouseSingleClickAction), "Perform mouse click"));
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Mouse Double Click", "MouseAndKeyboard", "👆👆",
-                typeof(NotImplementedAction), "Perform double click"));
+                typeof(Model.Actions.MouseAndKeyboard.MouseDoubleClickAction), "Perform double click"));
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Keys", "MouseAndKeyboard", "⌨️",
-                typeof(NotImplementedAction), "Send keyboard input"));
+                typeof(Model.Actions.MouseAndKeyboard.SendKeysAction), "Send keyboard input"));
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Key Down", "MouseAndKeyboard", "⬇️",
-                typeof(NotImplementedAction), "Press key down"));
+                typeof(Model.Actions.MouseAndKeyboard.SendKeyDownAction), "Press key down"));
             mouseAndKeyboard.Actions.Add(new ActionTemplate("Send Key Up", "MouseAndKeyboard", "⬆️",
-                typeof(NotImplementedAction), "Release key"));
+                typeof(Model.Actions.MouseAndKeyboard.SendKeyUpAction), "Release key"));
 
             // 7. Text Category
             var text = new ActionCategory("Text", "📝");

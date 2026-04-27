@@ -3,6 +3,7 @@ using FleetAutomate.Model.Actions.DateAndTime;
 using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Loops;
+using FleetAutomate.Model.Actions.MouseAndKeyboard;
 using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.Text;
@@ -81,6 +82,12 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(GetCurrentDateTimeAction))]
     [KnownType(typeof(FormatDateTimeAction))]
     [KnownType(typeof(AddDateTimeAction))]
+    [KnownType(typeof(MoveMouseToAction))]
+    [KnownType(typeof(MouseSingleClickAction))]
+    [KnownType(typeof(MouseDoubleClickAction))]
+    [KnownType(typeof(SendKeysAction))]
+    [KnownType(typeof(SendKeyDownAction))]
+    [KnownType(typeof(SendKeyUpAction))]
     public partial class TestFlow : ILogicAction
     {
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();

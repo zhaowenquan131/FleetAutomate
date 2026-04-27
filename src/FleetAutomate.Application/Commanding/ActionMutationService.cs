@@ -2,6 +2,7 @@ using FleetAutomate.Model;
 using FleetAutomate.Model.Actions.DateAndTime;
 using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.MouseAndKeyboard;
 using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.Text;
@@ -83,6 +84,18 @@ public class ActionMutationService
         ["Format Date/Time"] = () => new FormatDateTimeAction(),
         ["AddDateTimeAction"] = () => new AddDateTimeAction(),
         ["Add to Date/Time"] = () => new AddDateTimeAction(),
+        ["MoveMouseToAction"] = () => new MoveMouseToAction(),
+        ["Move Mouse To"] = () => new MoveMouseToAction(),
+        ["MouseSingleClickAction"] = () => new MouseSingleClickAction(),
+        ["Mouse Single Click"] = () => new MouseSingleClickAction(),
+        ["MouseDoubleClickAction"] = () => new MouseDoubleClickAction(),
+        ["Mouse Double Click"] = () => new MouseDoubleClickAction(),
+        ["SendKeysAction"] = () => new SendKeysAction(),
+        ["Send Keys"] = () => new SendKeysAction(),
+        ["SendKeyDownAction"] = () => new SendKeyDownAction(),
+        ["Send Key Down"] = () => new SendKeyDownAction(),
+        ["SendKeyUpAction"] = () => new SendKeyUpAction(),
+        ["Send Key Up"] = () => new SendKeyUpAction(),
         ["IfAction"] = () => new IfAction
         {
             Environment = new FleetAutomate.Model.Actions.Logic.Environment(),

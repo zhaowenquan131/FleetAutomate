@@ -5,6 +5,7 @@ using FleetAutomate.Model.Actions.FileSystem;
 using FleetAutomate.Model.Actions.Scripts;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.Text;
+using FleetAutomate.Model.Actions.MouseAndKeyboard;
 
 namespace FleetAutomate.Tests.Cli;
 
@@ -79,7 +80,19 @@ public sealed class ActionMutationServiceTests
         { "FormatDateTimeAction", typeof(FormatDateTimeAction) },
         { "Format Date/Time", typeof(FormatDateTimeAction) },
         { "AddDateTimeAction", typeof(AddDateTimeAction) },
-        { "Add to Date/Time", typeof(AddDateTimeAction) }
+        { "Add to Date/Time", typeof(AddDateTimeAction) },
+        { "MoveMouseToAction", typeof(MoveMouseToAction) },
+        { "Move Mouse To", typeof(MoveMouseToAction) },
+        { "MouseSingleClickAction", typeof(MouseSingleClickAction) },
+        { "Mouse Single Click", typeof(MouseSingleClickAction) },
+        { "MouseDoubleClickAction", typeof(MouseDoubleClickAction) },
+        { "Mouse Double Click", typeof(MouseDoubleClickAction) },
+        { "SendKeysAction", typeof(SendKeysAction) },
+        { "Send Keys", typeof(SendKeysAction) },
+        { "SendKeyDownAction", typeof(SendKeyDownAction) },
+        { "Send Key Down", typeof(SendKeyDownAction) },
+        { "SendKeyUpAction", typeof(SendKeyUpAction) },
+        { "Send Key Up", typeof(SendKeyUpAction) }
     };
 
     [Theory]
