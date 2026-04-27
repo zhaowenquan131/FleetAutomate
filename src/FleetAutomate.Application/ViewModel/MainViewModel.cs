@@ -6,6 +6,7 @@ using FleetAutomate.Model.Flow;
 using FleetAutomate.Model.Project;
 using FleetAutomate.Services;
 using FleetAutomate.UndoRedo;
+using FleetAutomate.Application.ActionConfiguration;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -302,6 +303,12 @@ namespace FleetAutomate.ViewModel
         /// Returns selected flow name, or null if cancelled.
         /// </summary>
         public event Func<IEnumerable<string>, string?>? OnPromptSubFlow;
+
+        /// <summary>
+        /// Event fired when UI needs to configure a schema-backed action.
+        /// Returns property values to apply, or null if cancelled.
+        /// </summary>
+        public event Func<IAction, IReadOnlyList<ActionConfigurationValue>?>? OnPromptActionConfiguration;
 
         /// <summary>
         /// Command to create a new project.
@@ -1293,6 +1300,16 @@ namespace FleetAutomate.ViewModel
                 {
                     // Create instance of the action normally
                     action = CreateActionInstance(actionTemplate);
+                    if (action != null && ActionConfigurationSchemaProvider.HasSchema(action.GetType()) && OnPromptActionConfiguration != null)
+                    {
+                        var values = OnPromptActionConfiguration.Invoke(action);
+                        if (values == null)
+                        {
+                            return;
+                        }
+
+                        ActionConfigurationValueApplier.ApplyValues(action, values);
+                    }
                 }
 
                 if (action != null)

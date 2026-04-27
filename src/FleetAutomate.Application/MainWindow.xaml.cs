@@ -1,5 +1,6 @@
 ﻿using FleetAutomate.View.Dialog;
 using FleetAutomate.ViewModel;
+using FleetAutomate.Application.ActionConfiguration;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -261,6 +262,22 @@ namespace FleetAutomate
                 }
 
                 return null; // User cancelled
+            };
+
+            ViewModel.OnPromptActionConfiguration += action =>
+            {
+                var schema = ActionConfigurationSchemaProvider.GetSchema(action.GetType());
+                if (schema == null)
+                {
+                    return [];
+                }
+
+                var dialog = new ActionConfigurationDialog(action, schema)
+                {
+                    Owner = this
+                };
+
+                return dialog.ShowDialog() == true ? dialog.Values : null;
             };
 
             // Handle error messages
@@ -983,6 +1000,11 @@ namespace FleetAutomate
                         {
                             EditSubFlowAction(subFlowAction);
                         }
+                        // Schema-backed actions use a typed generic configuration dialog.
+                        else if (ActionConfigurationSchemaProvider.HasSchema(action.GetType()))
+                        {
+                            EditSchemaConfiguredAction(action);
+                        }
                         else
                         {
                             // Open the standard properties dialog
@@ -1040,6 +1062,30 @@ namespace FleetAutomate
                 // For Name, AutomationId, ClassName, etc.
                 return $"{identifierType}: {elementIdentifier}";
             }
+        }
+
+        private void EditSchemaConfiguredAction(Model.IAction action)
+        {
+            var schema = ActionConfigurationSchemaProvider.GetSchema(action.GetType());
+            if (schema == null)
+            {
+                return;
+            }
+
+            var dialog = new ActionConfigurationDialog(action, schema)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            var changes = dialog.Values
+                .Select(value => (value.PropertyName, value.Value))
+                .ToArray();
+            ViewModel.ApplyActionPropertyChanges(action, $"Edit {action.Name}", changes);
         }
 
         private void EditIfAction(Model.Actions.Logic.IfAction ifAction)

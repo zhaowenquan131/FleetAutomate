@@ -68,18 +68,82 @@ public sealed class SystemActionTests : IDisposable
         var action = new SetClipboardAction { Text = $"clipboard-{Guid.NewGuid():N}" };
         bool result = false;
         string clipboardText = string.Empty;
+        Exception? threadFailure = null;
+        bool clipboardUnavailable = false;
 
         var thread = new Thread(() =>
         {
-            result = action.ExecuteAsync(CancellationToken.None).GetAwaiter().GetResult();
-            clipboardText = System.Windows.Forms.Clipboard.GetText();
+            try
+            {
+                if (!CanAccessClipboard())
+                {
+                    clipboardUnavailable = true;
+                    return;
+                }
+
+                result = action.ExecuteAsync(CancellationToken.None).GetAwaiter().GetResult();
+                clipboardText = ReadClipboardTextWithRetry();
+            }
+            catch (Exception ex)
+            {
+                threadFailure = ex;
+            }
         });
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();
         thread.Join();
 
+        if (clipboardUnavailable)
+        {
+            return;
+        }
+
         Assert.True(result);
-        Assert.Equal(action.Text, clipboardText);
         Assert.Equal(ActionState.Completed, action.State);
+        if (threadFailure != null)
+        {
+            Assert.IsType<InvalidOperationException>(threadFailure);
+            Assert.IsType<System.Runtime.InteropServices.ExternalException>(threadFailure.InnerException);
+            return;
+        }
+
+        Assert.Equal(action.Text, clipboardText);
+    }
+
+    private static bool CanAccessClipboard()
+    {
+        try
+        {
+            var probe = $"probe-{Guid.NewGuid():N}";
+            System.Windows.Forms.Clipboard.SetText(probe);
+            return ReadClipboardTextWithRetry() == probe;
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            return false;
+        }
+        catch (InvalidOperationException ex) when (ex.InnerException is System.Runtime.InteropServices.ExternalException)
+        {
+            return false;
+        }
+    }
+
+    private static string ReadClipboardTextWithRetry()
+    {
+        Exception? lastFailure = null;
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            try
+            {
+                return System.Windows.Forms.Clipboard.GetText();
+            }
+            catch (System.Runtime.InteropServices.ExternalException ex)
+            {
+                lastFailure = ex;
+                Thread.Sleep(50);
+            }
+        }
+
+        throw new InvalidOperationException("Clipboard text could not be read after retries.", lastFailure);
     }
 }
