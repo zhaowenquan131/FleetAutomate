@@ -148,6 +148,22 @@ namespace FleetAutomate
                 return null; // User cancelled
             };
 
+            // Handle wait duration prompt
+            ViewModel.OnPromptWaitDuration += () =>
+            {
+                var dialog = new WaitDurationDialog
+                {
+                    Owner = this
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    return (dialog.Duration, dialog.Unit);
+                }
+
+                return null; // User cancelled
+            };
+
             // Handle wait for element prompt
             ViewModel.OnPromptWaitForElement += () =>
             {
@@ -952,6 +968,11 @@ namespace FleetAutomate
                         {
                             EditLogAction(logAction);
                         }
+                        // Special handling for WaitDurationAction - use WaitDurationDialog for editing
+                        else if (action is Model.Actions.System.WaitDurationAction waitDurationAction)
+                        {
+                            EditWaitDurationAction(waitDurationAction);
+                        }
                         // Special handling for SetVariableAction<T> - use SetVariableDialog for editing
                         else if (IsSetVariableAction(action))
                         {
@@ -1313,6 +1334,24 @@ namespace FleetAutomate
                     (nameof(Model.Actions.System.LogAction.LogLevel), dialog.LogLevel),
                     (nameof(Model.Actions.System.LogAction.Message), dialog.Message),
                     (nameof(Model.Actions.System.LogAction.Description), $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}")
+                ]);
+
+                RefreshActiveTestFlow();
+            }
+        }
+
+        private void EditWaitDurationAction(Model.Actions.System.WaitDurationAction waitAction)
+        {
+            var dialog = new WaitDurationDialog(waitAction.Duration, waitAction.Unit)
+            {
+                Owner = this
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                ViewModel.ApplyActionPropertyChanges(waitAction, "Edit wait action", [
+                    (nameof(Model.Actions.System.WaitDurationAction.Duration), dialog.Duration),
+                    (nameof(Model.Actions.System.WaitDurationAction.Unit), dialog.Unit)
                 ]);
 
                 RefreshActiveTestFlow();

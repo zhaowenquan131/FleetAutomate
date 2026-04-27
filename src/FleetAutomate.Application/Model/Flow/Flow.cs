@@ -41,6 +41,7 @@ namespace FleetAutomate.Model.Flow
     [KnownType(typeof(IfAction))]
     [KnownType(typeof(SubFlowAction))]
     [KnownType(typeof(LaunchApplicationAction))]
+    [KnownType(typeof(WaitDurationAction))]
     [KnownType(typeof(WaitForElementAction))]
     [KnownType(typeof(ClickElementAction))]
     [KnownType(typeof(SetTextAction))]

@@ -1,6 +1,7 @@
 using FleetAutomate.Model;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Expression;
+using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Flow;
 
 namespace FleetAutomate.Tests.Flow;
@@ -303,6 +304,84 @@ public sealed class TestFlowExecutionTests
         Assert.Equal(1, current.ExecutionCount);
         Assert.Equal(0, blockedSibling.ExecutionCount);
         Assert.Equal(0, next.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task ContinueAsync_AfterPauseInsideIfAction_DoesNotReexecuteCompletedChildren()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        var completedChild = new AtomicGateAction("completed");
+        var remainingChild = new RecordingAction("remaining");
+        var next = new RecordingAction("next");
+        var ifAction = new IfAction
+        {
+            Condition = true,
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment()
+        };
+        ifAction.IfBlock.Add(completedChild);
+        ifAction.IfBlock.Add(remainingChild);
+        flow.Actions.Add(ifAction);
+        flow.Actions.Add(next);
+
+        var runTask = flow.StartAsync(CancellationToken.None);
+        await completedChild.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        flow.Pause();
+        completedChild.Release();
+        await runTask;
+
+        var continueResult = await flow.ContinueAsync(CancellationToken.None);
+
+        Assert.True(continueResult);
+        Assert.Equal(ActionState.Completed, flow.State);
+        Assert.Equal(1, completedChild.ExecutionCount);
+        Assert.Equal(1, remainingChild.ExecutionCount);
+        Assert.Equal(1, next.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task ContinueAsync_AfterPauseOnWaitDurationAction_UsesRemainingTime()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        var wait = new WaitDurationAction
+        {
+            Duration = 1,
+            Unit = WaitDurationUnit.Seconds
+        };
+        var next = new RecordingAction("next");
+        flow.Actions.Add(wait);
+        flow.Actions.Add(next);
+
+        var runTask = flow.StartAsync(CancellationToken.None);
+        await Task.Delay(350);
+
+        flow.Pause();
+        Assert.True(await runTask);
+
+        var pausedRemaining = wait.RemainingTime;
+        Assert.Equal(ActionState.Paused, flow.State);
+        Assert.Equal(TestFlowBreakReason.PauseRequested, flow.BreakReason);
+        Assert.Same(wait, flow.CurrentAction);
+        Assert.Equal(ActionState.Paused, wait.State);
+        Assert.Equal(0, next.ExecutionCount);
+        Assert.InRange(pausedRemaining, TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(900));
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var continueResult = await flow.ContinueAsync(CancellationToken.None);
+        stopwatch.Stop();
+
+        Assert.True(continueResult);
+        Assert.Equal(ActionState.Completed, flow.State);
+        Assert.Equal(ActionState.Completed, wait.State);
+        Assert.Equal(1, next.ExecutionCount);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromMilliseconds(900));
+        Assert.True(stopwatch.Elapsed >= pausedRemaining - TimeSpan.FromMilliseconds(250));
     }
 
     [Fact]

@@ -262,6 +262,12 @@ namespace FleetAutomate.ViewModel
         public event Func<(string executablePath, string arguments, string workingDirectory, bool waitForCompletion, int timeoutMs)?>? OnPromptLaunchApplication;
 
         /// <summary>
+        /// Event fired when UI needs to show a "Wait" dialog.
+        /// Should return the wait duration and unit, or null if cancelled.
+        /// </summary>
+        public event Func<(int duration, Model.Actions.System.WaitDurationUnit unit)?>? OnPromptWaitDuration;
+
+        /// <summary>
         /// Event fired when UI needs to show a "Wait for Element" dialog.
         /// Should return the element search parameters, or null if cancelled.
         /// </summary>
@@ -1009,6 +1015,8 @@ namespace FleetAutomate.ViewModel
             var system = new ActionCategory("System", "💻");
             system.Actions.Add(new ActionTemplate("Launch Application", "System", "🚀",
                 typeof(Model.Actions.System.LaunchApplicationAction), "Launch an application"));
+            system.Actions.Add(new ActionTemplate("Wait", "System", "⏱️",
+                typeof(Model.Actions.System.WaitDurationAction), "Wait for a specified duration"));
             system.Actions.Add(new ActionTemplate("Log", "System", "📝",
                 typeof(Model.Actions.System.LogAction), "Log a message to output"));
             system.Actions.Add(new ActionTemplate("If Process Exists", "System", "🔍",
@@ -1176,6 +1184,18 @@ namespace FleetAutomate.ViewModel
                     }
 
                     action = CreateLaunchApplicationAction(result.Value.executablePath, result.Value.arguments, result.Value.workingDirectory, result.Value.waitForCompletion, result.Value.timeoutMs);
+                }
+                // Special handling for WaitDurationAction - prompt user for duration
+                else if (actionTemplate.ActionType == typeof(Model.Actions.System.WaitDurationAction))
+                {
+                    var result = OnPromptWaitDuration?.Invoke();
+                    if (result == null)
+                    {
+                        // User cancelled
+                        return;
+                    }
+
+                    action = CreateWaitDurationAction(result.Value.duration, result.Value.unit);
                 }
                 // Special handling for WaitForElementAction - prompt user for element search parameters
                 else if (actionTemplate.ActionType == typeof(Model.Actions.UIAutomation.WaitForElementAction))
@@ -1442,6 +1462,23 @@ namespace FleetAutomate.ViewModel
             catch (Exception ex)
             {
                 OnShowError?.Invoke("Error", $"Failed to create log action: {ex.Message}");
+                return null;
+            }
+        }
+
+        private IAction? CreateWaitDurationAction(int duration, Model.Actions.System.WaitDurationUnit unit)
+        {
+            try
+            {
+                return new Model.Actions.System.WaitDurationAction
+                {
+                    Duration = duration,
+                    Unit = unit
+                };
+            }
+            catch (Exception ex)
+            {
+                OnShowError?.Invoke("Error", $"Failed to create wait action: {ex.Message}");
                 return null;
             }
         }

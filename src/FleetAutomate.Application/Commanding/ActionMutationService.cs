@@ -15,6 +15,8 @@ public class ActionMutationService
     private static readonly Dictionary<string, Func<IAction>> ActionFactories = new(StringComparer.OrdinalIgnoreCase)
     {
         ["LaunchApplicationAction"] = () => new LaunchApplicationAction(),
+        ["WaitDurationAction"] = () => new WaitDurationAction(),
+        ["WaitAction"] = () => new WaitDurationAction(),
         ["WaitForElementAction"] = () => new WaitForElementAction(),
         ["ClickElementAction"] = () => new ClickElementAction(),
         ["SetTextAction"] = () => new SetTextAction(),
