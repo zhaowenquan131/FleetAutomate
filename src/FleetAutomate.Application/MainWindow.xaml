@@ -81,6 +81,12 @@
             <ui:MenuItem Header="Save" Icon="{ui:SymbolIcon Save20}"
                         Command="{Binding SaveProjectCommand}"
                         ToolTip="Save Project (Ctrl+S)"/>
+            <ui:MenuItem Header="Undo" Icon="{ui:SymbolIcon ArrowUndo20}"
+                        Command="{Binding UndoTestFlowCommand}"
+                        ToolTip="Undo TestFlow edit (Ctrl+Z)"/>
+            <ui:MenuItem Header="Redo" Icon="{ui:SymbolIcon ArrowRedo20}"
+                        Command="{Binding RedoTestFlowCommand}"
+                        ToolTip="Redo TestFlow edit (Ctrl+Y)"/>
             <!-- Execute button - visible when not running -->
             <ui:MenuItem Header="Execute" Icon="{ui:SymbolIcon Play20}"
                         Command="{Binding RunTestFlowCommand}"

@@ -1056,31 +1056,34 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the IfAction with new values
+                object? condition = ifAction.Condition;
+                string description = ifAction.Description;
                 if (dialog.ConditionType == "Expression")
                 {
                     var parsedCondition = Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
                     if (parsedCondition != null)
                     {
-                        ifAction.Condition = parsedCondition;
-                        ifAction.Description = $"If {dialog.ConditionExpression}";
+                        condition = parsedCondition;
+                        description = $"If {dialog.ConditionExpression}";
                     }
                 }
                 else if (dialog.ConditionType == "UIElementExists")
                 {
-                    ifAction.Condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
+                    condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
                         dialog.ElementIdentifier,
                         dialog.IdentifierType,
                         1000,
                         dialog.RetryTimes
                     );
-                    ifAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (retry:{dialog.RetryTimes}x)";
+                    description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (retry:{dialog.RetryTimes}x)";
                 }
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                ViewModel.ApplyActionPropertyChanges(ifAction, "Edit if action", [
+                    (nameof(Model.Actions.Logic.IfAction.Condition), condition),
+                    (nameof(Model.Actions.Logic.IfAction.Description), description)
+                ]);
+
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1110,17 +1113,20 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the ClickElementAction with new values
-                clickAction.ElementIdentifier = dialog.ElementIdentifier;
-                clickAction.IdentifierType = dialog.IdentifierType;
-                clickAction.IsDoubleClick = dialog.IsDoubleClick;
-                clickAction.UseInvoke = dialog.UseInvoke;
-                clickAction.InvokeWithoutWaiting = dialog.UseInvoke && dialog.InvokeWithoutWaiting;
-                clickAction.RetryTimes = dialog.RetryTimes;
-                clickAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
-                clickAction.SearchScope = dialog.SearchScope;
-                clickAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                clickAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? (dialog.InvokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)") : "")} (retry:{dialog.RetryTimes}x)";
+                var invokeWithoutWaitingValue = dialog.UseInvoke && dialog.InvokeWithoutWaiting;
+                var description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)}{(dialog.IsDoubleClick ? " (double)" : "")}{(dialog.UseInvoke ? (dialog.InvokeWithoutWaiting ? " (invoke no-wait)" : " (invoke)") : "")} (retry:{dialog.RetryTimes}x)";
+                ViewModel.ApplyActionPropertyChanges(clickAction, "Edit click action", [
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.ElementIdentifier), dialog.ElementIdentifier),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.IsDoubleClick), dialog.IsDoubleClick),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.UseInvoke), dialog.UseInvoke),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.InvokeWithoutWaiting), invokeWithoutWaitingValue),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.RetryTimes), dialog.RetryTimes),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.RetryDelayMilliseconds), dialog.RetryDelayMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.SearchScope), dialog.SearchScope),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.AddToGlobalDictionary), dialog.AddToGlobalDictionary),
+                    (nameof(Model.Actions.UIAutomation.ClickElementAction.Description), description)
+                ]);
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
                 if (dialog.AddToGlobalDictionary)
@@ -1129,10 +1135,7 @@ namespace FleetAutomate
                     activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
                 }
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1153,13 +1156,15 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                waitAction.ElementIdentifier = dialog.ElementIdentifier;
-                waitAction.IdentifierType = dialog.IdentifierType;
-                waitAction.TimeoutMilliseconds = dialog.TimeoutMilliseconds;
-                waitAction.PollingIntervalMilliseconds = dialog.PollingIntervalMilliseconds;
-                waitAction.SearchScope = dialog.SearchScope;
-                waitAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                waitAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (timeout:{dialog.TimeoutMilliseconds}ms)";
+                ViewModel.ApplyActionPropertyChanges(waitAction, "Edit wait action", [
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.ElementIdentifier), dialog.ElementIdentifier),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.TimeoutMilliseconds), dialog.TimeoutMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.PollingIntervalMilliseconds), dialog.PollingIntervalMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.SearchScope), dialog.SearchScope),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.AddToGlobalDictionary), dialog.AddToGlobalDictionary),
+                    (nameof(Model.Actions.UIAutomation.WaitForElementAction.Description), $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (timeout:{dialog.TimeoutMilliseconds}ms)")
+                ]);
 
                 if (dialog.AddToGlobalDictionary)
                 {
@@ -1196,16 +1201,17 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the SetTextAction with new values
-                setTextAction.ElementIdentifier = dialog.ElementIdentifier;
-                setTextAction.IdentifierType = dialog.IdentifierType;
-                setTextAction.TextToSet = dialog.TextToSet;
-                setTextAction.ClearExistingText = dialog.ClearExistingText;
-                setTextAction.RetryTimes = dialog.RetryTimes;
-                setTextAction.RetryDelayMilliseconds = dialog.RetryDelayMilliseconds;
-                setTextAction.SearchScope = dialog.SearchScope;
-                setTextAction.AddToGlobalDictionary = dialog.AddToGlobalDictionary;
-                setTextAction.Description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)";
+                ViewModel.ApplyActionPropertyChanges(setTextAction, "Edit set text action", [
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.ElementIdentifier), dialog.ElementIdentifier),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.TextToSet), dialog.TextToSet),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.ClearExistingText), dialog.ClearExistingText),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.RetryTimes), dialog.RetryTimes),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.RetryDelayMilliseconds), dialog.RetryDelayMilliseconds),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.SearchScope), dialog.SearchScope),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.AddToGlobalDictionary), dialog.AddToGlobalDictionary),
+                    (nameof(Model.Actions.UIAutomation.SetTextAction.Description), $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} = '{dialog.TextToSet}'{(dialog.ClearExistingText ? " (clear first)" : "")} (retry:{dialog.RetryTimes}x)")
+                ]);
 
                 // Register key to GlobalElementDictionary if AddToGlobalDictionary is checked
                 if (dialog.AddToGlobalDictionary)
@@ -1214,10 +1220,7 @@ namespace FleetAutomate
                     activeFlow?.GlobalElementDictionary?.RegisterKey(dialog.ElementIdentifier);
                 }
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1238,18 +1241,16 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the IfWindowContainsTextAction with new values
-                windowTextAction.WindowIdentifier = dialog.WindowIdentifier;
-                windowTextAction.IdentifierType = dialog.IdentifierType;
-                windowTextAction.SearchText = dialog.SearchText;
-                windowTextAction.CaseSensitive = dialog.CaseSensitive;
-                windowTextAction.DeepSearch = dialog.DeepSearch;
-                windowTextAction.Description = $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}";
+                ViewModel.ApplyActionPropertyChanges(windowTextAction, "Edit window text action", [
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.WindowIdentifier), dialog.WindowIdentifier),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.IdentifierType), dialog.IdentifierType),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.SearchText), dialog.SearchText),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.CaseSensitive), dialog.CaseSensitive),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.DeepSearch), dialog.DeepSearch),
+                    (nameof(Model.Actions.UIAutomation.IfWindowContainsTextAction.Description), $"If window '{dialog.WindowIdentifier}' contains '{dialog.SearchText}'{(dialog.CaseSensitive ? " (case-sensitive)" : "")}")
+                ]);
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1270,13 +1271,6 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the LaunchApplicationAction with new values
-                launchAction.ExecutablePath = dialog.ExecutablePath;
-                launchAction.Arguments = dialog.Arguments;
-                launchAction.WorkingDirectory = dialog.WorkingDirectory;
-                launchAction.WaitForCompletion = dialog.WaitForCompletion;
-                launchAction.TimeoutMilliseconds = dialog.TimeoutMilliseconds;
-
                 // Update description with relevant details
                 string description = $"Launch: {dialog.ExecutablePath}";
                 if (!string.IsNullOrWhiteSpace(dialog.Arguments))
@@ -1287,12 +1281,17 @@ namespace FleetAutomate
                 {
                     description += $" (wait {dialog.TimeoutMilliseconds}ms)";
                 }
-                launchAction.Description = description;
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                ViewModel.ApplyActionPropertyChanges(launchAction, "Edit launch action", [
+                    (nameof(Model.Actions.System.LaunchApplicationAction.ExecutablePath), dialog.ExecutablePath),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.Arguments), dialog.Arguments),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.WorkingDirectory), dialog.WorkingDirectory),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.WaitForCompletion), dialog.WaitForCompletion),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.TimeoutMilliseconds), dialog.TimeoutMilliseconds),
+                    (nameof(Model.Actions.System.LaunchApplicationAction.Description), description)
+                ]);
+
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1310,15 +1309,13 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true)
             {
-                // Update the LogAction with new values
-                logAction.LogLevel = dialog.LogLevel;
-                logAction.Message = dialog.Message;
-                logAction.Description = $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}";
+                ViewModel.ApplyActionPropertyChanges(logAction, "Edit log action", [
+                    (nameof(Model.Actions.System.LogAction.LogLevel), dialog.LogLevel),
+                    (nameof(Model.Actions.System.LogAction.Message), dialog.Message),
+                    (nameof(Model.Actions.System.LogAction.Description), $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}")
+                ]);
 
-                // Force refresh
-                var currentTestFlow = ViewModel.ActiveTestFlow;
-                ViewModel.ActiveTestFlow = null;
-                ViewModel.ActiveTestFlow = currentTestFlow;
+                RefreshActiveTestFlow();
             }
         }
 
@@ -1374,9 +1371,11 @@ namespace FleetAutomate
 
             if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.SelectedFlowName))
             {
-                subFlowAction.TargetFlowName = dialog.SelectedFlowName;
-                subFlowAction.Description = $"Execute sub-flow: {dialog.SelectedFlowName}";
-                subFlowAction.TestProject = ViewModel.ActiveProject?.Model;
+                ViewModel.ApplyActionPropertyChanges(subFlowAction, "Edit sub-flow action", [
+                    (nameof(Model.Actions.Logic.SubFlowAction.TargetFlowName), dialog.SelectedFlowName),
+                    (nameof(Model.Actions.Logic.SubFlowAction.Description), $"Execute sub-flow: {dialog.SelectedFlowName}"),
+                    (nameof(Model.Actions.Logic.SubFlowAction.TestProject), ViewModel.ActiveProject?.Model)
+                ]);
 
                 RefreshActiveTestFlow();
             }

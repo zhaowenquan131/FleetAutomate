@@ -1,4 +1,5 @@
 using FleetAutomate.Application.Commanding;
+using FleetAutomate.Model.Actions.UIAutomation;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.ViewModel;
 
@@ -50,6 +51,35 @@ public sealed class MainViewModelUndoRedoTests : IDisposable
 
         Assert.False(viewModel.ActiveTestFlow!.HasUnsavedChanges);
         Assert.False(viewModel.SaveProjectCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void ApplyActionPropertyChanges_RecordsUndoForUseInvoke()
+    {
+        var viewModel = CreateViewModelWithActiveFlow();
+        var action = new ClickElementAction
+        {
+            ElementIdentifier = "OK",
+            IdentifierType = "Name",
+            UseInvoke = false
+        };
+        viewModel.ActiveTestFlow!.Actions.Add(action);
+        viewModel.ActiveTestFlow.MarkSavedCheckpoint();
+
+        viewModel.ApplyActionPropertyChanges(action, "Edit click action", [
+            (nameof(ClickElementAction.UseInvoke), true)
+        ]);
+
+        Assert.True(action.UseInvoke);
+        Assert.True(viewModel.UndoTestFlowCommand.CanExecute(null));
+
+        viewModel.UndoTestFlowCommand.Execute(null);
+
+        Assert.False(action.UseInvoke);
+
+        viewModel.RedoTestFlowCommand.Execute(null);
+
+        Assert.True(action.UseInvoke);
     }
 
     public void Dispose()

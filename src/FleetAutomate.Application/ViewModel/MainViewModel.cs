@@ -20,6 +20,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1924,6 +1925,40 @@ namespace FleetAutomate.ViewModel
                     !ifAction.ShowElseBlock,
                     "Toggle else block"));
             }
+        }
+
+        public bool ApplyActionPropertyChanges(IAction action, string displayName, params (string propertyName, object? newValue)[] changes)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            ArgumentNullException.ThrowIfNull(changes);
+
+            if (ActiveTestFlow == null || !TryGetActionPath(action, out var actionPath))
+            {
+                return false;
+            }
+
+            var edits = new List<IUndoableFlowEdit>();
+            foreach (var (propertyName, newValue) in changes)
+            {
+                var property = action.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
+                    ?? throw new InvalidOperationException($"Action property '{propertyName}' was not found.");
+
+                var oldValue = property.GetValue(action);
+                if (Equals(oldValue, newValue))
+                {
+                    continue;
+                }
+
+                edits.Add(new ActionPropertyEdit(actionPath, property.Name, oldValue, newValue, $"Set {property.Name}"));
+            }
+
+            if (edits.Count == 0)
+            {
+                return false;
+            }
+
+            ActiveTestFlow.UndoRedoService.Execute(edits.Count == 1 ? edits[0] : new BatchFlowEdit(edits, displayName));
+            return true;
         }
 
         private bool TryGetCollectionRef(ObservableCollection<IAction> collection, out ActionCollectionRef collectionRef)
