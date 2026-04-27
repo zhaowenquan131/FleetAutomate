@@ -27,6 +27,7 @@
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
         <converters:ActionTypeToSymbolConverter x:Key="ActionTypeToSymbolConverter"/>
         <converters:ActionTypeToIconVisibilityConverter x:Key="ActionTypeToIconVisibilityConverter"/>
+        <converters:ActionToChildActionsConverter x:Key="ActionToChildActionsConverter"/>
         <converters:ActionToFormattedNameConverter x:Key="ActionToFormattedNameConverter"/>
 
         <!-- Easing function for smooth pulsing animation -->

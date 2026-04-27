@@ -16,7 +16,7 @@ namespace FleetAutomate.Converters
         {
             return GetActionType(value) == typeof(ClickElementAction)
                 ? SymbolRegular.CursorClick20
-                : null;
+                : SymbolRegular.Document20;
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)

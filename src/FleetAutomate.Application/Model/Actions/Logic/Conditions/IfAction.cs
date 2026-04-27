@@ -31,8 +31,10 @@ namespace FleetAutomate.Model.Actions.Logic
     [KnownType(typeof(Expression.LiteralExpression<int>))]
     [KnownType(typeof(Expression.LiteralExpression<double>))]
     [KnownType(typeof(Expression.LiteralExpression<string>))]
-    public partial class IfAction : ILogicAction, ICompositeAction
+    public partial class IfAction : ILogicAction, ICompositeAction, IPauseAwareAction
     {
+        public ActionPauseBehavior PauseBehavior => ActionPauseBehavior.Cooperative;
+
         public IfAction()
         {
             if (ElseIfs.Count > 1)
@@ -280,9 +282,8 @@ namespace FleetAutomate.Model.Actions.Logic
             // Re-initialize child actions to ensure ChildActions is populated
             RefreshChildActions();
 
-            // Reconnect the collection change handler in case it was lost
-            IfBlock.CollectionChanged -= (s, e) => RefreshChildActions();
-            IfBlock.CollectionChanged += (s, e) => RefreshChildActions();
+            // Reconnect the stored collection change handler in case it was lost.
+            EnsureIfBlockHandlerAttached();
         }
 
 
@@ -298,10 +299,15 @@ namespace FleetAutomate.Model.Actions.Logic
 
             if (Condition is ExpressionBase<bool> boolExp)
             {
-                // Set Environment on expression so it can resolve variables
-                boolExp.Environment = Environment;
-                boolExp.Evaluate();
-                conditionResult = boolExp.Result;
+                // Some expressions, such as UI element existence checks, perform blocking UIA work.
+                // Evaluate them off the UI thread so the shell remains responsive to pause requests.
+                conditionResult = await Task.Run(() =>
+                {
+                    boolExp.Environment = Environment;
+                    boolExp.Evaluate();
+                    return boolExp.Result;
+                }, cancellationToken);
+
                 // IMPORTANT: Don't replace Condition - keep expression for re-evaluation
             }
             else if (Condition is bool boolValue)
@@ -322,11 +328,19 @@ namespace FleetAutomate.Model.Actions.Logic
                     if (action.IsEnabled)
                     {
                         var rst = await action.ExecuteAsync(cancellationToken);
-                        if (cancellationToken.IsCancellationRequested || !rst)
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            State = ActionState.Paused;
+                            return false;
+                        }
+
+                        if (!rst)
                         {
                             State = ActionState.Failed;
-                            return false; // Stop execution if cancellation is requested
+                            return false;
                         }
+
+                        await Task.Yield();
                     }
                 }
             }
@@ -337,11 +351,19 @@ namespace FleetAutomate.Model.Actions.Logic
                     if (action.IsEnabled)
                     {
                         var rst = await action.ExecuteAsync(cancellationToken);
-                        if (cancellationToken.IsCancellationRequested || !rst)
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            State = ActionState.Paused;
+                            return false;
+                        }
+
+                        if (!rst)
                         {
                             State = ActionState.Failed;
-                            return false; // Stop execution if cancellation is requested
+                            return false;
                         }
+
+                        await Task.Yield();
                     }
                 }
             }

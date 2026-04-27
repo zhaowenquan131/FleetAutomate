@@ -268,6 +268,44 @@ public sealed class TestFlowExecutionTests
     }
 
     [Fact]
+    public async Task Pause_OnIfAction_WaitsForCurrentChildThenPausesBeforeNextChild()
+    {
+        var flow = new TestFlow
+        {
+            Name = "flow"
+        };
+        var current = new AtomicGateAction("atomic");
+        var blockedSibling = new RecordingAction("blocked");
+        var next = new RecordingAction("next");
+        var ifAction = new IfAction
+        {
+            Condition = true,
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment()
+        };
+        ifAction.IfBlock.Add(current);
+        ifAction.IfBlock.Add(blockedSibling);
+        flow.Actions.Add(ifAction);
+        flow.Actions.Add(next);
+
+        var runTask = flow.StartAsync(CancellationToken.None);
+        await current.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        flow.Pause();
+        current.Release();
+
+        var result = await runTask;
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Paused, flow.State);
+        Assert.Equal(TestFlowBreakReason.PauseRequested, flow.BreakReason);
+        Assert.Same(ifAction, flow.CurrentAction);
+        Assert.Equal(ActionState.Paused, ifAction.State);
+        Assert.Equal(1, current.ExecutionCount);
+        Assert.Equal(0, blockedSibling.ExecutionCount);
+        Assert.Equal(0, next.ExecutionCount);
+    }
+
+    [Fact]
     public async Task IfAction_WhenConditionTrue_ExecutesIfBlockOnly()
     {
         var action = new IfAction

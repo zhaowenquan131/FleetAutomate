@@ -3,7 +3,7 @@
     {
       "FlowKey": "TestFlows\\calculator_add_1_plus_2.testfl",
       "State": 1,
-      "CurrentActionPath": "6",
+      "CurrentActionPath": "1",
       "Actions": [
         {
           "Path": "0",
@@ -14,23 +14,23 @@
           "State": 3
         },
         {
-          "Path": "2",
+          "Path": "1/if/0",
           "State": 3
         },
         {
-          "Path": "3",
+          "Path": "1/if/1",
           "State": 3
         },
         {
-          "Path": "4",
+          "Path": "1/if/2",
           "State": 3
         },
         {
-          "Path": "5",
+          "Path": "1/if/3",
           "State": 3
         },
         {
-          "Path": "6",
+          "Path": "1/if/4",
           "State": 3
         }
       ]

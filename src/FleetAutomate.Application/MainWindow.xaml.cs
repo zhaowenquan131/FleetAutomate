@@ -333,7 +333,17 @@ namespace FleetAutomate
 
         private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            Close();
+            System.Windows.Application.Current.Shutdown();
+        }
+
+        protected override void OnClosed(System.EventArgs e)
+        {
+            base.OnClosed(e);
+
+            if (System.Windows.Application.Current?.ShutdownMode != ShutdownMode.OnExplicitShutdown)
+            {
+                System.Windows.Application.Current?.Shutdown();
+            }
         }
 
         private void AddTestFlowMenuItem_Click(object sender, RoutedEventArgs e)
@@ -1892,12 +1902,16 @@ namespace FleetAutomate
             {
                 VisualTree = factory
             };
-            template.ItemsSource = new System.Windows.Data.Binding("ChildActions") { Mode = System.Windows.Data.BindingMode.OneWay };
+            template.ItemsSource = new System.Windows.Data.Binding(".")
+            {
+                Converter = (IValueConverter)this.FindResource("ActionToChildActionsConverter"),
+                Mode = System.Windows.Data.BindingMode.OneWay
+            };
             treeView.ItemTemplate = template;
 
             // Create ItemContainerStyle to highlight executing actions
             var itemContainerStyle = new Style(typeof(System.Windows.Controls.TreeViewItem));
-            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, Brushes.Transparent));
+            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
             itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1)));
 
             // Bind Background to State with ActionStateToBackgroundConverter
@@ -1905,15 +1919,15 @@ namespace FleetAutomate
             {
                 Converter = (IValueConverter)this.FindResource("ActionStateToBackgroundConverter")
             };
-            itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, backgroundBinding));
+            itemContainerStyle.Setters.Add(new Setter(BackgroundProperty, backgroundBinding));
             itemContainerStyle.Triggers.Add(new Trigger
             {
                 Property = System.Windows.Controls.TreeViewItem.IsSelectedProperty,
                 Value = true,
                 Setters =
                 {
-                    new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255))),
-                    new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black)
+                    new Setter(BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255))),
+                    new Setter(ForegroundProperty, System.Windows.Media.Brushes.Black)
                 }
             });
             var dropIntoTrigger = new MultiTrigger();
