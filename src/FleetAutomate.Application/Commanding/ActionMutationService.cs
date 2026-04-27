@@ -165,6 +165,11 @@ public class ActionMutationService
         return $"{prefix}.{insertIndex.ToString(CultureInfo.InvariantCulture)}";
     }
 
+    public object? ConvertPropertyValue(string rawValue, Type propertyType)
+    {
+        return ConvertValue(rawValue, propertyType);
+    }
+
     private static object? ConvertValue(string rawValue, Type propertyType)
     {
         var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;

@@ -17,6 +17,10 @@
     <ui:FluentWindow.DataContext>
         <vm:MainViewModel/>
     </ui:FluentWindow.DataContext>
+    <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoTestFlowCommand}"/>
+        <KeyBinding Key="Y" Modifiers="Control" Command="{Binding RedoTestFlowCommand}"/>
+    </ui:FluentWindow.InputBindings>
     <ui:FluentWindow.Resources>
         <converters:ProjectToTitleConverter x:Key="ProjectToTitleConverter"/>
         <converters:ProjectToStatusConverter x:Key="ProjectToStatusConverter"/>
@@ -155,8 +159,8 @@
                 </ui:MenuItem.Style>
             </ui:MenuItem>
             <ui:MenuItem Header="Edit" Icon="{ui:SymbolIcon DocumentEdit20}">
-                <MenuItem Header="Undo" InputGestureText="Ctrl+Z" IsEnabled="False"/>
-                <MenuItem Header="Redo" InputGestureText="Ctrl+Y" IsEnabled="False"/>
+                <MenuItem Header="Undo" Command="{Binding UndoTestFlowCommand}" InputGestureText="Ctrl+Z"/>
+                <MenuItem Header="Redo" Command="{Binding RedoTestFlowCommand}" InputGestureText="Ctrl+Y"/>
                 <Separator />
                 <MenuItem Header="Cut" InputGestureText="Ctrl+X" IsEnabled="False"/>
                 <MenuItem Header="Copy" InputGestureText="Ctrl+C" IsEnabled="False"/>
