@@ -1,4 +1,5 @@
-﻿using FleetAutomate.Model.Actions.Logic;
+﻿using FleetAutomate.Expressions;
+using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Loops;
 
 using FleetAutomate.Model.Flow;
@@ -63,6 +64,13 @@ namespace FleetAutomate.Model.Flow
                     }
                 }
             }
+        }
+
+        private static bool IsBooleanCondition(object condition)
+        {
+            return condition is bool ||
+                condition is ExpressionBase<bool> ||
+                condition is ExpressionDocument { ResultTypeId: TypeIds.Bool };
         }
 
         /// <summary>
@@ -197,9 +205,9 @@ namespace FleetAutomate.Model.Flow
                             ActionPath = context.CurrentPath
                         };
                     }
-                    else if (ifAction.Condition is not bool && ifAction.Condition is not ExpressionBase<bool>)
+                    else if (!IsBooleanCondition(ifAction.Condition))
                     {
-                        yield return new SyntaxError(action, "If condition must be a boolean value or Expression<bool>", "Condition", SyntaxErrorSeverity.Critical)
+                        yield return new SyntaxError(action, "If condition must be a boolean value or boolean expression", "Condition", SyntaxErrorSeverity.Critical)
                         {
                             ActionPath = context.CurrentPath,
                             Context = ifAction.Condition?.GetType()?.Name

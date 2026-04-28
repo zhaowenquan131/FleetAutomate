@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using FleetAutomate.Expressions;
 
 using FleetAutomate.Model.Flow;
 
@@ -102,6 +103,17 @@ namespace FleetAutomate.Model.Actions.Logic
                 }
 
                 // Handle boolean expressions with RawText
+                if (Condition is ExpressionDocument expressionDocument && !string.IsNullOrWhiteSpace(expressionDocument.RawText))
+                {
+                    var expr = expressionDocument.RawText.Trim();
+                    if (expr.Length > 50)
+                    {
+                        expr = string.Concat(expr.AsSpan(0, 47), "...");
+                    }
+
+                    return $"If {expr}";
+                }
+
                 if (Condition is ExpressionBase<bool> boolExpr && !string.IsNullOrWhiteSpace(boolExpr.RawText))
                 {
                     string expr = boolExpr.RawText.Trim();
@@ -336,6 +348,14 @@ namespace FleetAutomate.Model.Actions.Logic
 
                     // IMPORTANT: Don't replace Condition - keep expression for re-evaluation
                 }
+                else if (Condition is ExpressionDocument expression)
+                {
+                    var context = new ExpressionContext(Environment ?? new Environment());
+                    var result = await new SimpleExpressionEngine().EvaluateAsync(expression.RawText, context, cancellationToken);
+                    conditionResult = result.Value is bool value
+                        ? value
+                        : throw new InvalidOperationException("If condition expression must return a boolean value.");
+                }
                 else if (Condition is bool boolValue)
                 {
                     conditionResult = boolValue;
@@ -343,7 +363,7 @@ namespace FleetAutomate.Model.Actions.Logic
                 else
                 {
                     State = ActionState.Failed;
-                    throw new InvalidOperationException("Condition must be an Expression<bool> or a boolean value.");
+                    throw new InvalidOperationException("Condition must be a boolean expression or a boolean value.");
                 }
 
                 activeBranch = conditionResult ? IfResumeBranch.If : IfResumeBranch.Else;

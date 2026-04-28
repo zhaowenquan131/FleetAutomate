@@ -120,12 +120,13 @@ namespace FleetAutomate.View.Dialog
                 return;
             }
 
-            var result = ExpressionTemplateCatalog.InsertTemplate(
-                MessageTextBox.Text ?? string.Empty,
-                MessageTextBox.CaretIndex,
-                templateId);
-            MessageTextBox.Text = result.Text;
-            MessageTextBox.CaretIndex = result.CaretIndex;
+            var originalText = MessageTextBox.Text ?? string.Empty;
+            var template = ExpressionTemplateCatalog.GetTemplates()
+                .First(t => string.Equals(t.Id, templateId, StringComparison.Ordinal));
+            var insertAt = Math.Clamp(MessageTextBox.CaretIndex, 0, originalText.Length);
+            var interpolatedTemplate = "{" + template.TemplateText + "}";
+            MessageTextBox.Text = originalText.Insert(insertAt, interpolatedTemplate);
+            MessageTextBox.CaretIndex = insertAt + interpolatedTemplate.Length;
             MessageTextBox.Focus();
         }
 

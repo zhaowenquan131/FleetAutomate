@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-16"?>
 <TestFlowDocument xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.datacontract.org/2004/07/FleetAutomate.Persistence">
   <formatVersion>2</formatVersion>
-  <id>303d9061c50a4ce1bbf5ce82e5a55953</id>
+  <id>38140e2d3dce4c55b46871142eb18330</id>
   <name>calculator_add_1_plus_2</name>
   <description>Launch Calculator, click 1 + 2 =, then verify the result contains 3.</description>
   <isEnabled>true</isEnabled>
   <actions>
     <ActionDocument>
-      <id>473a6ac7b2f1412199eefa33f415cd59</id>
+      <id>553e7bcda2d44e0cbbfbc5f356a17d0f</id>
       <typeId>system.launchApplication</typeId>
       <version>1</version>
       <properties>
@@ -45,19 +45,135 @@
       <children />
     </ActionDocument>
     <ActionDocument>
-      <id>f376f270b16f42a7915a401a9e8a4f6f</id>
+      <id>56884006edf84f83a3ff2b371139fc75</id>
+      <typeId>logic.setVariable</typeId>
+      <version>1</version>
+      <properties>
+        <Property>
+          <name>Name</name>
+          <typeId>string</typeId>
+          <value>uicontains</value>
+        </Property>
+        <Property>
+          <name>Value</name>
+          <typeId>bool</typeId>
+          <value>False</value>
+        </Property>
+        <Property>
+          <name>TypeName</name>
+          <typeId>string</typeId>
+          <value>bool</value>
+        </Property>
+        <Property>
+          <name>ValueMode</name>
+          <typeId>string</typeId>
+          <value>Expression</value>
+        </Property>
+        <Property>
+          <name>ExpressionText</name>
+          <typeId>string</typeId>
+          <value>uiContainsText('//Pane[@Name="桌面 1"]//Window[@Name="计算器"]//Window[@Name="计算器"]', "标准")</value>
+        </Property>
+        <Property>
+          <name>Description</name>
+          <typeId>string</typeId>
+          <value>Set Boolean uicontains = False</value>
+        </Property>
+        <Property>
+          <name>IsEnabled</name>
+          <typeId>bool</typeId>
+          <value>True</value>
+        </Property>
+      </properties>
+      <children />
+    </ActionDocument>
+    <ActionDocument>
+      <id>06cc65ee00924b2aadd3d7e6bcf2f734</id>
+      <typeId>system.log</typeId>
+      <version>1</version>
+      <properties>
+        <Property>
+          <name>Description</name>
+          <typeId>string</typeId>
+          <value>Log [Info]: uiContainsText('//Pane[@Nam...</value>
+        </Property>
+        <Property>
+          <name>LastResolvedMessage</name>
+          <typeId>string</typeId>
+          <value>True</value>
+        </Property>
+        <Property>
+          <name>LogLevel</name>
+          <typeId>object</typeId>
+          <value>Info</value>
+        </Property>
+        <Property>
+          <name>Message</name>
+          <typeId>string</typeId>
+          <value>uiContainsText('//Pane[@Name="桌面 1"]//Window[@Name="计算器"]//Window[@Name="计算器"]', "计算器")</value>
+        </Property>
+        <Property>
+          <name>MessageMode</name>
+          <typeId>object</typeId>
+          <value>Expression</value>
+        </Property>
+      </properties>
+      <children />
+    </ActionDocument>
+    <ActionDocument>
+      <id>33f920b0395d4e65aceceeac729a2fef</id>
       <typeId>logic.if</typeId>
       <version>1</version>
       <properties>
         <Property>
           <name>Description</name>
           <typeId>string</typeId>
-          <value>Name: 计算器 (retry:3x)</value>
+          <value>Name: 计算器 (retry:1x)</value>
         </Property>
         <Property>
           <name>ShowElseBlock</name>
           <typeId>bool</typeId>
           <value>False</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionTypeId</name>
+          <typeId>string</typeId>
+          <value>logic</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionVersion</name>
+          <typeId>int</typeId>
+          <value>1</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionRawText</name>
+          <typeId>string</typeId>
+          <value>uiExists('//Pane[@Name="桌面 1"]//Window[@Name="计算器"]//Window[@Name="计算器"]', 'XPath', 1)</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionResultTypeId</name>
+          <typeId>string</typeId>
+          <value>bool</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionProperty.ElementIdentifier</name>
+          <typeId>string</typeId>
+          <value>//Pane[@Name="桌面 1"]//Window[@Name="计算器"]//Window[@Name="计算器"]</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionProperty.IdentifierType</name>
+          <typeId>string</typeId>
+          <value>XPath</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionProperty.RetryTimes</name>
+          <typeId>string</typeId>
+          <value>1</value>
+        </Property>
+        <Property>
+          <name>ConditionExpressionProperty.Template</name>
+          <typeId>string</typeId>
+          <value>UIElementExists</value>
         </Property>
       </properties>
       <children>
@@ -65,7 +181,7 @@
           <name>then</name>
           <actions>
             <ActionDocument>
-              <id>4832e5166de34177bd7696f9e5625873</id>
+              <id>212f00bdc808417886d4bfb50b446f7a</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -128,7 +244,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>601e9ad3a3854778aca88e9e474df5eb</id>
+              <id>2646a2c21c47461cae747b672f2ae782</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -191,7 +307,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>d5056f60c6f9447890bf3a3fc7dfa955</id>
+              <id>0eeed064bf914561b27f0798c39a3982</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -254,7 +370,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>bc18827ef32a4158abf2c88efd777db0</id>
+              <id>53a0f775abb64f9db820341c6839ce11</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -317,7 +433,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>42adef7f73be4b2ba05f4df9a102b778</id>
+              <id>e1c475484a6c43e2bbf87c8a25a6aba5</id>
               <typeId>ui.waitForElement</typeId>
               <version>1</version>
               <properties>
@@ -376,88 +492,12 @@
         </ActionChildCollection>
       </children>
     </ActionDocument>
-    <ActionDocument>
-      <id>d41de19ecb894cd5b304ea404688dc9e</id>
-      <typeId>logic.setVariable</typeId>
-      <version>1</version>
-      <properties>
-        <Property>
-          <name>Name</name>
-          <typeId>string</typeId>
-          <value>beginsWithSou</value>
-        </Property>
-        <Property>
-          <name>Value</name>
-          <typeId>bool</typeId>
-          <value>True</value>
-        </Property>
-        <Property>
-          <name>TypeName</name>
-          <typeId>string</typeId>
-          <value>bool</value>
-        </Property>
-        <Property>
-          <name>ValueMode</name>
-          <typeId>string</typeId>
-          <value>Expression</value>
-        </Property>
-        <Property>
-          <name>ExpressionText</name>
-          <typeId>string</typeId>
-          <value>"source text".StartsWithText("sou")</value>
-        </Property>
-        <Property>
-          <name>Description</name>
-          <typeId>string</typeId>
-          <value>Set Boolean beginsWithSou = False</value>
-        </Property>
-        <Property>
-          <name>IsEnabled</name>
-          <typeId>bool</typeId>
-          <value>True</value>
-        </Property>
-      </properties>
-      <children />
-    </ActionDocument>
-    <ActionDocument>
-      <id>52f21d97c64e41ebbd6dba608c74ae50</id>
-      <typeId>system.log</typeId>
-      <version>1</version>
-      <properties>
-        <Property>
-          <name>Description</name>
-          <typeId>string</typeId>
-          <value>Log [Info]: beginsWithSou</value>
-        </Property>
-        <Property>
-          <name>LastResolvedMessage</name>
-          <typeId>string</typeId>
-          <value>True</value>
-        </Property>
-        <Property>
-          <name>LogLevel</name>
-          <typeId>object</typeId>
-          <value>Info</value>
-        </Property>
-        <Property>
-          <name>Message</name>
-          <typeId>string</typeId>
-          <value>beginsWithSou</value>
-        </Property>
-        <Property>
-          <name>MessageMode</name>
-          <typeId>object</typeId>
-          <value>Expression</value>
-        </Property>
-      </properties>
-      <children />
-    </ActionDocument>
   </actions>
   <environment>
     <Variable>
-      <name>beginsWithSou</name>
+      <name>uicontains</name>
       <typeId>bool</typeId>
-      <value>True</value>
+      <value>False</value>
     </Variable>
   </environment>
   <globalElements />

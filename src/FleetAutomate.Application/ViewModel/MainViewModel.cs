@@ -7,6 +7,7 @@ using FleetAutomate.Model.Project;
 using FleetAutomate.Services;
 using FleetAutomate.UndoRedo;
 using FleetAutomate.Application.ActionConfiguration;
+using FleetAutomate.Expressions;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -1362,8 +1363,10 @@ namespace FleetAutomate.ViewModel
         {
             try
             {
+                var environment = ActiveTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment();
+                var inferredType = GetTypeFromString(variableType);
                 var parsedValue = valueMode == SetVariableValueMode.Expression
-                    ? GetDefaultValue(GetTypeFromString(variableType))
+                    ? GetExpressionInitialValue(variableValue, environment, out inferredType)
                     : Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(variableValue, variableType);
 
                 if (parsedValue == null)
@@ -1377,13 +1380,13 @@ namespace FleetAutomate.ViewModel
                 {
                     Name = variableName,
                     Value = parsedValue,
-                    Type = GetTypeFromString(variableType)
+                    Type = inferredType
                 };
 
                 // Create and return SetVariableAction<object>
                 var action = new SetVariableAction<object>(variableName, parsedValue)
                 {
-                    Environment = ActiveTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment(),
+                    Environment = environment,
                     Variable = variable,
                     ValueMode = valueMode,
                     ExpressionText = valueMode == SetVariableValueMode.Expression ? variableValue : string.Empty
@@ -1396,6 +1399,13 @@ namespace FleetAutomate.ViewModel
                 OnShowError?.Invoke("Error", $"Failed to create variable: {ex.Message}");
                 return null;
             }
+        }
+
+        private object GetExpressionInitialValue(string expressionText, Model.Actions.Logic.Environment environment, out Type inferredType)
+        {
+            var validation = new SimpleExpressionEngine().Validate(expressionText, new ExpressionContext(environment));
+            inferredType = validation.IsValid && validation.ResultType != null ? validation.ResultType : typeof(object);
+            return GetDefaultValue(inferredType);
         }
 
         private static object GetDefaultValue(Type type)
@@ -1416,26 +1426,28 @@ namespace FleetAutomate.ViewModel
 
                 if (conditionType == "Expression")
                 {
-                    // Parse the boolean expression
-                    var parsedCondition = Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(conditionExpression);
-
-                    if (parsedCondition == null)
+                    var validation = new SimpleExpressionEngine().Validate(conditionExpression, ExpressionContext.Empty);
+                    if (!validation.IsValid || validation.ResultType != typeof(bool))
                     {
-                        OnShowError?.Invoke("Invalid Expression", "Could not parse the condition as a boolean expression.");
+                        var error = validation.IsValid
+                            ? "Condition expression must return a boolean value."
+                            : string.Join(System.Environment.NewLine, validation.Errors);
+                        OnShowError?.Invoke("Invalid Expression", error);
                         return null;
                     }
 
-                    condition = parsedCondition;
+                    condition = CreateBooleanExpressionDocument(conditionExpression);
                 }
                 else if (conditionType == "UIElementExists")
                 {
-                    // Create UIElementExistsExpression with retry times
-                    condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
-                        elementIdentifier,
-                        identifierType,
-                        1000,  // 1 second timeout for existence check
-                        retryTimes  // Use the retry times from the dialog
-                    );
+                    conditionExpression = BuildUiExistsExpression(elementIdentifier, identifierType, retryTimes);
+                    condition = CreateBooleanExpressionDocument(conditionExpression, new Dictionary<string, string?>
+                    {
+                        ["Template"] = "UIElementExists",
+                        ["ElementIdentifier"] = elementIdentifier,
+                        ["IdentifierType"] = identifierType,
+                        ["RetryTimes"] = retryTimes.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    });
                 }
                 else
                 {
@@ -1462,6 +1474,27 @@ namespace FleetAutomate.ViewModel
                 OnShowError?.Invoke("Error", $"Failed to create if action: {ex.Message}");
                 return null;
             }
+        }
+
+        private static ExpressionDocument CreateBooleanExpressionDocument(string expressionText, Dictionary<string, string?>? properties = null)
+        {
+            return new ExpressionDocument
+            {
+                TypeId = "logic",
+                RawText = expressionText,
+                ResultTypeId = TypeIds.Bool,
+                Properties = properties ?? []
+            };
+        }
+
+        private static string BuildUiExistsExpression(string elementIdentifier, string identifierType, int retryTimes)
+        {
+            return $"uiExists({QuoteExpressionString(elementIdentifier)}, {QuoteExpressionString(identifierType)}, {Math.Max(1, retryTimes)})";
+        }
+
+        private static string QuoteExpressionString(string value)
+        {
+            return $"'{value.Replace("\\", "\\\\").Replace("'", "\\'", StringComparison.Ordinal)}'";
         }
 
         /// <summary>

@@ -93,6 +93,9 @@ namespace FleetAutomate.Model.Actions.System
         [IgnoreDataMember]
         public string LastResolvedMessage { get; private set; } = string.Empty;
 
+        [IgnoreDataMember]
+        public IExpressionUiQueryService UiQueryService { get; set; } = DefaultExpressionUiQueryService.Instance;
+
         /// <summary>
         /// The log level for this message
         /// </summary>
@@ -224,14 +227,40 @@ namespace FleetAutomate.Model.Actions.System
         {
             if (MessageMode == LogMessageMode.Expression)
             {
-                var result = await new SimpleExpressionEngine().EvaluateAsync(
-                    Message,
-                    new ExpressionContext(Environment ?? new Logic.Environment()),
-                    cancellationToken);
-                return Convert.ToString(result.Value, global::System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+                return await ResolveInterpolatedExpressionsAsync(Message, cancellationToken);
             }
 
             return ResolveVariables(Message);
+        }
+
+        private async Task<string> ResolveInterpolatedExpressionsAsync(string message, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                return message;
+            }
+
+            var engine = new SimpleExpressionEngine();
+            var context = new ExpressionContext(Environment ?? new Logic.Environment(), UiQueryService);
+            var matches = Regex.Matches(message, @"\{([^{}]+)\}");
+            if (matches.Count == 0)
+            {
+                var result = await engine.EvaluateAsync(message, context, cancellationToken);
+                return Convert.ToString(result.Value, global::System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            }
+
+            var resolvedMessage = message;
+
+            foreach (Match match in matches.Cast<Match>().Reverse())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var expressionText = match.Groups[1].Value.Trim();
+                var result = await engine.EvaluateAsync(expressionText, context, cancellationToken);
+                var replacement = Convert.ToString(result.Value, global::System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+                resolvedMessage = resolvedMessage.Remove(match.Index, match.Length).Insert(match.Index, replacement);
+            }
+
+            return resolvedMessage;
         }
     }
 }

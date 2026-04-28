@@ -24,14 +24,35 @@ public sealed class ExpressionDocument
 
 public sealed class ExpressionContext
 {
-    public static ExpressionContext Empty { get; } = new(new FlowEnvironment());
+    public static ExpressionContext Empty { get; } = new(new FlowEnvironment(), NullExpressionUiQueryService.Instance);
 
     public ExpressionContext(FlowEnvironment environment)
+        : this(environment, DefaultExpressionUiQueryService.Instance)
+    {
+    }
+
+    public ExpressionContext(FlowEnvironment environment, IExpressionUiQueryService uiQueryService)
     {
         Environment = environment ?? throw new ArgumentNullException(nameof(environment));
+        UiQueryService = uiQueryService ?? throw new ArgumentNullException(nameof(uiQueryService));
     }
 
     public FlowEnvironment Environment { get; }
+
+    public IExpressionUiQueryService UiQueryService { get; }
+}
+
+public interface IExpressionUiQueryService
+{
+    bool Exists(string elementPath);
+
+    bool Exists(string elementPath, string identifierType, int retryTimes) => Exists(elementPath);
+
+    bool ContainsText(string elementPath, string text);
+
+    string? GetProperty(string elementPath, string propertyName);
+
+    int Count(string elementPath);
 }
 
 public sealed record ExpressionResult(object? Value, Type ResultType);

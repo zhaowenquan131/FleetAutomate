@@ -94,14 +94,16 @@ namespace FleetAutomate.View.Dialog
         {
             var selectedIndex = VariableTypeComboBox.SelectedIndex;
             var isExpression = ValueModeComboBox?.SelectedIndex == 1;
+            VariableTypeComboBox.Visibility = isExpression ? Visibility.Collapsed : Visibility.Visible;
+            VariableTypeLabelTextBlock.Visibility = isExpression ? Visibility.Collapsed : Visibility.Visible;
             ValueLabelTextBlock.Text = isExpression ? "Expression" : "Value";
             ExpressionTemplatePanel.Visibility = isExpression ? Visibility.Visible : Visibility.Collapsed;
             VariableValueTextBox.ToolTip = isExpression
-                ? "Enter an expression, e.g. x * 2 + 3 or ready && count >= 3"
+                ? "Enter an expression. The variable type is inferred from the expression result."
                 : "Enter the initial value for the variable";
 
             HintTextBlock.Text = isExpression
-                ? "Supported: + - * / %, comparisons, && || !, variables, parentheses, now(), today()"
+                ? "Type is inferred automatically. Numbers currently infer as double."
                 : selectedIndex switch
             {
                 0 => "Enter an integer value (e.g., 42)",

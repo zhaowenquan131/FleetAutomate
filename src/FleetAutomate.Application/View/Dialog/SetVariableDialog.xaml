@@ -34,7 +34,7 @@
                     ToolTip="Enter a valid variable name (alphanumeric and underscore)"/>
 
             <!-- Variable Type -->
-            <TextBlock Text="Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <TextBlock Name="VariableTypeLabelTextBlock" Text="Type" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
             <ComboBox Name="VariableTypeComboBox"
                      Padding="8,4"
                      Margin="0,0,0,15"

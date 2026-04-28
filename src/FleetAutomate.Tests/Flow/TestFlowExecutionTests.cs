@@ -1,4 +1,5 @@
 using FleetAutomate.Model;
+using FleetAutomate.Expressions;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Expression;
 using FleetAutomate.Model.Actions.System;
@@ -438,6 +439,35 @@ public sealed class TestFlowExecutionTests
             {
                 OperandLeft = "count",
                 OperandRight = 3
+            },
+            Environment = environment
+        };
+        var ifBlockAction = new RecordingAction("if");
+        var elseBlockAction = new RecordingAction("else");
+        action.IfBlock.Add(ifBlockAction);
+        action.ElseBlock.Add(elseBlockAction);
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal(ActionState.Completed, action.State);
+        Assert.Equal(1, ifBlockAction.ExecutionCount);
+        Assert.Equal(0, elseBlockAction.ExecutionCount);
+    }
+
+    [Fact]
+    public async Task IfAction_WhenConditionIsExpressionDocument_ExecutesMatchingBranch()
+    {
+        var environment = new FleetAutomate.Model.Actions.Logic.Environment();
+        environment.Variables.Add(new Variable("count", 3, typeof(int)));
+
+        var action = new IfAction
+        {
+            Condition = new ExpressionDocument
+            {
+                TypeId = "logic",
+                RawText = "count == 3",
+                ResultTypeId = TypeIds.Bool
             },
             Environment = environment
         };

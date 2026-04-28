@@ -1,3 +1,4 @@
+using FleetAutomate.Expressions;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.Logic.Expression;
 using FleetAutomate.Model.Actions.Logic.Loops;
@@ -41,7 +42,7 @@ public sealed class LoopAndIfValidationTests
         Assert.Equal("Condition", error.PropertyName);
         Assert.Equal("Flow.Actions[0]", error.ActionPath);
         Assert.Equal("Int32", error.Context);
-        Assert.Equal("If condition must be a boolean value or Expression<bool>", error.Message);
+        Assert.Equal("If condition must be a boolean value or boolean expression", error.Message);
     }
 
     [Fact]
@@ -66,6 +67,26 @@ public sealed class LoopAndIfValidationTests
         flow.Actions.Add(new IfAction
         {
             Condition = new LiteralExpression<bool>(true),
+            Environment = flow.Environment
+        });
+
+        var errors = flow.ValidateSyntax().ToList();
+
+        Assert.DoesNotContain(errors, error => error.PropertyName == "Condition");
+    }
+
+    [Fact]
+    public void ValidateFlow_IfActionWithExpressionDocumentCondition_DoesNotReturnConditionErrors()
+    {
+        var flow = CreateFlow();
+        flow.Actions.Add(new IfAction
+        {
+            Condition = new ExpressionDocument
+            {
+                TypeId = "logic",
+                RawText = "true",
+                ResultTypeId = TypeIds.Bool
+            },
             Environment = flow.Environment
         });
 

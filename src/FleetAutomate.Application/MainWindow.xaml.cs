@@ -1,6 +1,7 @@
 ﻿using FleetAutomate.View.Dialog;
 using FleetAutomate.ViewModel;
 using FleetAutomate.Application.ActionConfiguration;
+using FleetAutomate.Expressions;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -1097,7 +1098,28 @@ namespace FleetAutomate
             string identifierType = "XPath";
             int retryTimes = 1;
 
-            if (ifAction.Condition is Model.Actions.Logic.Expression.UIElementExistsExpression uiExpr)
+            if (ifAction.Condition is FleetAutomate.Expressions.ExpressionDocument expressionDocument &&
+                expressionDocument.Properties.TryGetValue("Template", out var template) &&
+                template == "UIElementExists")
+            {
+                conditionType = "UIElementExists";
+                elementIdentifier = expressionDocument.Properties.TryGetValue("ElementIdentifier", out var identifier)
+                    ? identifier ?? string.Empty
+                    : string.Empty;
+                identifierType = expressionDocument.Properties.TryGetValue("IdentifierType", out var type)
+                    ? type ?? "XPath"
+                    : "XPath";
+                retryTimes = expressionDocument.Properties.TryGetValue("RetryTimes", out var retryText) &&
+                    int.TryParse(retryText, out var parsedRetryTimes)
+                        ? parsedRetryTimes
+                        : 1;
+            }
+            else if (ifAction.Condition is FleetAutomate.Expressions.ExpressionDocument genericExpressionDocument)
+            {
+                conditionType = "Expression";
+                conditionExpression = genericExpressionDocument.RawText;
+            }
+            else if (ifAction.Condition is Model.Actions.Logic.Expression.UIElementExistsExpression uiExpr)
             {
                 conditionType = "UIElementExists";
                 elementIdentifier = uiExpr.ElementIdentifier;
@@ -1127,21 +1149,20 @@ namespace FleetAutomate
                 string description = ifAction.Description;
                 if (dialog.ConditionType == "Expression")
                 {
-                    var parsedCondition = Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(dialog.ConditionExpression);
-                    if (parsedCondition != null)
-                    {
-                        condition = parsedCondition;
-                        description = $"If {dialog.ConditionExpression}";
-                    }
+                    condition = CreateBooleanExpressionDocument(dialog.ConditionExpression);
+                    description = $"If {dialog.ConditionExpression}";
                 }
                 else if (dialog.ConditionType == "UIElementExists")
                 {
-                    condition = new Model.Actions.Logic.Expression.UIElementExistsExpression(
-                        dialog.ElementIdentifier,
-                        dialog.IdentifierType,
-                        1000,
-                        dialog.RetryTimes
-                    );
+                    condition = CreateBooleanExpressionDocument(
+                        dialog.ConditionExpression,
+                        new Dictionary<string, string?>
+                        {
+                            ["Template"] = "UIElementExists",
+                            ["ElementIdentifier"] = dialog.ElementIdentifier,
+                            ["IdentifierType"] = dialog.IdentifierType,
+                            ["RetryTimes"] = dialog.RetryTimes.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                        });
                     description = $"{FormatElementDescription(dialog.ElementIdentifier, dialog.IdentifierType)} (retry:{dialog.RetryTimes}x)";
                 }
 
@@ -1152,6 +1173,17 @@ namespace FleetAutomate
 
                 RefreshActiveTestFlow();
             }
+        }
+
+        private static ExpressionDocument CreateBooleanExpressionDocument(string expressionText, Dictionary<string, string?>? properties = null)
+        {
+            return new ExpressionDocument
+            {
+                TypeId = "logic",
+                RawText = expressionText,
+                ResultTypeId = TypeIds.Bool,
+                Properties = properties ?? []
+            };
         }
 
         private void EditClickElementAction(Model.Actions.UIAutomation.ClickElementAction clickAction)

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using FleetAutomate.Model.Actions.Logic;
 
 namespace FleetAutomate.Expressions;
@@ -129,20 +130,44 @@ public sealed class SimpleExpressionEngine : IExpressionEngine
         private Token ReadString(char quote)
         {
             _position++;
-            var start = _position;
-            while (_position < _text.Length && _text[_position] != quote)
+            var value = new StringBuilder();
+            while (_position < _text.Length)
             {
-                _position++;
+                var ch = _text[_position++];
+                if (ch == quote)
+                {
+                    return new Token(TokenKind.String, value.ToString());
+                }
+
+                if (ch == '\\')
+                {
+                    if (_position >= _text.Length)
+                    {
+                        throw new InvalidOperationException("Unterminated escape sequence in string literal.");
+                    }
+
+                    value.Append(ReadEscapedCharacter(_text[_position++]));
+                    continue;
+                }
+
+                value.Append(ch);
             }
 
-            if (_position >= _text.Length)
-            {
-                throw new InvalidOperationException("Unterminated string literal.");
-            }
+            throw new InvalidOperationException("Unterminated string literal.");
+        }
 
-            var value = _text[start.._position];
-            _position++;
-            return new Token(TokenKind.String, value);
+        private static char ReadEscapedCharacter(char escaped)
+        {
+            return escaped switch
+            {
+                '"' => '"',
+                '\'' => '\'',
+                '\\' => '\\',
+                'n' => '\n',
+                'r' => '\r',
+                't' => '\t',
+                _ => escaped
+            };
         }
 
         private Token ReadIdentifier()
@@ -234,7 +259,8 @@ public sealed class SimpleExpressionEngine : IExpressionEngine
             var left = ParseAnd();
             while (Match(TokenKind.PipePipe))
             {
-                left = ToBool(left) || ToBool(ParseAnd());
+                var right = ParseAnd();
+                left = ToBool(left) || ToBool(right);
             }
 
             return left;
@@ -245,7 +271,8 @@ public sealed class SimpleExpressionEngine : IExpressionEngine
             var left = ParseEquality();
             while (Match(TokenKind.AmpAmp))
             {
-                left = ToBool(left) && ToBool(ParseEquality());
+                var right = ParseEquality();
+                left = ToBool(left) && ToBool(right);
             }
 
             return left;
@@ -451,14 +478,21 @@ public sealed class SimpleExpressionEngine : IExpressionEngine
             {
                 "now" when args.Count == 0 => DateTimeOffset.Now,
                 "today" when args.Count == 0 => DateTimeOffset.Now.Date,
-                "uiExists" when args.Count == 1 => !string.IsNullOrWhiteSpace(Convert.ToString(args[0], CultureInfo.InvariantCulture)),
-                "uiContainsText" when args.Count == 2 => Convert.ToString(args[0], CultureInfo.InvariantCulture)?.Contains(Convert.ToString(args[1], CultureInfo.InvariantCulture) ?? string.Empty, StringComparison.OrdinalIgnoreCase) == true,
-                "getUiProperty" when args.Count == 2 => $"{args[0]}:{args[1]}",
-                "uiCount" when args.Count == 1 => string.IsNullOrWhiteSpace(Convert.ToString(args[0], CultureInfo.InvariantCulture)) ? 0d : 1d,
+                "uiExists" when args.Count == 1 => _context.UiQueryService.Exists(ToText(args[0])),
+                "uiExists" when args.Count == 2 => _context.UiQueryService.Exists(ToText(args[0]), ToText(args[1]), 1),
+                "uiExists" when args.Count == 3 => _context.UiQueryService.Exists(ToText(args[0]), ToText(args[1]), Math.Max(1, (int)ToDouble(args[2]))),
+                "uiContainsText" when args.Count == 2 => _context.UiQueryService.ContainsText(ToText(args[0]), ToText(args[1])),
+                "getUiProperty" when args.Count == 2 => _context.UiQueryService.GetProperty(ToText(args[0]), ToText(args[1])) ?? string.Empty,
+                "uiCount" when args.Count == 1 => (double)_context.UiQueryService.Count(ToText(args[0])),
                 "isNowLaterThan" when args.Count == 1 => DateTimeOffset.Now > ParseDateTime(args[0]),
                 "isNowEarlierThan" when args.Count == 1 => DateTimeOffset.Now < ParseDateTime(args[0]),
                 _ => throw new InvalidOperationException($"Unknown function '{functionName}'.")
             };
+        }
+
+        private static string ToText(object? value)
+        {
+            return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
         }
 
         private static object? EvaluateMethod(object? receiver, string methodName, IReadOnlyList<object?> args)

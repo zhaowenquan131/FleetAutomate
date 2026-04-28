@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using FleetAutomate.Expressions;
 using Wpf.Ui.Controls;
 
 namespace FleetAutomate.View.Dialog
@@ -192,11 +193,12 @@ namespace FleetAutomate.View.Dialog
                 return false;
             }
 
-            // Try to parse the condition
-            var parsedCondition = Model.Actions.Logic.Expression.BooleanExpressionParser.Parse(condition);
-            if (parsedCondition == null)
+            var validation = new SimpleExpressionEngine().Validate(condition, ExpressionContext.Empty);
+            if (!validation.IsValid || validation.ResultType != typeof(bool))
             {
-                ErrorTextBlock.Text = "Invalid boolean expression. Use comparison operators (>, <, >=, <=) or literal values (true, false).";
+                ErrorTextBlock.Text = validation.IsValid
+                    ? "Invalid boolean expression. Expression must return a boolean value."
+                    : string.Join(System.Environment.NewLine, validation.Errors);
                 ErrorTextBlock.Visibility = Visibility.Visible;
                 return false;
             }
@@ -242,7 +244,18 @@ namespace FleetAutomate.View.Dialog
                 IdentifierType = identifierTypeItem.Content?.ToString() ?? "XPath";
             }
 
+            ConditionExpression = BuildUiExistsExpression(ElementIdentifier, IdentifierType, RetryTimes);
             return true;
+        }
+
+        private static string BuildUiExistsExpression(string elementIdentifier, string identifierType, int retryTimes)
+        {
+            return $"uiExists({QuoteExpressionString(elementIdentifier)}, {QuoteExpressionString(identifierType)}, {retryTimes})";
+        }
+
+        private static string QuoteExpressionString(string value)
+        {
+            return $"'{value.Replace("\\", "\\\\").Replace("'", "\\'", StringComparison.Ordinal)}'";
         }
 
         private async Task ShowErrorAsync(string title, string message)

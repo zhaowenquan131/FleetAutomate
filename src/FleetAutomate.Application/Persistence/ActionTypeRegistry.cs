@@ -184,6 +184,7 @@ internal sealed class IfActionMapper : ReflectionActionMapper<IfAction>
     {
         var document = base.ToDocument(action, registry);
         var ifAction = (IfAction)action;
+        WriteCondition(document.Properties, ifAction.Condition);
         document.Children =
         [
             ToChild("then", ifAction.IfBlock, registry),
@@ -196,6 +197,7 @@ internal sealed class IfActionMapper : ReflectionActionMapper<IfAction>
     public override IAction FromDocument(ActionDocument document, ActionTypeRegistry registry)
     {
         var action = (IfAction)base.FromDocument(document, registry);
+        action.Condition = ReadCondition(document.Properties);
         foreach (var child in document.Children)
         {
             var target = child.Name switch
@@ -225,6 +227,89 @@ internal sealed class IfActionMapper : ReflectionActionMapper<IfAction>
 
         action.InitializeAfterDeserialization();
         return action;
+    }
+
+    private static void WriteCondition(List<PropertyDocument> properties, object? condition)
+    {
+        RemoveConditionProperties(properties);
+
+        switch (condition)
+        {
+            case ExpressionDocument expression:
+                properties.Add(ValueSerializer.ToProperty("ConditionExpressionTypeId", expression.TypeId, typeof(string)));
+                properties.Add(ValueSerializer.ToProperty("ConditionExpressionVersion", expression.Version, typeof(int)));
+                properties.Add(ValueSerializer.ToProperty("ConditionExpressionRawText", expression.RawText, typeof(string)));
+                properties.Add(ValueSerializer.ToProperty("ConditionExpressionResultTypeId", expression.ResultTypeId, typeof(string)));
+                foreach (var (key, value) in expression.Properties.OrderBy(p => p.Key, StringComparer.Ordinal))
+                {
+                    properties.Add(ValueSerializer.ToProperty($"ConditionExpressionProperty.{key}", value, typeof(string)));
+                }
+                break;
+
+            case bool boolCondition:
+                properties.Add(ValueSerializer.ToProperty("ConditionType", "Boolean", typeof(string)));
+                properties.Add(ValueSerializer.ToProperty("ConditionValue", boolCondition, typeof(bool)));
+                break;
+        }
+    }
+
+    private static object ReadCondition(IEnumerable<PropertyDocument> properties)
+    {
+        var propertyMap = properties.ToDictionary(p => p.Name, StringComparer.Ordinal);
+        if (propertyMap.ContainsKey("ConditionExpressionRawText"))
+        {
+            var expression = new ExpressionDocument
+            {
+                TypeId = GetString(propertyMap, "ConditionExpressionTypeId") ?? "logic",
+                Version = GetInt(propertyMap, "ConditionExpressionVersion", 1),
+                RawText = GetString(propertyMap, "ConditionExpressionRawText") ?? string.Empty,
+                ResultTypeId = GetString(propertyMap, "ConditionExpressionResultTypeId") ?? TypeIds.Bool
+            };
+
+            foreach (var property in propertyMap.Values.Where(p => p.Name.StartsWith("ConditionExpressionProperty.", StringComparison.Ordinal)))
+            {
+                expression.Properties[property.Name["ConditionExpressionProperty.".Length..]] = property.Value;
+            }
+
+            return expression;
+        }
+
+        var conditionType = GetString(propertyMap, "ConditionType");
+
+        return conditionType switch
+        {
+            "Boolean" => propertyMap.TryGetValue("ConditionValue", out var boolProperty)
+                ? (bool)(ValueSerializer.FromProperty(boolProperty) ?? false)
+                : false,
+            _ => true
+        };
+    }
+
+    private static void RemoveConditionProperties(List<PropertyDocument> properties)
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "ConditionType",
+            "ConditionValue",
+            "ConditionExpressionTypeId",
+            "ConditionExpressionVersion",
+            "ConditionExpressionRawText",
+            "ConditionExpressionResultTypeId"
+        };
+        properties.RemoveAll(property => names.Contains(property.Name) ||
+            property.Name.StartsWith("ConditionExpressionProperty.", StringComparison.Ordinal));
+    }
+
+    private static string? GetString(Dictionary<string, PropertyDocument> properties, string name)
+    {
+        return properties.TryGetValue(name, out var property) ? property.Value : null;
+    }
+
+    private static int GetInt(Dictionary<string, PropertyDocument> properties, string name, int defaultValue)
+    {
+        return properties.TryGetValue(name, out var property) && ValueSerializer.FromProperty(property) is int value
+            ? value
+            : defaultValue;
     }
 
     private static ActionChildCollectionDocument ToChild(string name, IEnumerable<IAction> actions, ActionTypeRegistry registry)

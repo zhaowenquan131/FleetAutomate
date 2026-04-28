@@ -1,3 +1,4 @@
+using FleetAutomate.Expressions;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Flow;
@@ -120,7 +121,8 @@ public sealed class SystemActionTests : IDisposable
             Environment = new FleetAutomate.Model.Actions.Logic.Environment
             {
                 Variables = [new Variable("count", 3, typeof(int))]
-            }
+            },
+            UiQueryService = new FakeExpressionUiQueryService { PropertyResult = "window button" }
         };
 
         var result = await action.ExecuteAsync(CancellationToken.None);
@@ -131,16 +133,34 @@ public sealed class SystemActionTests : IDisposable
     }
 
     [Fact]
-    public async Task LogAction_ExpressionModeEvaluatesExpression()
+    public async Task LogAction_ExpressionModeInterpolatesExpressions()
+    {
+        var action = new LogAction
+        {
+            MessageMode = LogMessageMode.Expression,
+            Message = "window contains target text: {getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")}, count: {count + 2}",
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment
+            {
+                Variables = [new Variable("count", 3, typeof(int))]
+            },
+            UiQueryService = new FakeExpressionUiQueryService { PropertyResult = "window button" }
+        };
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal("window contains target text: True, count: 5", action.LastResolvedMessage);
+        Assert.Equal(ActionState.Completed, action.State);
+    }
+
+    [Fact]
+    public async Task LogAction_ExpressionModeEvaluatesWholeExpressionWhenNoInterpolationMarkers()
     {
         var action = new LogAction
         {
             MessageMode = LogMessageMode.Expression,
             Message = "getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")",
-            Environment = new FleetAutomate.Model.Actions.Logic.Environment
-            {
-                Variables = [new Variable("count", 3, typeof(int))]
-            }
+            UiQueryService = new FakeExpressionUiQueryService { PropertyResult = "window button" }
         };
 
         var result = await action.ExecuteAsync(CancellationToken.None);
@@ -185,5 +205,20 @@ public sealed class SystemActionTests : IDisposable
         }
 
         throw new InvalidOperationException("Clipboard text could not be read after retries.", lastFailure);
+    }
+
+    private sealed class FakeExpressionUiQueryService : IExpressionUiQueryService
+    {
+        public string? PropertyResult { get; set; }
+
+        public bool Exists(string elementPath) => false;
+
+        public bool Exists(string elementPath, string identifierType, int retryTimes) => false;
+
+        public bool ContainsText(string elementPath, string text) => false;
+
+        public string? GetProperty(string elementPath, string propertyName) => PropertyResult;
+
+        public int Count(string elementPath) => 0;
     }
 }

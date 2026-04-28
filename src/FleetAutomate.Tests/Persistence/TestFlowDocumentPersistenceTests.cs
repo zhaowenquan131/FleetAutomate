@@ -1,6 +1,8 @@
 using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Actions.Logic.Expression;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Flow;
+using FleetAutomate.Expressions;
 
 namespace FleetAutomate.Tests.Persistence;
 
@@ -95,6 +97,38 @@ public class TestFlowDocumentPersistenceTests
         Assert.Equal(LogLevel.Warn, loadedLog.LogLevel);
         Assert.Equal(LogMessageMode.Expression, loadedLog.MessageMode);
         Assert.Equal("getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")", loadedLog.Message);
+    }
+
+    [Fact]
+    public void DocumentRoundTrip_PreservesIfActionUiElementExistsConditionAsExpression()
+    {
+        const string expressionText = "uiExists('//Pane[@Name=\"桌面 1\"]//Window[@Name=\"计算器\"]//Window[@Name=\"计算器\"]')";
+        var flow = new TestFlow
+        {
+            Name = "If Condition Flow"
+        };
+        flow.Actions.Add(new IfAction
+        {
+            Condition = new ExpressionDocument
+            {
+                TypeId = "logic",
+                RawText = expressionText,
+                ResultTypeId = TypeIds.Bool
+            },
+            Environment = flow.Environment,
+            Description = "Name: 计算器 (retry:3x)"
+        });
+
+        var xml = TestFlowXmlSerializer.SerializeToXml(flow);
+        var loaded = TestFlowXmlSerializer.DeserializeFromXml(xml);
+
+        Assert.Contains("ConditionExpressionRawText", xml);
+        Assert.Contains("uiExists", xml);
+        var loadedIf = Assert.IsType<IfAction>(Assert.Single(loaded!.Actions));
+        var condition = Assert.IsType<ExpressionDocument>(loadedIf.Condition);
+        Assert.Equal("logic", condition.TypeId);
+        Assert.Equal(expressionText, condition.RawText);
+        Assert.Equal(TypeIds.Bool, condition.ResultTypeId);
     }
 
     [Fact]

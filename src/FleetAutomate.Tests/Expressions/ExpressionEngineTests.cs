@@ -54,13 +54,66 @@ public class ExpressionEngineTests
     public async Task EvaluateAsync_SupportsParenthesesAndStringMethodChains()
     {
         var engine = new SimpleExpressionEngine();
+        var context = new ExpressionContext(
+            new FleetAutomate.Model.Actions.Logic.Environment(),
+            new FakeExpressionUiQueryService
+            {
+                PropertyResult = "calculator window",
+                CountResult = 1
+            });
 
         var result = await engine.EvaluateAsync(
             "(getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")) && uiCount(\"Window\") >= 1",
-            ExpressionContext.Empty,
+            context,
             CancellationToken.None);
 
         Assert.True((bool)result.Value!);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_SupportsEscapedQuotesInStringLiterals()
+    {
+        var engine = new SimpleExpressionEngine();
+
+        var result = await engine.EvaluateAsync(
+            "uiContainsText(\"//Pane[@Name=\\\"桌面 1\\\"]//Window[@Name=\\\"计算器\\\"]//Window[@Name=\\\"计算器\\\"]\", \"标准\")",
+            ExpressionContext.Empty,
+            CancellationToken.None);
+
+        Assert.False((bool)result.Value!);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_SupportsSingleQuotedXpathWithDoubleQuotedPredicates()
+    {
+        var engine = new SimpleExpressionEngine();
+
+        var result = await engine.EvaluateAsync(
+            "uiContainsText('//Pane[@Name=\"桌面 1\"]//Window[@Name=\"计算器\"]//Window[@Name=\"计算器\"]', \"标准\")",
+            ExpressionContext.Empty,
+            CancellationToken.None);
+
+        Assert.False((bool)result.Value!);
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_UiContainsTextUsesUiQueryService()
+    {
+        var engine = new SimpleExpressionEngine();
+        var uiQuery = new FakeExpressionUiQueryService
+        {
+            ContainsTextResult = true
+        };
+        var context = new ExpressionContext(new FleetAutomate.Model.Actions.Logic.Environment(), uiQuery);
+
+        var result = await engine.EvaluateAsync(
+            "uiContainsText('//Window[@Name=\"Calculator\"]', \"Standard\")",
+            context,
+            CancellationToken.None);
+
+        Assert.True((bool)result.Value!);
+        Assert.Equal("//Window[@Name=\"Calculator\"]", uiQuery.LastElementPath);
+        Assert.Equal("Standard", uiQuery.LastText);
     }
 
     [Fact]
@@ -76,7 +129,7 @@ public class ExpressionEngineTests
     }
 
     [Fact]
-    public async Task SetVariableAction_UsesExpressionRightValue()
+    public async Task SetVariableAction_ExpressionRightValueInfersResultType()
     {
         var environment = new FleetAutomate.Model.Actions.Logic.Environment
         {
@@ -93,7 +146,33 @@ public class ExpressionEngineTests
 
         Assert.True(ok);
         var variable = Assert.Single(environment.Variables, v => v.Name == "result");
-        Assert.Equal(12, variable.Value);
-        Assert.Equal(typeof(int), variable.Type);
+        Assert.Equal(12d, variable.Value);
+        Assert.Equal(typeof(double), variable.Type);
+    }
+
+    private sealed class FakeExpressionUiQueryService : IExpressionUiQueryService
+    {
+        public bool ContainsTextResult { get; set; }
+
+        public string? PropertyResult { get; set; }
+
+        public int CountResult { get; set; }
+
+        public string? LastElementPath { get; private set; }
+
+        public string? LastText { get; private set; }
+
+        public bool Exists(string elementPath) => false;
+
+        public bool ContainsText(string elementPath, string text)
+        {
+            LastElementPath = elementPath;
+            LastText = text;
+            return ContainsTextResult;
+        }
+
+        public string? GetProperty(string elementPath, string propertyName) => PropertyResult;
+
+        public int Count(string elementPath) => CountResult;
     }
 }

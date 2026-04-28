@@ -96,6 +96,89 @@ dotnet run --project src/FleetAutomate.Application/FleetAutomate.csproj
    - Click "Run" or press `F5`
    - Watch the execution in real-time
 
+## Expressions for New Users
+
+Expressions let actions calculate values at run time instead of using only fixed text. They are useful for variable assignment, conditions, UI checks, and log messages.
+
+### Where expressions are used
+
+- **Set Variable**: choose `Expression` as the value mode. FleetAutomate infers the variable type from the expression result, so you do not need to choose a type in expression mode.
+- **Log**: choose `Expression` as the message mode to use string interpolation. Normal text is kept, and each `{...}` block is evaluated as an expression.
+- **Conditions**: condition actions can use expressions to decide whether a branch or loop should run.
+
+### Basic syntax
+
+Supported expression syntax includes:
+
+- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Comparison: `==`, `!=`, `>`, `>=`, `<`, `<=`
+- Logic: `&&`, `||`, `!`
+- Parentheses: `(count + 1) * 2`
+- Variables: use the variable name directly, for example `count + 1`
+- Strings and booleans: `"hello"`, `true`, `false`
+
+Numeric expressions currently infer as `double`. For example, `1 + 2` creates a `double` value `3`.
+
+### Built-in expression functions
+
+UI-related functions:
+
+```text
+uiExists("Window/Pane/Button")
+uiContainsText("Window/Pane", "target text")
+getUiProperty("Window/Pane/Button", "Name")
+uiCount("Window/Pane")
+```
+
+XPath values often contain double quotes in predicates. Use a single-quoted expression string, or escape the inner double quotes:
+
+```text
+uiContainsText('//Pane[@Name="桌面 1"]//Window[@Name="计算器"]', "标准")
+uiContainsText("//Pane[@Name=\"桌面 1\"]//Window[@Name=\"计算器\"]", "标准")
+```
+
+Text chaining functions:
+
+```text
+getUiProperty("Window/Pane/Button", "Name").ContainsText("calculator")
+"hello world".StartsWithText("hello")
+"hello world".EndsWithText("world")
+```
+
+Date and time functions:
+
+```text
+now()
+today()
+isNowLaterThan("2026-01-01T00:00:00Z")
+isNowEarlierThan("2026-01-01T00:00:00Z")
+```
+
+### Set Variable examples
+
+Expression mode infers the variable type from the expression result:
+
+```text
+count + 1
+ready && uiExists("Window/Pane/Button")
+getUiProperty("Window/Pane/Button", "Name")
+isNowLaterThan("2026-01-01T00:00:00Z")
+```
+
+If an expression references variables, make sure those variables have already been created earlier in the flow.
+
+### Log message interpolation
+
+Log Action expression mode evaluates only the expressions inside `{...}` and keeps the rest of the text:
+
+```text
+window contains target text: {uiContainsText("Window/Pane", "target text")}
+button name: {getUiProperty("Window/Pane/Button", "Name")}
+next count: {count + 1}
+```
+
+This is different from Set Variable expression mode, where the whole input is treated as one expression.
+
 ## CLI Usage (fleetctl / FleetAutomate.Cli.exe)
 
 FleetAutomate includes a CLI executable (`FleetAutomate.Cli.exe`). In docs and examples this command is shown as `fleetctl`; use either based on your local setup.

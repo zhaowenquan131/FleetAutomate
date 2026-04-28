@@ -114,12 +114,13 @@ namespace FleetAutomate.Model.Actions.Logic
                 if (existingVariable != null)
                 {
                     existingVariable.Value = value;
-                    existingVariable.Type = Variable.Type;
+                    existingVariable.Type = GetResolvedVariableType(value);
                     Variable = existingVariable;
                 }
                 else
                 {
                     Variable.Value = value;
+                    Variable.Type = GetResolvedVariableType(value);
                     Environment.Variables.Add(Variable);
                 }
 
@@ -142,27 +143,12 @@ namespace FleetAutomate.Model.Actions.Logic
 
             var engine = new SimpleExpressionEngine();
             var result = await engine.EvaluateAsync(ExpressionText, new ExpressionContext(Environment), cancellationToken);
-            return ConvertToVariableType(result.Value, Variable.Type);
+            return result.Value;
         }
 
-        private static object? ConvertToVariableType(object? value, Type targetType)
+        private static Type GetResolvedVariableType(object? value)
         {
-            if (value == null || targetType == typeof(object))
-            {
-                return value;
-            }
-
-            if (targetType.IsInstanceOfType(value))
-            {
-                return value;
-            }
-
-            if (targetType.IsEnum)
-            {
-                return Enum.Parse(targetType, Convert.ToString(value) ?? string.Empty, ignoreCase: true);
-            }
-
-            return Convert.ChangeType(value, targetType, global::System.Globalization.CultureInfo.InvariantCulture);
+            return value?.GetType() ?? typeof(object);
         }
     }
 }
