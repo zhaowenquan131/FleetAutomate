@@ -1,4 +1,5 @@
 using FleetAutomate.Model.Actions.System;
+using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Flow;
 
 namespace FleetAutomate.Tests.Actions;
@@ -108,6 +109,45 @@ public sealed class SystemActionTests : IDisposable
         }
 
         Assert.Equal(action.Text, clipboardText);
+    }
+
+    [Fact]
+    public async Task LogAction_LiteralModeResolvesBraceVariables()
+    {
+        var action = new LogAction
+        {
+            Message = "Count: {count}",
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment
+            {
+                Variables = [new Variable("count", 3, typeof(int))]
+            }
+        };
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal("Count: 3", action.LastResolvedMessage);
+        Assert.Equal(ActionState.Completed, action.State);
+    }
+
+    [Fact]
+    public async Task LogAction_ExpressionModeEvaluatesExpression()
+    {
+        var action = new LogAction
+        {
+            MessageMode = LogMessageMode.Expression,
+            Message = "getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")",
+            Environment = new FleetAutomate.Model.Actions.Logic.Environment
+            {
+                Variables = [new Variable("count", 3, typeof(int))]
+            }
+        };
+
+        var result = await action.ExecuteAsync(CancellationToken.None);
+
+        Assert.True(result);
+        Assert.Equal("True", action.LastResolvedMessage);
+        Assert.Equal(ActionState.Completed, action.State);
     }
 
     private static bool CanAccessClipboard()

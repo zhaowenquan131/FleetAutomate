@@ -242,7 +242,7 @@ namespace FleetAutomate
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.LogLevel, dialog.Message);
+                    return (dialog.LogLevel, dialog.Message, dialog.MessageMode);
                 }
 
                 return null; // User cancelled
@@ -1369,7 +1369,7 @@ namespace FleetAutomate
             string message = logAction.Message;
 
             // Create and show the LogActionDialog with pre-populated values
-            var dialog = new LogActionDialog(logLevel, message)
+            var dialog = new LogActionDialog(logLevel, message, logAction.MessageMode)
             {
                 Owner = this
             };
@@ -1379,6 +1379,7 @@ namespace FleetAutomate
                 ViewModel.ApplyActionPropertyChanges(logAction, "Edit log action", [
                     (nameof(Model.Actions.System.LogAction.LogLevel), dialog.LogLevel),
                     (nameof(Model.Actions.System.LogAction.Message), dialog.Message),
+                    (nameof(Model.Actions.System.LogAction.MessageMode), dialog.MessageMode),
                     (nameof(Model.Actions.System.LogAction.Description), $"Log [{dialog.LogLevel}]: {(dialog.Message.Length > 30 ? dialog.Message.Substring(0, 27) + "..." : dialog.Message)}")
                 ]);
 

@@ -76,6 +76,28 @@ public class TestFlowDocumentPersistenceTests
     }
 
     [Fact]
+    public void DocumentRoundTrip_PreservesLogActionExpressionMode()
+    {
+        var flow = new TestFlow
+        {
+            Name = "Log Expression Flow"
+        };
+        flow.Actions.Add(new LogAction
+        {
+            LogLevel = LogLevel.Warn,
+            MessageMode = LogMessageMode.Expression,
+            Message = "getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")"
+        });
+
+        var loaded = TestFlowXmlSerializer.DeserializeFromXml(TestFlowXmlSerializer.SerializeToXml(flow));
+
+        var loadedLog = Assert.IsType<LogAction>(Assert.Single(loaded!.Actions));
+        Assert.Equal(LogLevel.Warn, loadedLog.LogLevel);
+        Assert.Equal(LogMessageMode.Expression, loadedLog.MessageMode);
+        Assert.Equal("getUiProperty(\"Window/Pane/Button\", \"Name\").ContainsText(\"window\")", loadedLog.Message);
+    }
+
+    [Fact]
     public void DeserializeFromXml_FallsBackToLegacyRuntimeXml()
     {
         var flow = new TestFlow { Name = "Legacy Flow", Description = "old" };

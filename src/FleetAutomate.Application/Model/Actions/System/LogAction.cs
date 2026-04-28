@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+using FleetAutomate.Expressions;
 using FleetAutomate.Model.Flow;
 using FleetAutomate.Model.Actions.Logic;
 using NLog;
@@ -25,6 +26,16 @@ namespace FleetAutomate.Model.Actions.System
         Error,
         [EnumMember]
         Fatal
+    }
+
+    [DataContract]
+    public enum LogMessageMode
+    {
+        [EnumMember]
+        Literal,
+
+        [EnumMember]
+        Expression
     }
 
     /// <summary>
@@ -77,7 +88,10 @@ namespace FleetAutomate.Model.Actions.System
         /// Environment for resolving variables. Not serialized.
         /// </summary>
         [IgnoreDataMember]
-        public Logic.Environment Environment { get; set; }
+        public Logic.Environment Environment { get; set; } = new();
+
+        [IgnoreDataMember]
+        public string LastResolvedMessage { get; private set; } = string.Empty;
 
         /// <summary>
         /// The log level for this message
@@ -115,6 +129,21 @@ namespace FleetAutomate.Model.Actions.System
             }
         }
 
+        [DataMember]
+        private LogMessageMode _messageMode = LogMessageMode.Literal;
+        public LogMessageMode MessageMode
+        {
+            get => _messageMode;
+            set
+            {
+                if (_messageMode != value)
+                {
+                    _messageMode = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(MessageMode)));
+                }
+            }
+        }
+
         public void Cancel()
         {
             // Nothing to cancel for logging
@@ -127,8 +156,8 @@ namespace FleetAutomate.Model.Actions.System
 
             try
             {
-                // Resolve variables in the message
-                string resolvedMessage = ResolveVariables(Message);
+                string resolvedMessage = await ResolveMessageAsync(cancellationToken);
+                LastResolvedMessage = resolvedMessage;
 
                 // Log at the appropriate level
                 switch (LogLevel)
@@ -189,6 +218,20 @@ namespace FleetAutomate.Model.Actions.System
                 // If variable not found, return the original placeholder
                 return match.Value;
             });
+        }
+
+        private async Task<string> ResolveMessageAsync(CancellationToken cancellationToken)
+        {
+            if (MessageMode == LogMessageMode.Expression)
+            {
+                var result = await new SimpleExpressionEngine().EvaluateAsync(
+                    Message,
+                    new ExpressionContext(Environment ?? new Logic.Environment()),
+                    cancellationToken);
+                return Convert.ToString(result.Value, global::System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty;
+            }
+
+            return ResolveVariables(Message);
         }
     }
 }

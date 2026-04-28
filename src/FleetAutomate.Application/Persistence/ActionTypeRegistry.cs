@@ -31,6 +31,7 @@ public sealed class ActionTypeRegistry
     {
         var registry = new ActionTypeRegistry();
         registry.Register(new ReflectionActionMapper<WaitDurationAction>("system.waitDuration"));
+        registry.Register(new ReflectionActionMapper<LogAction>("system.log"));
         registry.Register(new ReflectionActionMapper<LaunchApplicationAction>("system.launchApplication"));
         registry.Register(new ReflectionActionMapper<ClickElementAction>("ui.clickElement"));
         registry.Register(new ReflectionActionMapper<WaitForElementAction>("ui.waitForElement"));

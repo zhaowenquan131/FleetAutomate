@@ -1,106 +1,464 @@
 ﻿<?xml version="1.0" encoding="utf-16"?>
-<TestFlow xmlns:i="http://www.w3.org/2001/XMLSchema-instance" z:Id="1" xmlns:z="http://schemas.microsoft.com/2003/10/Serialization/" xmlns="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Flow">
-  <ActionsArray xmlns:d2p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="2" z:Size="2">
-    <d2p1:anyType z:Id="3" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.System" i:type="d3p1:LaunchApplicationAction">
-      <d3p1:_arguments z:Id="4"></d3p1:_arguments>
-      <d3p1:_description z:Id="5">Launch Windows Calculator</d3p1:_description>
-      <d3p1:_executablePath z:Id="6">calc.exe</d3p1:_executablePath>
-      <d3p1:_timeoutMilliseconds>30000</d3p1:_timeoutMilliseconds>
-      <d3p1:_waitForCompletion>false</d3p1:_waitForCompletion>
-      <d3p1:_workingDirectory z:Ref="4" i:nil="true" />
-    </d2p1:anyType>
-    <d2p1:anyType z:Id="7" xmlns:d3p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.Logic" i:type="d3p1:IfAction">
-      <d3p1:Condition z:Id="8" xmlns:d4p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.Logic.Expression" i:type="d4p1:UIElementExistsExpression">
-        <d3p1:RawText i:nil="true" />
-        <d3p1:Result>true</d3p1:Result>
-        <d4p1:ElementIdentifier z:Id="9">//Pane[@Name="桌面 1"]//Window[@Name="计算器"]//Window[@Name="计算器"]</d4p1:ElementIdentifier>
-        <d4p1:IdentifierType z:Id="10">XPath</d4p1:IdentifierType>
-        <d4p1:RetryTimes>3</d4p1:RetryTimes>
-        <d4p1:TimeoutMilliseconds>1000</d4p1:TimeoutMilliseconds>
-      </d3p1:Condition>
-      <d3p1:Description z:Id="11">Name: 计算器 (retry:3x)</d3p1:Description>
-      <d3p1:ElseBlockArray z:Id="12" z:Size="0" />
-      <d3p1:ElseIfsArray z:Id="13" z:Size="0" />
-      <d3p1:Environment z:Id="14">
-        <d3p1:Actions z:Id="15" z:Size="0" />
-        <d3p1:Variables z:Id="16" z:Size="0" />
-      </d3p1:Environment>
-      <d3p1:IfBlockArray z:Id="17" z:Size="6">
-        <d2p1:anyType z:Id="18" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
-          <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="19">AutomationId: num1Button (invoke no-wait) (retry:3x)</d5p1:_description>
-          <d5p1:_elementIdentifier z:Id="20">num1Button</d5p1:_elementIdentifier>
-          <d5p1:_globalDictionaryKey i:nil="true" />
-          <d5p1:_identifierType z:Id="21">AutomationId</d5p1:_identifierType>
-          <d5p1:_invokeWithoutWaiting>true</d5p1:_invokeWithoutWaiting>
-          <d5p1:_isDoubleClick>false</d5p1:_isDoubleClick>
-          <d5p1:_retryDelayMilliseconds>500</d5p1:_retryDelayMilliseconds>
-          <d5p1:_retryTimes>3</d5p1:_retryTimes>
-          <d5p1:_searchScope i:nil="true" />
-          <d5p1:_useInvoke>true</d5p1:_useInvoke>
-        </d2p1:anyType>
-        <d2p1:anyType z:Id="22" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
-          <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="23">AutomationId: plusButton (invoke no-wait) (retry:3x)</d5p1:_description>
-          <d5p1:_elementIdentifier z:Id="24">plusButton</d5p1:_elementIdentifier>
-          <d5p1:_globalDictionaryKey i:nil="true" />
-          <d5p1:_identifierType z:Id="25">AutomationId</d5p1:_identifierType>
-          <d5p1:_invokeWithoutWaiting>true</d5p1:_invokeWithoutWaiting>
-          <d5p1:_isDoubleClick>false</d5p1:_isDoubleClick>
-          <d5p1:_retryDelayMilliseconds>500</d5p1:_retryDelayMilliseconds>
-          <d5p1:_retryTimes>3</d5p1:_retryTimes>
-          <d5p1:_searchScope i:nil="true" />
-          <d5p1:_useInvoke>true</d5p1:_useInvoke>
-        </d2p1:anyType>
-        <d2p1:anyType z:Id="26" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
-          <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="27">AutomationId: num2Button (retry:3x)</d5p1:_description>
-          <d5p1:_elementIdentifier z:Id="28">num2Button</d5p1:_elementIdentifier>
-          <d5p1:_globalDictionaryKey i:nil="true" />
-          <d5p1:_identifierType z:Id="29">AutomationId</d5p1:_identifierType>
-          <d5p1:_invokeWithoutWaiting>false</d5p1:_invokeWithoutWaiting>
-          <d5p1:_isDoubleClick>false</d5p1:_isDoubleClick>
-          <d5p1:_retryDelayMilliseconds>500</d5p1:_retryDelayMilliseconds>
-          <d5p1:_retryTimes>3</d5p1:_retryTimes>
-          <d5p1:_searchScope i:nil="true" />
-          <d5p1:_useInvoke>false</d5p1:_useInvoke>
-        </d2p1:anyType>
-        <d2p1:anyType z:Id="30" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:ClickElementAction">
-          <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="31">AutomationId: equalButton (invoke no-wait) (retry:3x)</d5p1:_description>
-          <d5p1:_elementIdentifier z:Id="32">equalButton</d5p1:_elementIdentifier>
-          <d5p1:_globalDictionaryKey i:nil="true" />
-          <d5p1:_identifierType z:Id="33">AutomationId</d5p1:_identifierType>
-          <d5p1:_invokeWithoutWaiting>true</d5p1:_invokeWithoutWaiting>
-          <d5p1:_isDoubleClick>false</d5p1:_isDoubleClick>
-          <d5p1:_retryDelayMilliseconds>500</d5p1:_retryDelayMilliseconds>
-          <d5p1:_retryTimes>3</d5p1:_retryTimes>
-          <d5p1:_searchScope i:nil="true" />
-          <d5p1:_useInvoke>true</d5p1:_useInvoke>
-        </d2p1:anyType>
-        <d2p1:anyType z:Id="34" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.System" i:type="d5p1:WaitDurationAction">
-          <d5p1:Duration>20</d5p1:Duration>
-          <d5p1:Unit>Seconds</d5p1:Unit>
-        </d2p1:anyType>
-        <d2p1:anyType z:Id="35" xmlns:d5p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.UIAutomation" i:type="d5p1:WaitForElementAction">
-          <d5p1:_addToGlobalDictionary>false</d5p1:_addToGlobalDictionary>
-          <d5p1:_description z:Id="36">Wait for result text to show 3</d5p1:_description>
-          <d5p1:_elementIdentifier z:Id="37">显示为 3</d5p1:_elementIdentifier>
-          <d5p1:_globalDictionaryKey i:nil="true" />
-          <d5p1:_identifierType z:Id="38">Name</d5p1:_identifierType>
-          <d5p1:_pollingIntervalMilliseconds>100</d5p1:_pollingIntervalMilliseconds>
-          <d5p1:_searchScope i:nil="true" />
-          <d5p1:_timeoutMilliseconds>5000</d5p1:_timeoutMilliseconds>
-        </d2p1:anyType>
-      </d3p1:IfBlockArray>
-      <d3p1:IsEnabled>true</d3p1:IsEnabled>
-    </d2p1:anyType>
-  </ActionsArray>
-  <Description z:Id="39">Launch Calculator, click 1 + 2 =, then verify the result contains 3.</Description>
-  <Environment xmlns:d2p1="http://schemas.datacontract.org/2004/07/FleetAutomate.Model.Actions.Logic" z:Ref="14" i:nil="true" />
-  <GlobalElementDictionary z:Id="40">
-    <RegisteredKeys xmlns:d3p1="http://schemas.microsoft.com/2003/10/Serialization/Arrays" z:Id="41" z:Size="0" />
-  </GlobalElementDictionary>
-  <IsEnabled>true</IsEnabled>
-  <Name z:Id="42">calculator_add_1_plus_2</Name>
-</TestFlow>
+<TestFlowDocument xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.datacontract.org/2004/07/FleetAutomate.Persistence">
+  <formatVersion>2</formatVersion>
+  <id>303d9061c50a4ce1bbf5ce82e5a55953</id>
+  <name>calculator_add_1_plus_2</name>
+  <description>Launch Calculator, click 1 + 2 =, then verify the result contains 3.</description>
+  <isEnabled>true</isEnabled>
+  <actions>
+    <ActionDocument>
+      <id>473a6ac7b2f1412199eefa33f415cd59</id>
+      <typeId>system.launchApplication</typeId>
+      <version>1</version>
+      <properties>
+        <Property>
+          <name>Arguments</name>
+          <typeId>string</typeId>
+          <value></value>
+        </Property>
+        <Property>
+          <name>Description</name>
+          <typeId>string</typeId>
+          <value>Launch Windows Calculator</value>
+        </Property>
+        <Property>
+          <name>ExecutablePath</name>
+          <typeId>string</typeId>
+          <value>calc.exe</value>
+        </Property>
+        <Property>
+          <name>TimeoutMilliseconds</name>
+          <typeId>int</typeId>
+          <value>30000</value>
+        </Property>
+        <Property>
+          <name>WaitForCompletion</name>
+          <typeId>bool</typeId>
+          <value>False</value>
+        </Property>
+        <Property>
+          <name>WorkingDirectory</name>
+          <typeId>string</typeId>
+          <value></value>
+        </Property>
+      </properties>
+      <children />
+    </ActionDocument>
+    <ActionDocument>
+      <id>f376f270b16f42a7915a401a9e8a4f6f</id>
+      <typeId>logic.if</typeId>
+      <version>1</version>
+      <properties>
+        <Property>
+          <name>Description</name>
+          <typeId>string</typeId>
+          <value>Name: 计算器 (retry:3x)</value>
+        </Property>
+        <Property>
+          <name>ShowElseBlock</name>
+          <typeId>bool</typeId>
+          <value>False</value>
+        </Property>
+      </properties>
+      <children>
+        <ActionChildCollection>
+          <name>then</name>
+          <actions>
+            <ActionDocument>
+              <id>4832e5166de34177bd7696f9e5625873</id>
+              <typeId>ui.clickElement</typeId>
+              <version>1</version>
+              <properties>
+                <Property>
+                  <name>AddToGlobalDictionary</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>Description</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId: num1Button (invoke no-wait) (retry:3x)</value>
+                </Property>
+                <Property>
+                  <name>ElementIdentifier</name>
+                  <typeId>string</typeId>
+                  <value>num1Button</value>
+                </Property>
+                <Property>
+                  <name>GlobalDictionaryKey</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>IdentifierType</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId</value>
+                </Property>
+                <Property>
+                  <name>InvokeWithoutWaiting</name>
+                  <typeId>bool</typeId>
+                  <value>True</value>
+                </Property>
+                <Property>
+                  <name>IsDoubleClick</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>RetryDelayMilliseconds</name>
+                  <typeId>int</typeId>
+                  <value>500</value>
+                </Property>
+                <Property>
+                  <name>RetryTimes</name>
+                  <typeId>int</typeId>
+                  <value>3</value>
+                </Property>
+                <Property>
+                  <name>SearchScope</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>UseInvoke</name>
+                  <typeId>bool</typeId>
+                  <value>True</value>
+                </Property>
+              </properties>
+              <children />
+            </ActionDocument>
+            <ActionDocument>
+              <id>601e9ad3a3854778aca88e9e474df5eb</id>
+              <typeId>ui.clickElement</typeId>
+              <version>1</version>
+              <properties>
+                <Property>
+                  <name>AddToGlobalDictionary</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>Description</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId: plusButton (invoke no-wait) (retry:3x)</value>
+                </Property>
+                <Property>
+                  <name>ElementIdentifier</name>
+                  <typeId>string</typeId>
+                  <value>plusButton</value>
+                </Property>
+                <Property>
+                  <name>GlobalDictionaryKey</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>IdentifierType</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId</value>
+                </Property>
+                <Property>
+                  <name>InvokeWithoutWaiting</name>
+                  <typeId>bool</typeId>
+                  <value>True</value>
+                </Property>
+                <Property>
+                  <name>IsDoubleClick</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>RetryDelayMilliseconds</name>
+                  <typeId>int</typeId>
+                  <value>500</value>
+                </Property>
+                <Property>
+                  <name>RetryTimes</name>
+                  <typeId>int</typeId>
+                  <value>3</value>
+                </Property>
+                <Property>
+                  <name>SearchScope</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>UseInvoke</name>
+                  <typeId>bool</typeId>
+                  <value>True</value>
+                </Property>
+              </properties>
+              <children />
+            </ActionDocument>
+            <ActionDocument>
+              <id>d5056f60c6f9447890bf3a3fc7dfa955</id>
+              <typeId>ui.clickElement</typeId>
+              <version>1</version>
+              <properties>
+                <Property>
+                  <name>AddToGlobalDictionary</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>Description</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId: num2Button (retry:3x)</value>
+                </Property>
+                <Property>
+                  <name>ElementIdentifier</name>
+                  <typeId>string</typeId>
+                  <value>num2Button</value>
+                </Property>
+                <Property>
+                  <name>GlobalDictionaryKey</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>IdentifierType</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId</value>
+                </Property>
+                <Property>
+                  <name>InvokeWithoutWaiting</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>IsDoubleClick</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>RetryDelayMilliseconds</name>
+                  <typeId>int</typeId>
+                  <value>500</value>
+                </Property>
+                <Property>
+                  <name>RetryTimes</name>
+                  <typeId>int</typeId>
+                  <value>3</value>
+                </Property>
+                <Property>
+                  <name>SearchScope</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>UseInvoke</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+              </properties>
+              <children />
+            </ActionDocument>
+            <ActionDocument>
+              <id>bc18827ef32a4158abf2c88efd777db0</id>
+              <typeId>ui.clickElement</typeId>
+              <version>1</version>
+              <properties>
+                <Property>
+                  <name>AddToGlobalDictionary</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>Description</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId: equalButton (invoke no-wait) (retry:3x)</value>
+                </Property>
+                <Property>
+                  <name>ElementIdentifier</name>
+                  <typeId>string</typeId>
+                  <value>equalButton</value>
+                </Property>
+                <Property>
+                  <name>GlobalDictionaryKey</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>IdentifierType</name>
+                  <typeId>string</typeId>
+                  <value>AutomationId</value>
+                </Property>
+                <Property>
+                  <name>InvokeWithoutWaiting</name>
+                  <typeId>bool</typeId>
+                  <value>True</value>
+                </Property>
+                <Property>
+                  <name>IsDoubleClick</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>RetryDelayMilliseconds</name>
+                  <typeId>int</typeId>
+                  <value>500</value>
+                </Property>
+                <Property>
+                  <name>RetryTimes</name>
+                  <typeId>int</typeId>
+                  <value>3</value>
+                </Property>
+                <Property>
+                  <name>SearchScope</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>UseInvoke</name>
+                  <typeId>bool</typeId>
+                  <value>True</value>
+                </Property>
+              </properties>
+              <children />
+            </ActionDocument>
+            <ActionDocument>
+              <id>42adef7f73be4b2ba05f4df9a102b778</id>
+              <typeId>ui.waitForElement</typeId>
+              <version>1</version>
+              <properties>
+                <Property>
+                  <name>AddToGlobalDictionary</name>
+                  <typeId>bool</typeId>
+                  <value>False</value>
+                </Property>
+                <Property>
+                  <name>Description</name>
+                  <typeId>string</typeId>
+                  <value>Wait for result text to show 3</value>
+                </Property>
+                <Property>
+                  <name>ElementIdentifier</name>
+                  <typeId>string</typeId>
+                  <value>显示为 3</value>
+                </Property>
+                <Property>
+                  <name>GlobalDictionaryKey</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>IdentifierType</name>
+                  <typeId>string</typeId>
+                  <value>Name</value>
+                </Property>
+                <Property>
+                  <name>PollingIntervalMilliseconds</name>
+                  <typeId>int</typeId>
+                  <value>100</value>
+                </Property>
+                <Property>
+                  <name>SearchScope</name>
+                  <typeId>string</typeId>
+                  <value i:nil="true" />
+                </Property>
+                <Property>
+                  <name>TimeoutMilliseconds</name>
+                  <typeId>int</typeId>
+                  <value>5000</value>
+                </Property>
+              </properties>
+              <children />
+            </ActionDocument>
+          </actions>
+        </ActionChildCollection>
+        <ActionChildCollection>
+          <name>else</name>
+          <actions />
+        </ActionChildCollection>
+        <ActionChildCollection>
+          <name>elseIf</name>
+          <actions />
+        </ActionChildCollection>
+      </children>
+    </ActionDocument>
+    <ActionDocument>
+      <id>d41de19ecb894cd5b304ea404688dc9e</id>
+      <typeId>logic.setVariable</typeId>
+      <version>1</version>
+      <properties>
+        <Property>
+          <name>Name</name>
+          <typeId>string</typeId>
+          <value>beginsWithSou</value>
+        </Property>
+        <Property>
+          <name>Value</name>
+          <typeId>bool</typeId>
+          <value>True</value>
+        </Property>
+        <Property>
+          <name>TypeName</name>
+          <typeId>string</typeId>
+          <value>bool</value>
+        </Property>
+        <Property>
+          <name>ValueMode</name>
+          <typeId>string</typeId>
+          <value>Expression</value>
+        </Property>
+        <Property>
+          <name>ExpressionText</name>
+          <typeId>string</typeId>
+          <value>"source text".StartsWithText("sou")</value>
+        </Property>
+        <Property>
+          <name>Description</name>
+          <typeId>string</typeId>
+          <value>Set Boolean beginsWithSou = False</value>
+        </Property>
+        <Property>
+          <name>IsEnabled</name>
+          <typeId>bool</typeId>
+          <value>True</value>
+        </Property>
+      </properties>
+      <children />
+    </ActionDocument>
+    <ActionDocument>
+      <id>52f21d97c64e41ebbd6dba608c74ae50</id>
+      <typeId>system.log</typeId>
+      <version>1</version>
+      <properties>
+        <Property>
+          <name>Description</name>
+          <typeId>string</typeId>
+          <value>Log [Info]: beginsWithSou</value>
+        </Property>
+        <Property>
+          <name>LastResolvedMessage</name>
+          <typeId>string</typeId>
+          <value>True</value>
+        </Property>
+        <Property>
+          <name>LogLevel</name>
+          <typeId>object</typeId>
+          <value>Info</value>
+        </Property>
+        <Property>
+          <name>Message</name>
+          <typeId>string</typeId>
+          <value>beginsWithSou</value>
+        </Property>
+        <Property>
+          <name>MessageMode</name>
+          <typeId>object</typeId>
+          <value>Expression</value>
+        </Property>
+      </properties>
+      <children />
+    </ActionDocument>
+  </actions>
+  <environment>
+    <Variable>
+      <name>beginsWithSou</name>
+      <typeId>bool</typeId>
+      <value>True</value>
+    </Variable>
+  </environment>
+  <globalElements />
+</TestFlowDocument>

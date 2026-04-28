@@ -1,4 +1,6 @@
 using System.Windows;
+using FleetAutomate.Expressions;
+using FleetAutomate.Model.Actions.System;
 using Wpf.Ui.Controls;
 using LogLevel = FleetAutomate.Model.Actions.System.LogLevel;
 
@@ -19,12 +21,17 @@ namespace FleetAutomate.View.Dialog
         /// </summary>
         public string Message { get; private set; } = string.Empty;
 
+        public LogMessageMode MessageMode { get; private set; } = LogMessageMode.Literal;
+
         public LogActionDialog()
         {
             InitializeComponent();
+            MessageModeComboBox.SelectionChanged += MessageModeComboBox_SelectionChanged;
+            InitializeExpressionTemplates();
             MessageTextBox.Focus();
             MessageTextBox.TextChanged += MessageTextBox_TextChanged;
             UpdateOkButtonState();
+            UpdateModeUi();
             // Set button text for creating
             OkButton.Content = "Create";
         }
@@ -34,12 +41,14 @@ namespace FleetAutomate.View.Dialog
         /// </summary>
         /// <param name="logLevel">Current log level</param>
         /// <param name="message">Current message</param>
-        public LogActionDialog(LogLevel logLevel, string message)
+        public LogActionDialog(LogLevel logLevel, string message, LogMessageMode messageMode = LogMessageMode.Literal)
             : this()
         {
             // Pre-populate fields with existing values
             LogLevelComboBox.SelectedIndex = (int)logLevel;
             MessageTextBox.Text = message ?? string.Empty;
+            MessageModeComboBox.SelectedIndex = messageMode == LogMessageMode.Expression ? 1 : 0;
+            UpdateModeUi();
 
             // Update button text for editing
             OkButton.Content = "Save";
@@ -51,6 +60,30 @@ namespace FleetAutomate.View.Dialog
         private void MessageTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
         {
             UpdateOkButtonState();
+        }
+
+        private void InitializeExpressionTemplates()
+        {
+            ExpressionTemplateComboBox.ItemsSource = ExpressionTemplateCatalog.GetTemplates();
+            ExpressionTemplateComboBox.SelectedIndex = 0;
+        }
+
+        private void MessageModeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            UpdateModeUi();
+        }
+
+        private void UpdateModeUi()
+        {
+            var isExpression = MessageModeComboBox?.SelectedIndex == 1;
+            ExpressionTemplatePanel.Visibility = isExpression ? Visibility.Visible : Visibility.Collapsed;
+            MessageLabelTextBlock.Text = isExpression ? "Expression" : "Message";
+            MessageTextBox.ToolTip = isExpression
+                ? "Expression to evaluate and log. Use templates or type manually."
+                : "Message to log. Use {variableName} to insert variable values.";
+            HintTextBlock.Text = isExpression
+                ? "Expression mode supports variables, UI/date/text functions, parentheses, and chained text methods."
+                : "Tip: Use {variableName} to insert variable values in the message.";
         }
 
         private void UpdateOkButtonState()
@@ -73,10 +106,27 @@ namespace FleetAutomate.View.Dialog
             // Set results
             LogLevel = (LogLevel)LogLevelComboBox.SelectedIndex;
             Message = message;
+            MessageMode = MessageModeComboBox.SelectedIndex == 1 ? LogMessageMode.Expression : LogMessageMode.Literal;
 
             // Close with success
             DialogResult = true;
             Close();
+        }
+
+        private void InsertTemplateButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ExpressionTemplateComboBox.SelectedValue is not string templateId)
+            {
+                return;
+            }
+
+            var result = ExpressionTemplateCatalog.InsertTemplate(
+                MessageTextBox.Text ?? string.Empty,
+                MessageTextBox.CaretIndex,
+                templateId);
+            MessageTextBox.Text = result.Text;
+            MessageTextBox.CaretIndex = result.CaretIndex;
+            MessageTextBox.Focus();
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

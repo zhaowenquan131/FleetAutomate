@@ -296,7 +296,7 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Log Message" dialog.
         /// Should return the log level and message, or null if cancelled.
         /// </summary>
-        public event Func<(Model.Actions.System.LogLevel logLevel, string message)?>? OnPromptLogAction;
+        public event Func<(Model.Actions.System.LogLevel logLevel, string message, Model.Actions.System.LogMessageMode messageMode)?>? OnPromptLogAction;
 
         /// <summary>
         /// Event fired when UI needs to show SubFlow dialog to select target flow.
@@ -1274,7 +1274,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateLogAction(result.Value.logLevel, result.Value.message);
+                    action = CreateLogAction(result.Value.logLevel, result.Value.message, result.Value.messageMode);
                 }
                 // Special handling for SubFlowAction - prompt user for target flow
                 else if (actionTemplate.ActionType == typeof(FleetAutomate.Model.Actions.Logic.SubFlowAction))
@@ -1490,7 +1490,7 @@ namespace FleetAutomate.ViewModel
             }
         }
 
-        private IAction? CreateLogAction(Model.Actions.System.LogLevel logLevel, string message)
+        private IAction? CreateLogAction(Model.Actions.System.LogLevel logLevel, string message, Model.Actions.System.LogMessageMode messageMode = Model.Actions.System.LogMessageMode.Literal)
         {
             try
             {
@@ -1498,6 +1498,7 @@ namespace FleetAutomate.ViewModel
                 {
                     LogLevel = logLevel,
                     Message = message,
+                    MessageMode = messageMode,
                     Description = $"Log [{logLevel}]: {(message.Length > 30 ? message.Substring(0, 27) + "..." : message)}"
                 };
 

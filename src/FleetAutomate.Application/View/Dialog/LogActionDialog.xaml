@@ -6,8 +6,8 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="Log Message"
-        Height="350"
-        Width="550"
+        Height="470"
+        Width="600"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
@@ -41,8 +41,36 @@
                     <ComboBoxItem Content="Fatal" VerticalContentAlignment="Center"/>
                 </ComboBox>
 
+                <!-- Message Mode -->
+                <TextBlock Text="Message Mode" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <ComboBox Name="MessageModeComboBox"
+                         MinHeight="36"
+                         Margin="0,0,0,15"
+                         SelectedIndex="0">
+                    <ComboBoxItem Content="Literal" VerticalContentAlignment="Center"/>
+                    <ComboBoxItem Content="Expression" VerticalContentAlignment="Center"/>
+                </ComboBox>
+
+                <!-- Expression Templates -->
+                <StackPanel Name="ExpressionTemplatePanel" Margin="0,0,0,15" Visibility="Collapsed">
+                    <TextBlock Text="Insert Template" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                    <DockPanel>
+                        <ui:Button Name="InsertTemplateButton"
+                                   DockPanel.Dock="Right"
+                                   Content="Insert"
+                                   Margin="8,0,0,0"
+                                   Padding="16,0"
+                                   Click="InsertTemplateButton_Click"/>
+                        <ComboBox Name="ExpressionTemplateComboBox"
+                                  Padding="8,4"
+                                  MinHeight="36"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Id"/>
+                    </DockPanel>
+                </StackPanel>
+
                 <!-- Message -->
-                <TextBlock Text="Message" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <TextBlock Name="MessageLabelTextBlock" Text="Message" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
                 <TextBox Name="MessageTextBox"
                         Padding="8"
                         Margin="0,0,0,15"
@@ -53,7 +81,8 @@
                         ToolTip="Message to log. Use {variableName} to insert variable values."/>
 
                 <!-- Hint Text -->
-                <TextBlock Text="Tip: Use {variableName} to insert variable values in the message."
+                <TextBlock Name="HintTextBlock"
+                          Text="Tip: Use {variableName} to insert variable values in the message."
                           FontSize="10"
                           Foreground="Gray"
                           TextWrapping="Wrap"
