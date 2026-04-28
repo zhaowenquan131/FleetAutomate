@@ -247,7 +247,7 @@ namespace FleetAutomate.ViewModel
         /// Event fired when UI needs to show a "Set Variable" dialog.
         /// Should return the variable name, type, and value, or null if cancelled.
         /// </summary>
-        public event Func<(string variableName, string variableType, string variableValue)?>? OnPromptSetVariable;
+        public event Func<(string variableName, string variableType, string variableValue, SetVariableValueMode valueMode)?>? OnPromptSetVariable;
 
         /// <summary>
         /// Event fired when UI needs to show an "If Action" dialog.
@@ -1190,7 +1190,7 @@ namespace FleetAutomate.ViewModel
                         return;
                     }
 
-                    action = CreateSetVariableAction(result.Value.variableName, result.Value.variableType, result.Value.variableValue);
+                    action = CreateSetVariableAction(result.Value.variableName, result.Value.variableType, result.Value.variableValue, result.Value.valueMode);
                 }
                 // Special handling for LaunchApplicationAction - prompt user for application details
                 else if (actionTemplate.ActionType == typeof(Model.Actions.System.LaunchApplicationAction))
@@ -1354,11 +1354,17 @@ namespace FleetAutomate.ViewModel
         /// <summary>
         /// Creates a SetVariableAction with the given parameters.
         /// </summary>
-        private IAction? CreateSetVariableAction(string variableName, string variableType, string variableValue)
+        private IAction? CreateSetVariableAction(
+            string variableName,
+            string variableType,
+            string variableValue,
+            SetVariableValueMode valueMode = SetVariableValueMode.Literal)
         {
             try
             {
-                var parsedValue = Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(variableValue, variableType);
+                var parsedValue = valueMode == SetVariableValueMode.Expression
+                    ? GetDefaultValue(GetTypeFromString(variableType))
+                    : Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(variableValue, variableType);
 
                 if (parsedValue == null)
                 {
@@ -1378,7 +1384,9 @@ namespace FleetAutomate.ViewModel
                 var action = new SetVariableAction<object>(variableName, parsedValue)
                 {
                     Environment = ActiveTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment(),
-                    Variable = variable
+                    Variable = variable,
+                    ValueMode = valueMode,
+                    ExpressionText = valueMode == SetVariableValueMode.Expression ? variableValue : string.Empty
                 };
 
                 return action;
@@ -1388,6 +1396,13 @@ namespace FleetAutomate.ViewModel
                 OnShowError?.Invoke("Error", $"Failed to create variable: {ex.Message}");
                 return null;
             }
+        }
+
+        private static object GetDefaultValue(Type type)
+        {
+            return type == typeof(string)
+                ? string.Empty
+                : type.IsValueType ? Activator.CreateInstance(type)! : new object();
         }
 
         /// <summary>

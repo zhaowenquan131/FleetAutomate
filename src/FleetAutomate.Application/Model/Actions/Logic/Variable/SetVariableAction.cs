@@ -1,10 +1,21 @@
 using FleetAutomate.Model.Flow;
+using FleetAutomate.Expressions;
 
 using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace FleetAutomate.Model.Actions.Logic
 {
+    [DataContract]
+    public enum SetVariableValueMode
+    {
+        [EnumMember]
+        Literal,
+
+        [EnumMember]
+        Expression
+    }
+
     [DataContract]
     public partial class SetVariableAction<TResult> : ILogicAction, INotifyPropertyChanged
     {
@@ -63,6 +74,12 @@ namespace FleetAutomate.Model.Actions.Logic
 
         public string Name => $"Set {Variable.ShortTypeName} {Variable.Name} = {Variable.Value}";
 
+        [DataMember]
+        public SetVariableValueMode ValueMode { get; set; } = SetVariableValueMode.Literal;
+
+        [DataMember]
+        public string ExpressionText { get; set; } = string.Empty;
+
         public TResult Result
         {
             get => (TResult)Variable.Value;
@@ -92,15 +109,17 @@ namespace FleetAutomate.Model.Actions.Logic
             {
                 var existingVariable = Environment.Variables.FirstOrDefault(v =>
                     string.Equals(v.Name, Variable.Name, StringComparison.Ordinal));
+                var value = await ResolveValueAsync(cancellationToken);
 
                 if (existingVariable != null)
                 {
-                    existingVariable.Value = Variable.Value;
+                    existingVariable.Value = value;
                     existingVariable.Type = Variable.Type;
                     Variable = existingVariable;
                 }
                 else
                 {
+                    Variable.Value = value;
                     Environment.Variables.Add(Variable);
                 }
 
@@ -112,6 +131,38 @@ namespace FleetAutomate.Model.Actions.Logic
                 State = ActionState.Failed;
                 return false;
             }
+        }
+
+        private async Task<object?> ResolveValueAsync(CancellationToken cancellationToken)
+        {
+            if (ValueMode != SetVariableValueMode.Expression)
+            {
+                return Variable.Value;
+            }
+
+            var engine = new SimpleExpressionEngine();
+            var result = await engine.EvaluateAsync(ExpressionText, new ExpressionContext(Environment), cancellationToken);
+            return ConvertToVariableType(result.Value, Variable.Type);
+        }
+
+        private static object? ConvertToVariableType(object? value, Type targetType)
+        {
+            if (value == null || targetType == typeof(object))
+            {
+                return value;
+            }
+
+            if (targetType.IsInstanceOfType(value))
+            {
+                return value;
+            }
+
+            if (targetType.IsEnum)
+            {
+                return Enum.Parse(targetType, Convert.ToString(value) ?? string.Empty, ignoreCase: true);
+            }
+
+            return Convert.ChangeType(value, targetType, global::System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 }

@@ -1,5 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Windows;
+using FleetAutomate.Expressions;
+using FleetAutomate.Model.Actions.Logic;
 using Wpf.Ui.Controls;
 
 namespace FleetAutomate.View.Dialog
@@ -25,29 +27,46 @@ namespace FleetAutomate.View.Dialog
         /// </summary>
         public string VariableValue { get; private set; } = string.Empty;
 
+        public SetVariableValueMode ValueMode { get; private set; } = SetVariableValueMode.Literal;
+
         public SetVariableDialog()
         {
             InitializeComponent();
             VariableNameTextBox.Focus();
             VariableNameTextBox.TextChanged += VariableNameTextBox_TextChanged;
             VariableTypeComboBox.SelectionChanged += VariableTypeComboBox_SelectionChanged;
+            ValueModeComboBox.SelectionChanged += ValueModeComboBox_SelectionChanged;
+            InitializeExpressionTemplates();
             UpdateOkButtonState();
             UpdateHintText();
             OkButton.Content = "创建";
         }
 
-        public SetVariableDialog(string variableName, string variableType, string variableValue)
+        public SetVariableDialog(
+            string variableName,
+            string variableType,
+            string variableValue,
+            SetVariableValueMode valueMode = SetVariableValueMode.Literal)
         {
             InitializeComponent();
             VariableNameTextBox.Text = variableName;
             VariableValueTextBox.Text = variableValue;
             VariableTypeComboBox.SelectedIndex = GetIndexFromType(variableType);
+            ValueModeComboBox.SelectedIndex = valueMode == SetVariableValueMode.Expression ? 1 : 0;
             VariableNameTextBox.Focus();
             VariableNameTextBox.TextChanged += VariableNameTextBox_TextChanged;
             VariableTypeComboBox.SelectionChanged += VariableTypeComboBox_SelectionChanged;
+            ValueModeComboBox.SelectionChanged += ValueModeComboBox_SelectionChanged;
+            InitializeExpressionTemplates();
             UpdateOkButtonState();
             UpdateHintText();
             OkButton.Content = "保存";
+        }
+
+        private void InitializeExpressionTemplates()
+        {
+            ExpressionTemplateComboBox.ItemsSource = ExpressionTemplateCatalog.GetTemplates();
+            ExpressionTemplateComboBox.SelectedIndex = 0;
         }
 
         private void VariableNameTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -56,6 +75,11 @@ namespace FleetAutomate.View.Dialog
         }
 
         private void VariableTypeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            UpdateHintText();
+        }
+
+        private void ValueModeComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             UpdateHintText();
         }
@@ -69,7 +93,16 @@ namespace FleetAutomate.View.Dialog
         private void UpdateHintText()
         {
             var selectedIndex = VariableTypeComboBox.SelectedIndex;
-            HintTextBlock.Text = selectedIndex switch
+            var isExpression = ValueModeComboBox?.SelectedIndex == 1;
+            ValueLabelTextBlock.Text = isExpression ? "Expression" : "Value";
+            ExpressionTemplatePanel.Visibility = isExpression ? Visibility.Visible : Visibility.Collapsed;
+            VariableValueTextBox.ToolTip = isExpression
+                ? "Enter an expression, e.g. x * 2 + 3 or ready && count >= 3"
+                : "Enter the initial value for the variable";
+
+            HintTextBlock.Text = isExpression
+                ? "Supported: + - * / %, comparisons, && || !, variables, parentheses, now(), today()"
+                : selectedIndex switch
             {
                 0 => "Enter an integer value (e.g., 42)",
                 1 => "Enter a decimal value (e.g., 3.14)",
@@ -105,7 +138,17 @@ namespace FleetAutomate.View.Dialog
 
             // Validate value based on type
             var typeIndex = VariableTypeComboBox.SelectedIndex;
-            if (!await ValidateValueForTypeAsync(variableValue, typeIndex))
+            var mode = ValueModeComboBox.SelectedIndex == 1 ? SetVariableValueMode.Expression : SetVariableValueMode.Literal;
+            if (mode == SetVariableValueMode.Expression)
+            {
+                var validation = new SimpleExpressionEngine().Validate(variableValue, ExpressionContext.Empty);
+                if (!validation.IsValid)
+                {
+                    await ShowErrorAsync("Invalid Expression", string.Join(global::System.Environment.NewLine, validation.Errors));
+                    return;
+                }
+            }
+            else if (!await ValidateValueForTypeAsync(variableValue, typeIndex))
             {
                 return;  // Error message shown in validation method
             }
@@ -114,6 +157,7 @@ namespace FleetAutomate.View.Dialog
             VariableName = variableName;
             VariableValue = variableValue;
             VariableType = GetTypeFromIndex(typeIndex);
+            ValueMode = mode;
 
             // Close with success
             DialogResult = true;
@@ -181,6 +225,22 @@ namespace FleetAutomate.View.Dialog
                 PrimaryButtonText = "OK"
             };
             await messageBox.ShowDialogAsync();
+        }
+
+        private void InsertTemplateButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (ExpressionTemplateComboBox.SelectedValue is not string templateId)
+            {
+                return;
+            }
+
+            var result = ExpressionTemplateCatalog.InsertTemplate(
+                VariableValueTextBox.Text ?? string.Empty,
+                VariableValueTextBox.CaretIndex,
+                templateId);
+            VariableValueTextBox.Text = result.Text;
+            VariableValueTextBox.CaretIndex = result.CaretIndex;
+            VariableValueTextBox.Focus();
         }
 
         private static string GetTypeFromIndex(int index)

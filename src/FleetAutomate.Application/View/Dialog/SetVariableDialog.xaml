@@ -6,8 +6,8 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="Create Variable"
-        Height="350"
-        Width="400"
+        Height="500"
+        Width="520"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
@@ -46,12 +46,41 @@
                 <ComboBoxItem VerticalContentAlignment="Center">Boolean</ComboBoxItem>
             </ComboBox>
 
+            <!-- Value Mode -->
+            <TextBlock Text="Value Mode" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <ComboBox Name="ValueModeComboBox"
+                     Padding="8,4"
+                     Margin="0,0,0,15"
+                     MinHeight="36"
+                     SelectedIndex="0">
+                <ComboBoxItem VerticalContentAlignment="Center">Literal</ComboBoxItem>
+                <ComboBoxItem VerticalContentAlignment="Center">Expression</ComboBoxItem>
+            </ComboBox>
+
+            <!-- Expression Templates -->
+            <StackPanel Name="ExpressionTemplatePanel" Margin="0,0,0,15" Visibility="Collapsed">
+                <TextBlock Text="Insert Template" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+                <DockPanel>
+                    <ui:Button Name="InsertTemplateButton"
+                               DockPanel.Dock="Right"
+                               Content="Insert"
+                               Margin="8,0,0,0"
+                               Padding="16,0"
+                               Click="InsertTemplateButton_Click"/>
+                    <ComboBox Name="ExpressionTemplateComboBox"
+                              Padding="8,4"
+                              MinHeight="36"
+                              DisplayMemberPath="DisplayName"
+                              SelectedValuePath="Id"/>
+                </DockPanel>
+            </StackPanel>
+
             <!-- Variable Value -->
-            <TextBlock Text="Value" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
+            <TextBlock Name="ValueLabelTextBlock" Text="Value" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
             <TextBox Name="VariableValueTextBox"
                     Padding="8"
                     Margin="0,0,0,15"
-                    Height="32"
+                    MinHeight="32"
                     ToolTip="Enter the initial value for the variable"/>
 
             <!-- Hint Text -->

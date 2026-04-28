@@ -2,6 +2,7 @@
 using FleetAutomate.Model.Actions.Logic.Loops;
 using FleetAutomate.Model.Actions.System;
 using FleetAutomate.Model.Actions.UIAutomation;
+using FleetAutomate.Persistence;
 
 using FleetAutomate.Model.Flow;
 
@@ -27,17 +28,19 @@ namespace FleetAutomate.Model.Flow
         /// <returns>Array of all known action types.</returns>
         private static Type[] GetKnownActionTypes()
         {
-            return
-            [
-                typeof(SetVariableAction<object>),
-                typeof(WhileLoopAction),
-                typeof(ForLoopAction),
-                typeof(IfAction),
-                typeof(TestFlow),
-                typeof(LaunchApplicationAction),
-                typeof(WaitForElementAction),
-                typeof(ClickElementAction)
-            ];
+            return typeof(TestFlow).Assembly
+                .GetTypes()
+                .Where(t => !t.IsAbstract)
+                .Where(t => typeof(IAction).IsAssignableFrom(t) || ImplementsGenericIAction(t))
+                .Append(typeof(SetVariableAction<object>))
+                .Append(typeof(TestFlow))
+                .Distinct()
+                .ToArray();
+        }
+
+        private static bool ImplementsGenericIAction(Type type)
+        {
+            return type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IAction<>));
         }
 
         /// <summary>
@@ -106,13 +109,15 @@ namespace FleetAutomate.Model.Flow
 
             try
             {
-                var serializer = CreateSerializer();
+                var mapper = new TestFlowDocumentMapper();
+                var document = mapper.ToDocument(testFlow);
+                var serializer = new DataContractSerializer(typeof(TestFlowDocument));
                 var settings = CreateWriterSettings();
 
                 using var stringWriter = new StringWriter();
                 using var xmlWriter = XmlWriter.Create(stringWriter, settings);
 
-                serializer.WriteObject(xmlWriter, testFlow);
+                serializer.WriteObject(xmlWriter, document);
                 xmlWriter.Flush(); // CRITICAL: Flush the XmlWriter before reading from StringWriter
 
                 return stringWriter.ToString();
@@ -134,12 +139,52 @@ namespace FleetAutomate.Model.Flow
             if (string.IsNullOrEmpty(xml))
                 throw new ArgumentException("XML cannot be null or empty", nameof(xml));
 
+            try
+            {
+                var documentSerializer = new DataContractSerializer(typeof(TestFlowDocument));
+                var settings = CreateReaderSettings();
+
+                using var stringReader = new StringReader(xml);
+                using var xmlReader = XmlReader.Create(stringReader, settings);
+                var document = (TestFlowDocument?)documentSerializer.ReadObject(xmlReader);
+                if (document is { FormatVersion: >= 2 })
+                {
+                    return new TestFlowDocumentMapper().FromDocument(document);
+                }
+            }
+            catch
+            {
+                // Legacy runtime XML is still supported for migration.
+            }
+
+            return DeserializeLegacyRuntimeXml(xml);
+        }
+
+        public static string SerializeLegacyRuntimeXmlForMigration(TestFlow testFlow)
+        {
+            if (testFlow == null)
+                throw new ArgumentNullException(nameof(testFlow));
+
+            var serializer = CreateSerializer();
+            var settings = CreateWriterSettings();
+
+            using var stringWriter = new StringWriter();
+            using var xmlWriter = XmlWriter.Create(stringWriter, settings);
+
+            serializer.WriteObject(xmlWriter, testFlow);
+            xmlWriter.Flush();
+
+            return stringWriter.ToString();
+        }
+
+        private static TestFlow? DeserializeLegacyRuntimeXml(string xml)
+        {
             var serializer = CreateSerializer();
             var settings = CreateReaderSettings();
 
             using var stringReader = new StringReader(xml);
             using var xmlReader = XmlReader.Create(stringReader, settings);
-            
+
             var testFlow = (TestFlow?)serializer.ReadObject(xmlReader);
             testFlow?.InitializeAfterDeserialization();
             return testFlow;

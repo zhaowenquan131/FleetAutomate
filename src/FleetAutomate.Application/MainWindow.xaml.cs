@@ -111,7 +111,7 @@ namespace FleetAutomate
 
                 if (dialog.ShowDialog() == true)
                 {
-                    return (dialog.VariableName, dialog.VariableType, dialog.VariableValue);
+                    return (dialog.VariableName, dialog.VariableType, dialog.VariableValue, dialog.ValueMode);
                 }
 
                 return null; // User cancelled
@@ -1416,14 +1416,17 @@ namespace FleetAutomate
             var dialog = new SetVariableDialog(
                 variable.Name,
                 GetVariableTypeKey(variable.Type),
-                variable.Value?.ToString() ?? string.Empty)
+                GetSetVariableValueText(action, variable),
+                GetSetVariableValueMode(action))
             {
                 Owner = this
             };
 
             if (dialog.ShowDialog() == true)
             {
-                var parsedValue = Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(dialog.VariableValue, dialog.VariableType);
+                var parsedValue = dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.Expression
+                    ? GetDefaultValueForDialog(GetTypeFromVariableKey(dialog.VariableType))
+                    : Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(dialog.VariableValue, dialog.VariableType);
                 if (parsedValue == null)
                 {
                     return;
@@ -1433,11 +1436,42 @@ namespace FleetAutomate
                 variable.Value = parsedValue;
                 variable.Type = GetTypeFromVariableKey(dialog.VariableType);
 
+                action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ValueMode))
+                    ?.SetValue(action, dialog.ValueMode);
+                action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ExpressionText))
+                    ?.SetValue(action, dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.Expression ? dialog.VariableValue : string.Empty);
+
                 var descriptionProperty = action.GetType().GetProperty("Description");
                 descriptionProperty?.SetValue(action, $"Set {variable.ShortTypeName} {variable.Name} = {variable.Value}");
 
                 RefreshActiveTestFlow();
             }
+        }
+
+        private static Model.Actions.Logic.SetVariableValueMode GetSetVariableValueMode(Model.IAction action)
+        {
+            return action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ValueMode))
+                ?.GetValue(action) as Model.Actions.Logic.SetVariableValueMode?
+                ?? Model.Actions.Logic.SetVariableValueMode.Literal;
+        }
+
+        private static string GetSetVariableValueText(Model.IAction action, Model.Actions.Logic.Variable variable)
+        {
+            var mode = GetSetVariableValueMode(action);
+            if (mode == Model.Actions.Logic.SetVariableValueMode.Expression)
+            {
+                return action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ExpressionText))
+                    ?.GetValue(action)?.ToString() ?? string.Empty;
+            }
+
+            return variable.Value?.ToString() ?? string.Empty;
+        }
+
+        private static object GetDefaultValueForDialog(Type type)
+        {
+            return type == typeof(string)
+                ? string.Empty
+                : type.IsValueType ? Activator.CreateInstance(type)! : new object();
         }
 
         private void EditSubFlowAction(Model.Actions.Logic.SubFlowAction subFlowAction)
