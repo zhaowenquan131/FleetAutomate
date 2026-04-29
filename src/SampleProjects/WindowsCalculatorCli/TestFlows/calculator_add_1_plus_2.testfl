@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-16"?>
 <TestFlowDocument xmlns:i="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.datacontract.org/2004/07/FleetAutomate.Persistence">
   <formatVersion>2</formatVersion>
-  <id>38140e2d3dce4c55b46871142eb18330</id>
+  <id>0f5db725b95349ecb622a300a897a463</id>
   <name>calculator_add_1_plus_2</name>
   <description>Launch Calculator, click 1 + 2 =, then verify the result contains 3.</description>
   <isEnabled>true</isEnabled>
   <actions>
     <ActionDocument>
-      <id>553e7bcda2d44e0cbbfbc5f356a17d0f</id>
+      <id>33c67898a48c435eb2cb1ad72ff2a64f</id>
       <typeId>system.launchApplication</typeId>
       <version>1</version>
       <properties>
@@ -45,7 +45,7 @@
       <children />
     </ActionDocument>
     <ActionDocument>
-      <id>56884006edf84f83a3ff2b371139fc75</id>
+      <id>bc3f3823fb084721a3d33f0167c64ed0</id>
       <typeId>logic.setVariable</typeId>
       <version>1</version>
       <properties>
@@ -88,7 +88,7 @@
       <children />
     </ActionDocument>
     <ActionDocument>
-      <id>06cc65ee00924b2aadd3d7e6bcf2f734</id>
+      <id>824fec981e844637a0dc5fa45ba7f6a3</id>
       <typeId>system.log</typeId>
       <version>1</version>
       <properties>
@@ -121,7 +121,7 @@
       <children />
     </ActionDocument>
     <ActionDocument>
-      <id>33f920b0395d4e65aceceeac729a2fef</id>
+      <id>aa9421a0bfbc49ab8af7d50340cb293a</id>
       <typeId>logic.if</typeId>
       <version>1</version>
       <properties>
@@ -181,7 +181,7 @@
           <name>then</name>
           <actions>
             <ActionDocument>
-              <id>212f00bdc808417886d4bfb50b446f7a</id>
+              <id>c3d840847ee54d79b65a361bc4a3a79d</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -244,7 +244,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>2646a2c21c47461cae747b672f2ae782</id>
+              <id>bb02a7c6d7754b6bbe4af7a0077371f7</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -307,7 +307,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>0eeed064bf914561b27f0798c39a3982</id>
+              <id>a60e49ad483746429875b4dc9575faa8</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -370,7 +370,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>53a0f775abb64f9db820341c6839ce11</id>
+              <id>f23f0d49c6db4c8ca9287ab81c9eedad</id>
               <typeId>ui.clickElement</typeId>
               <version>1</version>
               <properties>
@@ -433,7 +433,7 @@
               <children />
             </ActionDocument>
             <ActionDocument>
-              <id>e1c475484a6c43e2bbf87c8a25a6aba5</id>
+              <id>5e74527bd8eb40c28384587bcd829f9f</id>
               <typeId>ui.waitForElement</typeId>
               <version>1</version>
               <properties>

@@ -28,6 +28,7 @@
         <converters:ActionStateToColorConverter x:Key="ActionStateToColorConverter"/>
         <converters:ActionStateToBackgroundConverter x:Key="ActionStateToBackgroundConverter"/>
         <converters:ActionStateToSymbolConverter x:Key="ActionStateToSymbolConverter"/>
+        <converters:ActionIconImageConverter x:Key="ActionIconImageConverter"/>
         <converters:ActionTypeToIconConverter x:Key="ActionTypeToIconConverter"/>
         <converters:ActionTypeToSymbolConverter x:Key="ActionTypeToSymbolConverter"/>
         <converters:ActionTypeToIconVisibilityConverter x:Key="ActionTypeToIconVisibilityConverter"/>
@@ -229,39 +230,34 @@
                                     <TreeView.ItemTemplate>
                                         <HierarchicalDataTemplate ItemsSource="{Binding Actions}">
                                             <StackPanel Orientation="Horizontal" Margin="2">
-                                                <TextBlock Text="{Binding Icon}"
-                                                           FontSize="16"
-                                                           Margin="0,0,5,0"
-                                                           VerticalAlignment="Center"/>
+                                                <Image Source="{Binding ., Converter={StaticResource ActionIconImageConverter}}"
+                                                       Width="22"
+                                                       Height="22"
+                                                       Margin="0,0,8,0"
+                                                       VerticalAlignment="Center"
+                                                       RenderOptions.BitmapScalingMode="HighQuality"/>
                                                 <TextBlock Text="{Binding Name}"
                                                            FontWeight="Bold"
-                                                           FontSize="12"/>
+                                                           FontSize="12.5"
+                                                           VerticalAlignment="Center"/>
                                             </StackPanel>
 
                                             <!-- Action Level (nested DataTemplate) -->
                                             <HierarchicalDataTemplate.ItemTemplate>
                                                 <DataTemplate>
-                                                    <StackPanel Orientation="Horizontal" Margin="5,2">
-                                                        <Grid Width="18"
-                                                              Height="18"
-                                                              Margin="0,0,5,0">
-                                                            <TextBlock Text="{Binding Icon}"
-                                                                       FontSize="14"
-                                                                       VerticalAlignment="Center"
-                                                                       HorizontalAlignment="Center"
-                                                                       Visibility="{Binding ., Converter={StaticResource ActionTypeToIconVisibilityConverter}}"/>
-                                                            <ui:SymbolIcon Symbol="{Binding ., Converter={StaticResource ActionTypeToSymbolConverter}}"
-                                                                           FontSize="14"
-                                                                           VerticalAlignment="Center"
-                                                                           HorizontalAlignment="Center"
-                                                                           Visibility="{Binding ., Converter={StaticResource ActionTypeToIconVisibilityConverter}, ConverterParameter=Symbol}"/>
-                                                        </Grid>
+                                                    <StackPanel Orientation="Horizontal" Margin="5,3">
+                                                        <Image Source="{Binding ., Converter={StaticResource ActionIconImageConverter}}"
+                                                               Width="22"
+                                                               Height="22"
+                                                               Margin="0,0,8,0"
+                                                               VerticalAlignment="Center"
+                                                               RenderOptions.BitmapScalingMode="HighQuality"/>
                                                         <StackPanel>
                                                             <TextBlock Text="{Binding Name}"
                                                                        FontWeight="Bold"
-                                                                       FontSize="11"/>
+                                                                       FontSize="11.5"/>
                                                             <TextBlock Text="{Binding Description}"
-                                                                       FontSize="9"
+                                                                       FontSize="9.5"
                                                                        Foreground="Gray"/>
                                                         </StackPanel>
                                                     </StackPanel>

@@ -1962,41 +1962,17 @@ namespace FleetAutomate
             factory.AppendChild(statusIcon);
 
             // Action type icon
-            var typeIconHost = new FrameworkElementFactory(typeof(Grid));
-            typeIconHost.SetValue(FrameworkElement.WidthProperty, 18.0);
-            typeIconHost.SetValue(FrameworkElement.HeightProperty, 18.0);
-            typeIconHost.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 5, 0));
-
-            var typeIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.TextBlock));
-            typeIcon.SetBinding(System.Windows.Controls.TextBlock.TextProperty, new System.Windows.Data.Binding
+            var typeIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.Image));
+            typeIcon.SetBinding(System.Windows.Controls.Image.SourceProperty, new System.Windows.Data.Binding(".")
             {
-                Converter = (IValueConverter)this.FindResource("ActionTypeToIconConverter")
+                Converter = (IValueConverter)this.FindResource("ActionIconImageConverter")
             });
-            typeIcon.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding(".")
-            {
-                Converter = (IValueConverter)this.FindResource("ActionTypeToIconVisibilityConverter")
-            });
-            typeIcon.SetValue(System.Windows.Controls.TextBlock.FontSizeProperty, 14.0);
-            typeIcon.SetValue(System.Windows.Controls.TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
-            typeIcon.SetValue(System.Windows.Controls.TextBlock.HorizontalAlignmentProperty, System.Windows.HorizontalAlignment.Center);
-            typeIconHost.AppendChild(typeIcon);
-
-            var symbolIcon = new FrameworkElementFactory(typeof(Wpf.Ui.Controls.SymbolIcon));
-            symbolIcon.SetBinding(Wpf.Ui.Controls.SymbolIcon.SymbolProperty, new System.Windows.Data.Binding(".")
-            {
-                Converter = (IValueConverter)this.FindResource("ActionTypeToSymbolConverter")
-            });
-            symbolIcon.SetBinding(UIElement.VisibilityProperty, new System.Windows.Data.Binding(".")
-            {
-                Converter = (IValueConverter)this.FindResource("ActionTypeToIconVisibilityConverter"),
-                ConverterParameter = "Symbol"
-            });
-            symbolIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            symbolIcon.SetValue(FrameworkElement.HorizontalAlignmentProperty, System.Windows.HorizontalAlignment.Center);
-            symbolIcon.SetValue(Wpf.Ui.Controls.SymbolIcon.FontSizeProperty, 14.0);
-            typeIconHost.AppendChild(symbolIcon);
-
-            factory.AppendChild(typeIconHost);
+            typeIcon.SetValue(FrameworkElement.WidthProperty, 22.0);
+            typeIcon.SetValue(FrameworkElement.HeightProperty, 22.0);
+            typeIcon.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 8, 0));
+            typeIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            typeIcon.SetValue(System.Windows.Media.RenderOptions.BitmapScalingModeProperty, BitmapScalingMode.HighQuality);
+            factory.AppendChild(typeIcon);
 
             // Action info stack
             var infoStack = new FrameworkElementFactory(typeof(StackPanel));
