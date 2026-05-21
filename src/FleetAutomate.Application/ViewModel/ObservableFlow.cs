@@ -478,6 +478,12 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void Action_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (!IsOnUiThread())
+            {
+                RunOnUiThread(() => Action_PropertyChanged(sender, e));
+                return;
+            }
+
             if (_isRefreshingFromModel)
             {
                 return;
@@ -485,7 +491,7 @@ namespace FleetAutomate.ViewModel
 
             if (e.PropertyName == nameof(IAction.State))
             {
-                RuntimeStateChanged?.Invoke(this);
+                RaiseRuntimeStateChanged();
                 return;
             }
 
@@ -873,44 +879,52 @@ namespace FleetAutomate.ViewModel
         /// <returns>True if execution was successful, false otherwise.</returns>
         public async Task<bool> ExecuteAsync(CancellationToken cancellationToken)
         {
-            var result = await _model.ExecuteAsync(cancellationToken);
+            var result = await ExecuteModelInBackgroundAsync(token => _model.ExecuteAsync(token), cancellationToken);
             RefreshFromModel(); // Refresh to get updated state
             return result;
         }
 
         public async Task<bool> StartAsync(CancellationToken cancellationToken)
         {
-            var result = await _model.StartAsync(cancellationToken);
+            var result = await ExecuteModelInBackgroundAsync(token => _model.StartAsync(token), cancellationToken);
             RefreshFromModel();
             return result;
         }
 
         public async Task<bool> StartFromActionAsync(IAction action, CancellationToken cancellationToken)
         {
-            var result = await _model.StartFromActionAsync(action, cancellationToken);
+            var result = await ExecuteModelInBackgroundAsync(token => _model.StartFromActionAsync(action, token), cancellationToken);
             RefreshFromModel();
             return result;
         }
 
         public async Task<bool> ContinueAsync(CancellationToken cancellationToken)
         {
-            var result = await _model.ContinueAsync(cancellationToken);
+            var result = await ExecuteModelInBackgroundAsync(token => _model.ContinueAsync(token), cancellationToken);
             RefreshFromModel();
             return result;
         }
 
         public async Task<bool> SkipFailedActionAndContinueAsync(CancellationToken cancellationToken)
         {
-            var result = await _model.SkipFailedActionAndContinueAsync(cancellationToken);
+            var result = await ExecuteModelInBackgroundAsync(token => _model.SkipFailedActionAndContinueAsync(token), cancellationToken);
             RefreshFromModel();
             return result;
         }
 
         public async Task<bool> StepActionAsync(IAction action, CancellationToken cancellationToken)
         {
-            var result = await _model.StepActionAsync(action, cancellationToken);
+            var result = await ExecuteModelInBackgroundAsync(token => _model.StepActionAsync(action, token), cancellationToken);
             RefreshFromModel();
             return result;
+        }
+
+        private static Task<bool> ExecuteModelInBackgroundAsync(
+            Func<CancellationToken, Task<bool>> executeAsync,
+            CancellationToken cancellationToken)
+        {
+            // UI automation actions can contain long synchronous FlaUI calls; run them off the WPF UI thread.
+            return Task.Run(() => executeAsync(cancellationToken), cancellationToken);
         }
 
         public IReadOnlyDictionary<string, object?> GetRuntimeVariableValues()
@@ -964,7 +978,7 @@ namespace FleetAutomate.ViewModel
                 _model.CurrentAction = value;
                 if (!_isRefreshingFromModel)
                 {
-                    RuntimeStateChanged?.Invoke(this);
+                    RaiseRuntimeStateChanged();
                 }
             }
         }
@@ -1008,7 +1022,7 @@ namespace FleetAutomate.ViewModel
                 _model.State = value;
                 if (!_isRefreshingFromModel)
                 {
-                    RuntimeStateChanged?.Invoke(this);
+                    RaiseRuntimeStateChanged();
                 }
             }
         }
@@ -1017,7 +1031,7 @@ namespace FleetAutomate.ViewModel
         {
             if (!_isRefreshingFromModel)
             {
-                RuntimeStateChanged?.Invoke(this);
+                RaiseRuntimeStateChanged();
             }
         }
 
@@ -1025,7 +1039,7 @@ namespace FleetAutomate.ViewModel
         {
             if (!_isRefreshingFromModel)
             {
-                RuntimeStateChanged?.Invoke(this);
+                RaiseRuntimeStateChanged();
             }
         }
 
@@ -1033,7 +1047,7 @@ namespace FleetAutomate.ViewModel
         {
             if (!_isRefreshingFromModel)
             {
-                RuntimeStateChanged?.Invoke(this);
+                RaiseRuntimeStateChanged();
             }
         }
 
@@ -1058,7 +1072,30 @@ namespace FleetAutomate.ViewModel
             LastFailedAction = _model.LastFailedAction;
             RuntimeVariables = new Dictionary<string, object?>(_model.GetRuntimeVariableValues(), StringComparer.Ordinal);
             _isRefreshingFromModel = false;
-            RuntimeStateChanged?.Invoke(this);
+            RaiseRuntimeStateChanged();
+        }
+
+        private static bool IsOnUiThread()
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            return dispatcher == null || dispatcher.CheckAccess();
+        }
+
+        private static void RunOnUiThread(Action action)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                action();
+                return;
+            }
+
+            dispatcher.BeginInvoke(action);
+        }
+
+        private void RaiseRuntimeStateChanged()
+        {
+            RunOnUiThread(() => RuntimeStateChanged?.Invoke(this));
         }
     }
 }

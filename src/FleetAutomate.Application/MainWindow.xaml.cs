@@ -6,6 +6,7 @@ using FleetAutomate.Expressions;
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Specialized;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -74,9 +75,35 @@ namespace FleetAutomate
 
         private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
         {
+            InitializeWelcomeDocument();
+
             if (System.Windows.Application.Current is FleetAutomate.App app)
             {
                 app.EnsureUiSessionHost(this);
+            }
+        }
+
+        private void InitializeWelcomeDocument()
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "dev";
+            WelcomeVersionText.Text = $"Version {version}";
+            RefreshWelcomeRecentProjects();
+        }
+
+        private void RefreshWelcomeRecentProjects()
+        {
+            var recentProjects = ViewModel.ProjectManager.RecentProjectsManager.GetValidRecentProjects();
+            WelcomeRecentProjectsList.ItemsSource = recentProjects;
+            WelcomeRecentProjectsList.Visibility = recentProjects.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            WelcomeNoRecentProjectsText.Visibility = recentProjects.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        private void WelcomeRecentProjectButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button { Tag: string filePath })
+            {
+                ViewModel.OpenProjectCommand.Execute(filePath);
+                RefreshWelcomeRecentProjects();
             }
         }
 
@@ -1714,9 +1741,12 @@ namespace FleetAutomate
                 {
                     ViewModel.ProjectManager.RecentProjectsManager.ClearAll();
                     PopulateRecentProjectsMenu();
+                    RefreshWelcomeRecentProjects();
                 };
                 openRecentMenu.Items.Add(clearRecentItem);
             }
+
+            RefreshWelcomeRecentProjects();
         }
 
         /// <summary>
@@ -1756,12 +1786,6 @@ namespace FleetAutomate
                 {
                     CreateDocumentForTestFlow(flow);
                 }
-
-                // Hide placeholder if this is the first document
-                if (ViewModel.OpenTestFlows.Count > 0 && PlaceholderDocument != null)
-                {
-                    DocumentPane.Children.Remove(PlaceholderDocument);
-                }
             }
             else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && e.OldItems != null)
             {
@@ -1769,12 +1793,6 @@ namespace FleetAutomate
                 foreach (ObservableFlow flow in e.OldItems)
                 {
                     RemoveDocumentForTestFlow(flow);
-                }
-
-                // Show placeholder if no documents left
-                if (ViewModel.OpenTestFlows.Count == 0 && PlaceholderDocument != null && !DocumentPane.Children.Contains(PlaceholderDocument))
-                {
-                    DocumentPane.Children.Add(PlaceholderDocument);
                 }
             }
             else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
@@ -1788,11 +1806,6 @@ namespace FleetAutomate
                     DocumentPane.Children.Remove(doc);
                 }
 
-                // Show placeholder
-                if (PlaceholderDocument != null && !DocumentPane.Children.Contains(PlaceholderDocument))
-                {
-                    DocumentPane.Children.Add(PlaceholderDocument);
-                }
             }
         }
 
@@ -1962,16 +1975,16 @@ namespace FleetAutomate
             factory.AppendChild(statusIcon);
 
             // Action type icon
-            var typeIcon = new FrameworkElementFactory(typeof(System.Windows.Controls.Image));
-            typeIcon.SetBinding(System.Windows.Controls.Image.SourceProperty, new System.Windows.Data.Binding(".")
+            var typeIcon = new FrameworkElementFactory(typeof(Wpf.Ui.Controls.SymbolIcon));
+            typeIcon.SetBinding(Wpf.Ui.Controls.SymbolIcon.SymbolProperty, new System.Windows.Data.Binding(".")
             {
-                Converter = (IValueConverter)this.FindResource("ActionIconImageConverter")
+                Converter = (IValueConverter)this.FindResource("ActionTypeToSymbolConverter")
             });
-            typeIcon.SetValue(FrameworkElement.WidthProperty, 22.0);
-            typeIcon.SetValue(FrameworkElement.HeightProperty, 22.0);
+            typeIcon.SetValue(FrameworkElement.WidthProperty, 24.0);
+            typeIcon.SetValue(FrameworkElement.HeightProperty, 24.0);
             typeIcon.SetValue(FrameworkElement.MarginProperty, new Thickness(0, 0, 8, 0));
             typeIcon.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            typeIcon.SetValue(System.Windows.Media.RenderOptions.BitmapScalingModeProperty, BitmapScalingMode.HighQuality);
+            typeIcon.SetValue(Wpf.Ui.Controls.SymbolIcon.FontSizeProperty, 22.0);
             factory.AppendChild(typeIcon);
 
             // Action info stack
