@@ -5,13 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:avalonDock="https://github.com/Dirkster99/AvalonDock"
-        xmlns:local="clr-namespace:Canvas.TestRunner"
+        xmlns:local="clr-namespace:FleetAutomate"
         xmlns:vm="clr-namespace:FleetAutomate.ViewModel"
         xmlns:converters="clr-namespace:FleetAutomate.Converters"
         xmlns:model="clr-namespace:FleetAutomate.Model"
         xmlns:actions="clr-namespace:FleetAutomate.Model.Actions.Logic"
         xmlns:view="clr-namespace:FleetAutomate.View"
         WindowStyle="None"
+        Icon="pack://application:,,,/Icons/AppIcon.ico"
         mc:Ignorable="d"
         Height="700" Width="1200">
     <ui:FluentWindow.DataContext>
@@ -36,6 +37,42 @@
 
         <!-- Easing function for smooth pulsing animation -->
         <SineEase x:Key="SineEase" EasingMode="EaseInOut"/>
+
+        <Style x:Key="WelcomeLinkButtonStyle" TargetType="Button">
+            <Setter Property="Margin" Value="0,2,0,6"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="Gray"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              TextElement.FontSize="{TemplateBinding FontSize}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </ui:FluentWindow.Resources>
 
     <Grid>
@@ -48,8 +85,21 @@
 
         <!-- TitleBar -->
         <ui:TitleBar Background="LightGray" Height="30"
-                     Title="{Binding ActiveProject, Converter={StaticResource ProjectToTitleConverter}}"
-                     Grid.Row="0"/>
+                     Grid.Row="0">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ContentControl Width="10"/>
+                    <Image Source="pack://application:,,,/Icons/AppIcon.png"
+                           Width="20"
+                           Height="20"
+                           Stretch="Uniform"
+                           VerticalAlignment="Center"
+                           Margin="0,0,10,0"/>
+                    <TextBlock Text="{Binding ActiveProject, Converter={StaticResource ProjectToTitleConverter}}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
 
         <!-- Menu -->
         <Menu Grid.Row="1">
@@ -195,6 +245,9 @@
                 <MenuItem Header="Capture Element" Click="CaptureElementMenuItem_Click"
                          ToolTip="Press Ctrl while hovering to capture UI element (F12)"/>
             </ui:MenuItem>
+            <ui:MenuItem Header="Help" Icon="{ui:SymbolIcon QuestionCircle20}">
+                <MenuItem Header="About FleetAutomate" Click="AboutMenuItem_Click"/>
+            </ui:MenuItem>
         </Menu>
 
         <!-- AvalonDock DockingManager -->
@@ -308,32 +361,29 @@
                                                FontWeight="SemiBold"
                                                Margin="0,0,0,10"/>
 
-                                    <ItemsControl Grid.Row="4"
-                                                  x:Name="WelcomeRecentProjectsList"
-                                                  MaxWidth="720"
-                                                  HorizontalAlignment="Left">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Button Content="{Binding FilePath}"
-                                                        Tag="{Binding FilePath}"
-                                                        Click="WelcomeRecentProjectButton_Click"
-                                                        Margin="0,2,0,6"
-                                                        Padding="0"
-                                                        BorderThickness="0"
-                                                        Background="Transparent"
-                                                        HorizontalContentAlignment="Left"
-                                                        Cursor="Hand"
-                                                        FontSize="12"
-                                                        Foreground="Gray"/>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                    <TextBlock Grid.Row="4"
-                                               x:Name="WelcomeNoRecentProjectsText"
-                                               Text="No recent projects"
-                                               Foreground="Gray"
-                                               FontStyle="Italic"
-                                               Visibility="Collapsed"/>
+                                    <StackPanel Grid.Row="4"
+                                                MaxWidth="720"
+                                                HorizontalAlignment="Left">
+                                        <ItemsControl x:Name="WelcomeRecentProjectsList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Content="{Binding FilePath}"
+                                                            Tag="{Binding FilePath}"
+                                                            Click="WelcomeRecentProjectButton_Click"
+                                                            Style="{StaticResource WelcomeLinkButtonStyle}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock x:Name="WelcomeNoRecentProjectsText"
+                                                   Text="No recent projects"
+                                                   Foreground="Gray"
+                                                   FontStyle="Italic"
+                                                   Visibility="Collapsed"/>
+                                        <Button Content="create new"
+                                                Command="{Binding CreateNewProjectCommand}"
+                                                Margin="0,10,0,0"
+                                                Style="{StaticResource WelcomeLinkButtonStyle}"/>
+                                    </StackPanel>
                                 </Grid>
                             </avalonDock:LayoutDocument>
                         </avalonDock:LayoutDocumentPane>
@@ -365,35 +415,52 @@
                                 <ListView.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="5">
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                                <RowDefinition Height="Auto"/>
-                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
 
-                                            <!-- TestFlow Name -->
-                                            <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
+                                            <Border Grid.Column="0"
+                                                    Width="28"
+                                                    Height="28"
+                                                    CornerRadius="6"
+                                                    Margin="0,0,8,0"
+                                                    VerticalAlignment="Top"
+                                                    Background="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}">
+                                                <TextBlock Text="TF"
+                                                           Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
 
-                                            <!-- Description -->
-                                            <TextBlock Grid.Row="1" Text="{Binding Description}" FontSize="10"
-                                                       Foreground="Gray" TextWrapping="Wrap" MaxWidth="220"/>
+                                            <Grid Grid.Column="1">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
 
-                                            <!-- Status and Actions Count -->
-                                            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
-                                                <TextBlock Text="●" FontSize="8" VerticalAlignment="Center" Margin="0,0,3,0">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="Green"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                                    <Setter Property="Foreground" Value="Red"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-                                                <TextBlock Text="{Binding Actions.Count, StringFormat=\{0\} actions}" FontSize="10" Foreground="Gray"/>
-                                            </StackPanel>
+                                                <!-- TestFlow Name -->
+                                                <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
+
+                                                <!-- Status and Actions Count -->
+                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <TextBlock Text="●" FontSize="8" VerticalAlignment="Center" Margin="0,0,3,0">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="Green"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                                        <Setter Property="Foreground" Value="Red"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding Actions.Count, StringFormat=\{0\} actions}" FontSize="10" Foreground="Gray"/>
+                                                </StackPanel>
+                                            </Grid>
                                         </Grid>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>

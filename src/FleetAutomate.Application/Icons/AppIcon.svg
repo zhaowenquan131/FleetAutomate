@@ -1,0 +1,59 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FleetAutomate app icon</title>
+  <desc id="desc">A Fluent-style automation flow icon with connected nodes, cursor pointer, and execution spark.</desc>
+  <defs>
+    <linearGradient id="backgroundGradient" x1="42" y1="26" x2="218" y2="234" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#27C4F4"/>
+      <stop offset="0.52" stop-color="#1477D4"/>
+      <stop offset="1" stop-color="#0B3F91"/>
+    </linearGradient>
+    <linearGradient id="nodeGradient" x1="70" y1="65" x2="180" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#DDF4FF"/>
+    </linearGradient>
+    <filter id="softShadow" x="24" y="28" width="214" height="208" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="10"/>
+      <feGaussianBlur stdDeviation="10"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.035 0 0 0 0 0.102 0 0 0 0 0.22 0 0 0 0.24 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+    </filter>
+    <filter id="cursorShadow" x="112" y="108" width="100" height="112" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="6"/>
+      <feGaussianBlur stdDeviation="6"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.028 0 0 0 0 0.09 0 0 0 0 0.19 0 0 0 0.28 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect x="22" y="22" width="212" height="212" rx="50" fill="url(#backgroundGradient)"/>
+  <path d="M50 62C50 50.9543 58.9543 42 70 42H184C195.046 42 204 50.9543 204 62V73C204 79.6274 198.627 85 192 85H62C55.3726 85 50 79.6274 50 73V62Z" fill="white" opacity="0.16"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M80 86H117C127.493 86 136 94.5066 136 105V111" stroke="#DDF4FF" stroke-width="12" stroke-linecap="round"/>
+    <path d="M136 145V151C136 161.493 144.507 170 155 170H176" stroke="#DDF4FF" stroke-width="12" stroke-linecap="round"/>
+    <path d="M136 145V151C136 161.493 127.493 170 117 170H84" stroke="#B7E8FF" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
+
+    <rect x="58" y="65" width="52" height="42" rx="14" fill="url(#nodeGradient)"/>
+    <rect x="110" y="106" width="52" height="42" rx="14" fill="url(#nodeGradient)"/>
+    <rect x="58" y="149" width="52" height="42" rx="14" fill="url(#nodeGradient)"/>
+    <rect x="162" y="149" width="52" height="42" rx="14" fill="url(#nodeGradient)"/>
+
+    <circle cx="84" cy="86" r="8" fill="#1477D4"/>
+    <path d="M128 126.5L136 118.5L144 126.5L136 134.5L128 126.5Z" fill="#1477D4"/>
+    <path d="M76 170H92" stroke="#1477D4" stroke-width="7" stroke-linecap="round"/>
+    <path d="M180 170H196" stroke="#1477D4" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <g filter="url(#cursorShadow)">
+    <path d="M136.5 121.5C134.097 120.337 131.302 122.127 131.374 124.796L133.521 204.407C133.608 207.621 137.496 209.171 139.772 206.901L158.653 188.071L170.12 215.212C171.093 217.514 173.748 218.587 176.044 217.607L191.337 211.08C193.618 210.107 194.684 207.471 193.719 205.187L182.205 177.935H208.722C211.945 177.935 213.468 173.956 211.058 171.817L136.5 121.5Z" fill="#FFFFFF"/>
+    <path d="M145.374 138.604L146.71 188.13L158.713 176.161C160.898 173.982 164.597 174.687 165.852 177.504L177.036 202.607L181.625 200.649L170.413 175.483C169.1 172.538 171.256 169.217 174.481 169.217H191.567L145.374 138.604Z" fill="#0B5CAD"/>
+  </g>
+
+  <path d="M190 62L196.638 75.3623L211.391 77.5543L200.716 87.9637L203.236 102.656L190 95.689L176.764 102.656L179.284 87.9637L168.609 77.5543L183.362 75.3623L190 62Z" fill="#FFD75A"/>
+</svg>

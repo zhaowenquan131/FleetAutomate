@@ -7,13 +7,18 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Icons\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="CLAUDE.md" />
+    <None Remove="Icons\AppIcon.ico" />
+    <None Remove="Icons\AppIcon.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Icons\AppIcon.ico" />
+    <Resource Include="Icons\AppIcon.png" />
     <None Include="NLog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

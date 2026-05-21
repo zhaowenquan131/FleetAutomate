@@ -447,6 +447,19 @@ namespace FleetAutomate
             }
         }
 
+        private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "dev";
+            var messageBox = new MessageBox
+            {
+                Title = "About FleetAutomate",
+                Content = $"FleetAutomate\nVersion {version}\n\nA visual Windows UI automation test tool.",
+                PrimaryButtonText = "OK"
+            };
+
+            _ = messageBox.ShowDialogAsync();
+        }
+
         private void TestFlowsListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Open the double-clicked TestFlow in a tab
