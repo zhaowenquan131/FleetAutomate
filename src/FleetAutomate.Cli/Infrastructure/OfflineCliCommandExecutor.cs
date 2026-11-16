@@ -24,6 +24,7 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
             "testflow.create" => CreateFlowAsync(projectPath, command.Arguments["name"] ?? string.Empty, GetValue(command.Arguments, "description")),
             "testflow.show" => WriteFlowAsync(projectPath, command.Arguments["flow"] ?? string.Empty),
             "testflow.tree" => WriteFlowTreeAsync(projectPath, command.Arguments["flow"] ?? string.Empty),
+            "testflow.run" => RunFlowAsync(projectPath, GetValue(command.Arguments, "flow") ?? string.Empty, cancellationToken),
             "action.add" => AddActionAsync(projectPath, command.Arguments),
             "action.set" => SetActionPropertyAsync(projectPath, command.Arguments),
             "action.remove" => RemoveActionAsync(projectPath, command.Arguments),
@@ -75,6 +76,37 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
             actionCount = flow.Actions.Count,
             state = flow.State.ToString()
         }));
+    }
+
+    private async Task<CommandResult> RunFlowAsync(string projectPath, string flowName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(flowName))
+        {
+            throw new CliUsageException("Missing required option '--flow'.");
+        }
+
+        var flow = _projectFacade.LoadFlow(projectPath, flowName);
+        flow.InitializeAfterDeserialization();
+        var completed = await flow.StartAsync(cancellationToken);
+        var payload = new
+        {
+            projectPath = Path.GetFullPath(projectPath),
+            flowName = flow.Name,
+            state = flow.State.ToString(),
+            breakReason = flow.BreakReason.ToString(),
+            failedAction = flow.LastFailedAction?.Name
+        };
+
+        if (!completed)
+        {
+            var failedAction = flow.LastFailedAction?.Name;
+            var message = failedAction == null
+                ? $"TestFlow '{flow.Name}' execution failed."
+                : $"TestFlow '{flow.Name}' failed at action '{failedAction}'.";
+            return CommandResult.Failure(CommandExecutionMode.Offline, "EXECUTION_FAILED", message, payload: payload);
+        }
+
+        return CommandResult.Success(CommandExecutionMode.Offline, payload);
     }
 
     private Task<CommandResult> CreateProjectAsync(string projectPath, string projectName)

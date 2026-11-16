@@ -12,13 +12,14 @@ internal static class HelpText
         Resources:
           testproj  create | show | list-flows
           project   save
-          testflow  show | tree | create
+          testflow  show | tree | create | run
           action    list | tree | show | add | set | remove
 
         Examples:
           fleetctl testproj show --project D:\demo\sample.testproj
           fleetctl testproj create --project D:\demo\sample.testproj --name SampleProject
           fleetctl testflow tree --project D:\demo\sample.testproj --flow basic_flow
+          fleetctl testflow run --project D:\demo\sample.testproj --flow basic_flow
           fleetctl action show --project D:\demo\sample.testproj --flow basic_flow --path 7.if.2
           fleetctl testflow create --project D:\demo\sample.testproj --name calculator_flow
           fleetctl project save --project D:\demo\sample.testproj

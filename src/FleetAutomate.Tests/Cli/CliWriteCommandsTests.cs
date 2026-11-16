@@ -227,6 +227,55 @@ public sealed class CliWriteCommandsTests : IDisposable
         Assert.Equal(Path.GetFullPath(_projectPath), json.RootElement.GetProperty("payload").GetProperty("projectPath").GetString());
     }
 
+    [Fact]
+    public async Task RunAsync_TestflowRun_ExecutesNamedFlowAndReportsCompletedState()
+    {
+        CreateProject();
+        await DispatchAsync("testflow", "create", "--project", _projectPath, "--name", "calculator_flow");
+
+        var (exitCode, stdout, stderr) = await RunProgramAsync(
+            "testflow",
+            "run",
+            "--project",
+            _projectPath,
+            "--flow",
+            "calculator_flow",
+            "--format",
+            "json");
+
+        Assert.Equal(0, exitCode);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+
+        using var json = JsonDocument.Parse(stdout);
+        Assert.True(json.RootElement.GetProperty("ok").GetBoolean());
+        var payload = json.RootElement.GetProperty("payload");
+        Assert.Equal("calculator_flow", payload.GetProperty("flowName").GetString());
+        Assert.Equal("Completed", payload.GetProperty("state").GetString());
+        Assert.Equal("Completed", payload.GetProperty("breakReason").GetString());
+    }
+
+    [Fact]
+    public async Task RunAsync_TestflowRun_RequiresFlowOption()
+    {
+        CreateProject();
+
+        var (exitCode, stdout, stderr) = await RunProgramAsync(
+            "testflow",
+            "run",
+            "--project",
+            _projectPath,
+            "--format",
+            "json");
+
+        Assert.Equal(2, exitCode);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+        using var json = JsonDocument.Parse(stdout);
+        Assert.False(json.RootElement.GetProperty("ok").GetBoolean());
+        var error = json.RootElement.GetProperty("error");
+        Assert.Equal("USAGE_ERROR", error.GetProperty("code").GetString());
+        Assert.Equal("Missing required option '--flow'.", error.GetProperty("message").GetString());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))
