@@ -3,6 +3,8 @@ using FleetAutomate.Cli.Output;
 using FleetAutomate.Cli.Services;
 using CliActionMutationService = FleetAutomate.Cli.Services.ActionMutationService;
 using CliActionPathResolver = FleetAutomate.Cli.Services.ActionPathResolver;
+using System.ComponentModel;
+using System.Diagnostics;
 
 namespace FleetAutomate.Cli.Infrastructure;
 
@@ -87,19 +89,87 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
 
         var flow = _projectFacade.LoadFlow(projectPath, flowName);
         flow.InitializeAfterDeserialization();
-        var completed = await flow.StartAsync(cancellationToken);
-        var payload = new
+        var actionExecutions = new List<ActionExecutionRecord>();
+        var activeExecutions = new Dictionary<FleetAutomate.Model.IAction, ActionExecutionBuilder>(ReferenceEqualityComparer.Instance);
+        var nodes = _actionPathResolver.Flatten(flow);
+        var actionStateHandlers = new List<(INotifyPropertyChanged ObservableAction, PropertyChangedEventHandler Handler)>();
+
+        var completed = false;
+        try
         {
-            projectPath = Path.GetFullPath(projectPath),
-            flowName = flow.Name,
-            state = flow.State.ToString(),
-            breakReason = flow.BreakReason.ToString(),
-            failedAction = flow.LastFailedAction?.Name
-        };
+            foreach (var node in nodes)
+            {
+                if (node.Action is not INotifyPropertyChanged observableAction)
+                {
+                    continue;
+                }
+
+                PropertyChangedEventHandler handler = (_, eventArgs) =>
+                {
+                    if (eventArgs.PropertyName != nameof(FleetAutomate.Model.IAction.State))
+                    {
+                        return;
+                    }
+
+                    var state = node.Action.State.ToString();
+                    if (state == "Running")
+                    {
+                        lock (actionExecutions)
+                        {
+                            var execution = new ActionExecutionBuilder(node, Stopwatch.GetTimestamp(), actionExecutions.Count);
+                            activeExecutions[node.Action] = execution;
+                            actionExecutions.Add(execution.ToRecord("Running", 0));
+                        }
+                    }
+                    else if (state is "Completed" or "Failed" or "Paused")
+                    {
+                        lock (actionExecutions)
+                        {
+                            if (activeExecutions.Remove(node.Action, out var execution))
+                            {
+                                var duration = Stopwatch.GetElapsedTime(execution.StartedAt).TotalMilliseconds;
+                                actionExecutions[execution.RecordIndex] = execution.ToRecord(state, (long)duration);
+                            }
+                        }
+                    }
+                };
+
+                observableAction.PropertyChanged += handler;
+                actionStateHandlers.Add((observableAction, handler));
+            }
+
+            completed = await flow.StartAsync(cancellationToken);
+        }
+        finally
+        {
+            foreach (var (observableAction, handler) in actionStateHandlers)
+            {
+                observableAction.PropertyChanged -= handler;
+            }
+        }
+
+        lock (actionExecutions)
+        {
+            foreach (var node in nodes)
+            {
+                if (node.Action.State.ToString() != "Ready" && actionExecutions.All(record => record.Path != node.Path))
+                {
+                    actionExecutions.Add(new ActionExecutionRecord(node.Path, node.Name, node.Action.State.ToString(), 0));
+                }
+            }
+        }
+
+        var failedAction = flow.LastFailedAction?.Name;
+        var payload = new TestFlowRunResult(
+            Path.GetFullPath(projectPath),
+            flow.Name,
+            flow.State.ToString(),
+            flow.BreakReason.ToString(),
+            failedAction,
+            actionExecutions);
 
         if (!completed)
         {
-            var failedAction = flow.LastFailedAction?.Name;
             var message = failedAction == null
                 ? $"TestFlow '{flow.Name}' execution failed."
                 : $"TestFlow '{flow.Name}' failed at action '{failedAction}'.";
@@ -107,6 +177,14 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
         }
 
         return CommandResult.Success(CommandExecutionMode.Offline, payload);
+    }
+
+    private readonly record struct ActionExecutionBuilder(FleetAutomate.Application.Commanding.ActionNode Node, long StartedAt, int RecordIndex)
+    {
+        public ActionExecutionRecord ToRecord(string state, long durationMilliseconds)
+        {
+            return new ActionExecutionRecord(Node.Path, Node.Name, state, durationMilliseconds);
+        }
     }
 
     private Task<CommandResult> CreateProjectAsync(string projectPath, string projectName)

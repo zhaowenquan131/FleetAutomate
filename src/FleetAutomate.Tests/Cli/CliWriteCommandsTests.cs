@@ -232,6 +232,15 @@ public sealed class CliWriteCommandsTests : IDisposable
     {
         CreateProject();
         await DispatchAsync("testflow", "create", "--project", _projectPath, "--name", "calculator_flow");
+        await DispatchAsync(
+            "action",
+            "add",
+            "--project",
+            _projectPath,
+            "--flow",
+            "calculator_flow",
+            "--type",
+            "LogAction");
 
         var (exitCode, stdout, stderr) = await RunProgramAsync(
             "testflow",
@@ -252,6 +261,39 @@ public sealed class CliWriteCommandsTests : IDisposable
         Assert.Equal("calculator_flow", payload.GetProperty("flowName").GetString());
         Assert.Equal("Completed", payload.GetProperty("state").GetString());
         Assert.Equal("Completed", payload.GetProperty("breakReason").GetString());
+        var action = Assert.Single(payload.GetProperty("actions").EnumerateArray());
+        Assert.Equal("0", action.GetProperty("path").GetString());
+        Assert.Equal("Completed", action.GetProperty("state").GetString());
+        Assert.True(action.GetProperty("durationMilliseconds").GetInt64() >= 0);
+    }
+
+    [Fact]
+    public async Task RunAsync_TestflowRun_TableOutputHighlightsResultAndListsActions()
+    {
+        CreateProject();
+        await DispatchAsync("testflow", "create", "--project", _projectPath, "--name", "calculator_flow");
+        await DispatchAsync(
+            "action",
+            "add",
+            "--project",
+            _projectPath,
+            "--flow",
+            "calculator_flow",
+            "--type",
+            "LogAction");
+
+        var (exitCode, stdout, stderr) = await RunProgramAsync(
+            "testflow",
+            "run",
+            "--project",
+            _projectPath,
+            "--flow",
+            "calculator_flow");
+
+        Assert.Equal(0, exitCode);
+        Assert.True(string.IsNullOrWhiteSpace(stderr));
+        Assert.Contains("=== TESTFLOW SUCCEEDED ===", stdout);
+        Assert.Contains("[PASS] 0 Log ", stdout);
     }
 
     [Fact]

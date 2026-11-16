@@ -53,6 +53,12 @@ internal sealed class CliOutputWriter
             return;
         }
 
+        if (result.Payload is TestFlowRunResult runResult)
+        {
+            WriteTestFlowRunResult(result, runResult);
+            return;
+        }
+
         Console.WriteLine($"ok: {result.Ok}");
         Console.WriteLine($"mode: {(result.Mode == CommandExecutionMode.UiSession ? "ui-session" : "offline")}");
         if (!string.IsNullOrWhiteSpace(result.SessionId))
@@ -68,6 +74,67 @@ internal sealed class CliOutputWriter
         if (result.Error != null)
         {
             Console.Error.WriteLine($"{result.Error.Code}: {result.Error.Message}");
+        }
+    }
+
+    private static void WriteTestFlowRunResult(CommandResult result, TestFlowRunResult runResult)
+    {
+        WriteColoredLine(
+            result.Ok ? "=== TESTFLOW SUCCEEDED ===" : "=== TESTFLOW FAILED ===",
+            result.Ok ? ConsoleColor.Green : ConsoleColor.Red);
+        Console.WriteLine($"mode: {(result.Mode == CommandExecutionMode.UiSession ? "ui-session" : "offline")}");
+        Console.WriteLine($"projectPath: {runResult.ProjectPath}");
+        Console.WriteLine($"flowName: {runResult.FlowName}");
+        Console.WriteLine($"state: {runResult.State}");
+        Console.WriteLine($"breakReason: {runResult.BreakReason}");
+        Console.WriteLine($"failedAction: {runResult.FailedAction}");
+        Console.WriteLine("actions:");
+
+        if (runResult.Actions.Count == 0)
+        {
+            Console.WriteLine("  (no actions)");
+        }
+        else
+        {
+            foreach (var action in runResult.Actions)
+            {
+                var (label, color) = action.State switch
+                {
+                    "Completed" => ("PASS", ConsoleColor.Green),
+                    "Failed" => ("FAIL", ConsoleColor.Red),
+                    "Paused" => ("PAUSED", ConsoleColor.Yellow),
+                    _ => (action.State.ToUpperInvariant(), ConsoleColor.Gray)
+                };
+                WriteColoredLine(
+                    $"  [{label}] {action.Path} {action.Name} ({action.DurationMilliseconds} ms)",
+                    color);
+            }
+        }
+
+        if (result.Error != null)
+        {
+            WriteColoredLine($"{result.Error.Code}: {result.Error.Message}", ConsoleColor.Red, Console.Error);
+        }
+    }
+
+    private static void WriteColoredLine(string value, ConsoleColor color, TextWriter? writer = null)
+    {
+        writer ??= Console.Out;
+        if (Console.IsOutputRedirected || !ReferenceEquals(writer, Console.Out))
+        {
+            writer.WriteLine(value);
+            return;
+        }
+
+        var previousColor = Console.ForegroundColor;
+        try
+        {
+            Console.ForegroundColor = color;
+            writer.WriteLine(value);
+        }
+        finally
+        {
+            Console.ForegroundColor = previousColor;
         }
     }
 
