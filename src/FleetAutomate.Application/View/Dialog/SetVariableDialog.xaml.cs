@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using FleetAutomate.Expressions;
 using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Project;
 using Wpf.Ui.Controls;
 
 namespace FleetAutomate.View.Dialog
@@ -29,7 +30,9 @@ namespace FleetAutomate.View.Dialog
 
         public SetVariableValueMode ValueMode { get; private set; } = SetVariableValueMode.Literal;
 
-        public SetVariableDialog()
+        public SetVariableDialog() : this(null) { }
+
+        public SetVariableDialog(TestProject? project)
         {
             InitializeComponent();
             VariableNameTextBox.Focus();
@@ -37,6 +40,7 @@ namespace FleetAutomate.View.Dialog
             VariableTypeComboBox.SelectionChanged += VariableTypeComboBox_SelectionChanged;
             ValueModeComboBox.SelectionChanged += ValueModeComboBox_SelectionChanged;
             InitializeExpressionTemplates();
+            InitializeConfigPicker(project: project);
             UpdateOkButtonState();
             UpdateHintText();
             OkButton.Content = "创建";
@@ -46,18 +50,20 @@ namespace FleetAutomate.View.Dialog
             string variableName,
             string variableType,
             string variableValue,
-            SetVariableValueMode valueMode = SetVariableValueMode.Literal)
+            SetVariableValueMode valueMode = SetVariableValueMode.Literal,
+            TestProject? project = null)
         {
             InitializeComponent();
             VariableNameTextBox.Text = variableName;
             VariableValueTextBox.Text = variableValue;
             VariableTypeComboBox.SelectedIndex = GetIndexFromType(variableType);
-            ValueModeComboBox.SelectedIndex = valueMode == SetVariableValueMode.Expression ? 1 : 0;
+            ValueModeComboBox.SelectedIndex = (int)valueMode;
             VariableNameTextBox.Focus();
             VariableNameTextBox.TextChanged += VariableNameTextBox_TextChanged;
             VariableTypeComboBox.SelectionChanged += VariableTypeComboBox_SelectionChanged;
             ValueModeComboBox.SelectionChanged += ValueModeComboBox_SelectionChanged;
             InitializeExpressionTemplates();
+            InitializeConfigPicker(valueMode == SetVariableValueMode.FromConfig ? variableValue : null, project);
             UpdateOkButtonState();
             UpdateHintText();
             OkButton.Content = "保存";
@@ -88,21 +94,27 @@ namespace FleetAutomate.View.Dialog
         {
             var variableName = VariableNameTextBox.Text?.Trim();
             OkButton.IsEnabled = !string.IsNullOrWhiteSpace(variableName) && IsValidVariableName(variableName);
+            if (ValueModeComboBox.SelectedIndex == 2)
+                OkButton.IsEnabled &= _selectedConfigNode != null && ConfigFileComboBox.SelectedItem != null;
         }
 
         private void UpdateHintText()
         {
             var selectedIndex = VariableTypeComboBox.SelectedIndex;
             var isExpression = ValueModeComboBox?.SelectedIndex == 1;
-            VariableTypeComboBox.Visibility = isExpression ? Visibility.Collapsed : Visibility.Visible;
-            VariableTypeLabelTextBlock.Visibility = isExpression ? Visibility.Collapsed : Visibility.Visible;
+            var isConfig = ValueModeComboBox?.SelectedIndex == 2;
+            VariableTypeComboBox.Visibility = isExpression || isConfig ? Visibility.Collapsed : Visibility.Visible;
+            VariableTypeLabelTextBlock.Visibility = isExpression || isConfig ? Visibility.Collapsed : Visibility.Visible;
+            ConfigPanel.Visibility = isConfig ? Visibility.Visible : Visibility.Collapsed;
+            VariableValueTextBox.Visibility = isConfig ? Visibility.Collapsed : Visibility.Visible;
+            ValueLabelTextBlock.Visibility = isConfig ? Visibility.Collapsed : Visibility.Visible;
             ValueLabelTextBlock.Text = isExpression ? "Expression" : "Value";
             ExpressionTemplatePanel.Visibility = isExpression ? Visibility.Visible : Visibility.Collapsed;
             VariableValueTextBox.ToolTip = isExpression
                 ? "Enter an expression. The variable type is inferred from the expression result."
                 : "Enter the initial value for the variable";
 
-            HintTextBlock.Text = isExpression
+            HintTextBlock.Text = isConfig ? "Type is inferred automatically. The selected item is read from the config at execution time." : isExpression
                 ? "Type is inferred automatically. Numbers currently infer as double."
                 : selectedIndex switch
             {
@@ -112,6 +124,7 @@ namespace FleetAutomate.View.Dialog
                 3 => "Enter true or false",
                 _ => "Enter a value"
             };
+            UpdateOkButtonState();
         }
 
         private static bool IsValidVariableName(string name)
@@ -140,8 +153,17 @@ namespace FleetAutomate.View.Dialog
 
             // Validate value based on type
             var typeIndex = VariableTypeComboBox.SelectedIndex;
-            var mode = ValueModeComboBox.SelectedIndex == 1 ? SetVariableValueMode.Expression : SetVariableValueMode.Literal;
-            if (mode == SetVariableValueMode.Expression)
+            var mode = (SetVariableValueMode)ValueModeComboBox.SelectedIndex;
+            if (mode == SetVariableValueMode.FromConfig)
+            {
+                try { variableValue = GetConfigReference(); }
+                catch (Exception ex)
+                {
+                    await ShowErrorAsync("Invalid Configuration", ex.Message);
+                    return;
+                }
+            }
+            else if (mode == SetVariableValueMode.Expression)
             {
                 var validation = new SimpleExpressionEngine().Validate(variableValue, ExpressionContext.Empty);
                 if (!validation.IsValid)

@@ -400,6 +400,8 @@ namespace FleetAutomate.Model.Flow
 
         private async Task<bool> ExecuteCoreAsync(IAction? startAction, bool resetStates, bool stepOnce, CancellationToken cancellationToken)
         {
+            using var uiPathScope = Project.UiPathReferenceResolver.Enter(ParentProject?.UiPathReferences);
+            using var configScope = Project.ProjectConfigValues.Enter(ParentProject);
             PrepareForExecution();
 
             if (resetStates)

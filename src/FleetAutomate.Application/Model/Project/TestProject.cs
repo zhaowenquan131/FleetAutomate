@@ -24,6 +24,9 @@ namespace FleetAutomate.Model.Project
         [DataMember]
         public string Name { get; set; }
 
+        [IgnoreDataMember]
+        public string? ProjectFilePath { get; set; }
+
         /// <summary>
         /// TestFlows collection - NOT serialized to project file.
         /// TestFlows are loaded from individual .testfl files referenced in TestFlowFileNames.
@@ -37,6 +40,23 @@ namespace FleetAutomate.Model.Project
         /// </summary>
         [DataMember]
         public string[] TestFlowFileNames { get; set; } = [];
+
+        [DataMember]
+        public List<ProjectFileReference> Configs { get; set; } = [];
+
+        [DataMember]
+        public List<ProjectFileReference> Resources { get; set; } = [];
+
+        [DataMember]
+        public List<UiPathReference> UiPathReferences { get; set; } = [];
+
+        [OnDeserializing]
+        private void InitializeProjectContent(StreamingContext context)
+        {
+            Configs = [];
+            Resources = [];
+            UiPathReferences = [];
+        }
 
 
         /// <summary>

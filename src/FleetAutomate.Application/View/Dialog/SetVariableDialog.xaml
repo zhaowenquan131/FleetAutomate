@@ -4,10 +4,11 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:FleetAutomate.ViewModel"
         mc:Ignorable="d"
         Title="Create Variable"
-        Height="500"
-        Width="520"
+        Height="680"
+        Width="620"
         WindowStartupLocation="CenterOwner"
         ResizeMode="CanResize" MinWidth="400" MinHeight="250"
         WindowStyle="None">
@@ -24,7 +25,8 @@
                     Icon="{ui:SymbolIcon DocumentAdd20}"/>
 
         <!-- Content -->
-        <StackPanel Grid.Row="1" Margin="20" VerticalAlignment="Top">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20" VerticalAlignment="Top">
             <!-- Variable Name -->
             <TextBlock Text="Name" FontWeight="Bold" FontSize="12" Margin="0,0,0,5"/>
             <TextBox Name="VariableNameTextBox"
@@ -55,7 +57,29 @@
                      SelectedIndex="0">
                 <ComboBoxItem VerticalContentAlignment="Center">Literal</ComboBoxItem>
                 <ComboBoxItem VerticalContentAlignment="Center">Expression</ComboBoxItem>
+                <ComboBoxItem VerticalContentAlignment="Center">From config</ComboBoxItem>
             </ComboBox>
+
+            <StackPanel x:Name="ConfigPanel" Visibility="Collapsed" Margin="0,0,0,15">
+                <TextBlock Text="Configuration file" FontWeight="Bold" Margin="0,0,0,5"/>
+                <ComboBox x:Name="ConfigFileComboBox" DisplayMemberPath="FilePath" SelectedValuePath="Id"
+                          SelectionChanged="ConfigFileComboBox_SelectionChanged" Margin="0,0,0,12"/>
+                <TextBlock Text="Configuration item" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TreeView x:Name="ConfigItemTree" Height="230" SelectedItemChanged="ConfigItemTree_SelectedItemChanged">
+                    <TreeView.ItemTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type vm:ConfigItemNode}" ItemsSource="{Binding Children}">
+                            <TextBlock Text="{Binding DisplayName}" ToolTip="{Binding Preview}"/>
+                        </HierarchicalDataTemplate>
+                    </TreeView.ItemTemplate>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="TreeViewItem">
+                            <Setter Property="IsExpanded" Value="True"/>
+                            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+                <TextBlock x:Name="ConfigPreviewText" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            </StackPanel>
 
             <!-- Expression Templates -->
             <StackPanel Name="ExpressionTemplatePanel" Margin="0,0,0,15" Visibility="Collapsed">
@@ -90,6 +114,7 @@
                       Foreground="Gray"
                       Margin="0,0,0,15"/>
         </StackPanel>
+        </ScrollViewer>
 
         <!-- Buttons -->
         <Border Grid.Row="2" Background="#F5F5F5" Padding="20" BorderBrush="LightGray" BorderThickness="0,1">

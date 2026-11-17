@@ -152,7 +152,7 @@ namespace FleetAutomate.Services
                         return false;
                 }
 
-                var newProject = new TestProject();
+                var newProject = new TestProject { ProjectFilePath = projectFilePath };
                 if (!string.IsNullOrEmpty(projectName))
                 {
                     newProject.Name = projectName;
@@ -597,6 +597,9 @@ namespace FleetAutomate.Services
         /// </summary>
         private bool SaveProjectToPath(string filePath)
         {
+            var previousProjectFilePath = CurrentProject?.ProjectFilePath;
+            var previousPaths = CurrentProject?.Configs.Concat(CurrentProject.Resources)
+                .ToDictionary(reference => reference, reference => reference.FilePath);
             try
             {
                 if (CurrentProject == null)
@@ -607,6 +610,12 @@ namespace FleetAutomate.Services
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 {
                     Directory.CreateDirectory(directory);
+                }
+
+                if (!string.IsNullOrWhiteSpace(CurrentProjectFilePath) &&
+                    !string.Equals(Path.GetFullPath(CurrentProjectFilePath), Path.GetFullPath(filePath), StringComparison.OrdinalIgnoreCase))
+                {
+                    ProjectContentService.RebaseFiles(CurrentProject, CurrentProjectFilePath, filePath);
                 }
 
                 // Save the project file itself using XML serialization
@@ -627,6 +636,9 @@ namespace FleetAutomate.Services
             }
             catch (Exception ex)
             {
+                if (CurrentProject != null) CurrentProject.ProjectFilePath = previousProjectFilePath;
+                if (previousPaths != null)
+                    foreach (var entry in previousPaths) entry.Key.FilePath = entry.Value;
                 OnOperationFailed?.Invoke($"Failed to save project to: {filePath}", ex);
                 return false;
             }

@@ -13,7 +13,10 @@ namespace FleetAutomate.Model.Actions.Logic
         Literal,
 
         [EnumMember]
-        Expression
+        Expression,
+
+        [EnumMember]
+        FromConfig
     }
 
     [DataContract]
@@ -72,13 +75,17 @@ namespace FleetAutomate.Model.Actions.Logic
             }
         }
 
-        public string Name => $"Set {Variable.ShortTypeName} {Variable.Name} = {Variable.Value}";
+        public string Name => ValueMode == SetVariableValueMode.FromConfig
+            ? $"Set {Variable.Name} from config" : $"Set {Variable.ShortTypeName} {Variable.Name} = {Variable.Value}";
 
         [DataMember]
         public SetVariableValueMode ValueMode { get; set; } = SetVariableValueMode.Literal;
 
         [DataMember]
         public string ExpressionText { get; set; } = string.Empty;
+
+        [DataMember]
+        public string ConfigReference { get; set; } = string.Empty;
 
         public TResult Result
         {
@@ -136,6 +143,8 @@ namespace FleetAutomate.Model.Actions.Logic
 
         private async Task<object?> ResolveValueAsync(CancellationToken cancellationToken)
         {
+            if (ValueMode == SetVariableValueMode.FromConfig)
+                return Project.ProjectConfigValues.ResolveCurrent(ConfigReference);
             if (ValueMode != SetVariableValueMode.Expression)
             {
                 return Variable.Value;

@@ -12,6 +12,7 @@ namespace FleetAutomate.ViewModel
     public partial class ObservableProject : ObservableObject
     {
         private readonly TestProject _model;
+        private bool _refreshingFlows;
 
         public ObservableProject(TestProject model)
         {
@@ -21,6 +22,8 @@ namespace FleetAutomate.ViewModel
             // Don't call RefreshTestFlows() here - we've already created the ObservableFlows above!
             // Calling it would create duplicate instances with duplicate event handlers.
             Name = _model.Name ?? string.Empty;
+            foreach (var flow in TestFlows) flow.PropertyChanged += ObsTestfl_PropertyChanged;
+            RefreshProjectTree();
         }
         protected override void OnPropertyChanging(PropertyChangingEventArgs e)
         {
@@ -41,7 +44,7 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (ObservableFlow newFlow in e.NewItems)
                 {
-                    if (newFlow.Model != null && !_model.TestFlows.Contains(newFlow.Model))
+                    if (!_refreshingFlows && newFlow.Model != null && !_model.TestFlows.Contains(newFlow.Model))
                     {
                         // Use internal method for in-memory operations
                         // Actual file operations should be done by TestProjectManager
@@ -55,7 +58,7 @@ namespace FleetAutomate.ViewModel
             {
                 foreach (ObservableFlow oldFlow in e.OldItems)
                 {
-                    if (oldFlow.Model != null && _model.TestFlows.Contains(oldFlow.Model))
+                    if (!_refreshingFlows && oldFlow.Model != null && _model.TestFlows.Contains(oldFlow.Model))
                     {
                         // Use RemoveTestFlow without deleteFile parameter (defaults to false)
                         _model.RemoveTestFlow(oldFlow.Model, deleteFile: false);
@@ -63,6 +66,7 @@ namespace FleetAutomate.ViewModel
                     oldFlow.PropertyChanged -= ObsTestfl_PropertyChanged;
                 }
             }
+            RefreshProjectTree();
         }
         protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
@@ -78,7 +82,33 @@ namespace FleetAutomate.ViewModel
 
         private void ObsTestfl_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(ObservableFlow.Name)) RefreshProjectTree();
+        }
 
+        public ObservableCollection<ProjectTreeNode> ProjectNodes { get; } = [];
+
+        public void RefreshProjectTree()
+        {
+            var previousRoot = ProjectNodes.FirstOrDefault();
+            var expanded = previousRoot?.Children.ToDictionary(node => node.Kind, node => node.IsExpanded);
+            var root = new ProjectTreeNode(ProjectNodeKind.Project, Name ?? _model.Name);
+            var flows = new ProjectTreeNode(ProjectNodeKind.TestFlows, "test flows");
+            foreach (var flow in TestFlows) flows.Children.Add(new ProjectTreeNode(ProjectNodeKind.TestFlow, flow.Name, flow, flow.FileName));
+            var configs = new ProjectTreeNode(ProjectNodeKind.Configs, "configs");
+            foreach (var file in _model.Configs) configs.Children.Add(new ProjectTreeNode(ProjectNodeKind.Config, Path.GetFileName(file.FilePath), file, file.FilePath));
+            var paths = new ProjectTreeNode(ProjectNodeKind.UiPaths, "ui path references");
+            foreach (var reference in _model.UiPathReferences) paths.Children.Add(new ProjectTreeNode(ProjectNodeKind.UiPath, reference.Name, reference, reference.XPath));
+            var resources = new ProjectTreeNode(ProjectNodeKind.Resources, "resources");
+            foreach (var file in _model.Resources) resources.Children.Add(new ProjectTreeNode(ProjectNodeKind.Resource, Path.GetFileName(file.FilePath), file, file.FilePath));
+            root.Children.Add(flows);
+            root.Children.Add(configs);
+            root.Children.Add(paths);
+            root.Children.Add(resources);
+            if (previousRoot != null) root.IsExpanded = previousRoot.IsExpanded;
+            foreach (var group in root.Children)
+                if (expanded?.TryGetValue(group.Kind, out var isExpanded) == true) group.IsExpanded = isExpanded;
+            ProjectNodes.Clear();
+            ProjectNodes.Add(root);
         }
 
         [ObservableProperty]
@@ -97,15 +127,21 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         public void RefreshTestFlows()
         {
-            TestFlows.Clear();
-            if (_model.TestFlows != null)
+            var models = _model.TestFlows?.ToList() ?? [];
+            var existing = TestFlows.ToDictionary(flow => flow.Model);
+            _refreshingFlows = true;
+            try
             {
-                foreach (var testFlow in _model.TestFlows)
+                foreach (var flow in TestFlows) flow.PropertyChanged -= ObsTestfl_PropertyChanged;
+                TestFlows.Clear();
+                foreach (var testFlow in models)
                 {
-                    TestFlows.Add(new ObservableFlow(testFlow));
+                    TestFlows.Add(existing.TryGetValue(testFlow, out var flow) ? flow : new ObservableFlow(testFlow));
                 }
             }
+            finally { _refreshingFlows = false; }
             Name = _model.Name ?? string.Empty;
+            RefreshProjectTree();
         }
 
         /// <summary>

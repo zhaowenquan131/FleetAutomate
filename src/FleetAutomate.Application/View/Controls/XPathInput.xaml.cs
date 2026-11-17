@@ -16,6 +16,7 @@ namespace FleetAutomate.View.Controls
         private bool _isCapturing = false;
         private Rectangle _currentHighlightRect = Rectangle.Empty;
         private readonly ScreenHighlighter _screenHighlighter = new ScreenHighlighter();
+        public bool AllowProjectReferences { get; set; } = true;
 
         /// <summary>
         /// Dependency property for XPath value.
@@ -45,16 +46,62 @@ namespace FleetAutomate.View.Controls
             var control = (XPathInput)d;
             if (control.XPathTextBox.Text != (string)e.NewValue)
             {
-                control.XPathTextBox.Text = (string)e.NewValue;
+                control.XPathTextBox.SetCurrentValue(System.Windows.Controls.TextBox.TextProperty, (string)e.NewValue);
             }
+            control.SelectCurrentProjectReference();
         }
 
         public XPathInput()
         {
             InitializeComponent();
+            Loaded += (_, _) => RefreshProjectReferences();
 
             // Subscribe to Unloaded event to clean up resources
             Unloaded += XPathInput_Unloaded;
+        }
+
+        private void RefreshProjectReferences()
+        {
+            var window = System.Windows.Window.GetWindow(this);
+            while (window != null && window is not MainWindow) window = window.Owner;
+            var references = (window as MainWindow)?.ViewModel.ActiveProject?.Model.UiPathReferences;
+            ProjectReferences.SelectionChanged -= ProjectReferences_SelectionChanged;
+            ProjectReferences.Items.Clear();
+            if (AllowProjectReferences && references != null)
+            {
+                foreach (var reference in references)
+                {
+                    ProjectReferences.Items.Add(new System.Windows.Controls.ComboBoxItem
+                    {
+                        Content = reference.Name, ToolTip = reference.XPath, Tag = "@{" + reference.Name + "}"
+                    });
+                }
+            }
+            ProjectReferencesPanel.Visibility = AllowProjectReferences ? Visibility.Visible : Visibility.Collapsed;
+            ProjectReferences.IsEnabled = ProjectReferences.Items.Count > 0;
+            ProjectReferencesPanel.ToolTip = ProjectReferences.Items.Count == 0
+                ? "No project UI paths. Add one under UI path references." : null;
+            ProjectReferences.SelectionChanged += ProjectReferences_SelectionChanged;
+            SelectCurrentProjectReference();
+        }
+
+        private void SelectCurrentProjectReference()
+        {
+            if (ProjectReferences == null) return;
+            ProjectReferences.SelectionChanged -= ProjectReferences_SelectionChanged;
+            ProjectReferences.SelectedItem = ProjectReferences.Items.OfType<System.Windows.Controls.ComboBoxItem>()
+                .FirstOrDefault(item => string.Equals(item.Tag as string, XPath?.Trim(), StringComparison.OrdinalIgnoreCase));
+            ProjectReferences.SelectionChanged += ProjectReferences_SelectionChanged;
+        }
+
+        private void ProjectReferences_DropDownOpened(object sender, EventArgs e) => RefreshProjectReferences();
+
+        private void ProjectReferences_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (ProjectReferences.SelectedItem is System.Windows.Controls.ComboBoxItem { Tag: string value })
+            {
+                SetCurrentValue(XPathProperty, value);
+            }
         }
 
         private void XPathInput_Unloaded(object sender, RoutedEventArgs e)

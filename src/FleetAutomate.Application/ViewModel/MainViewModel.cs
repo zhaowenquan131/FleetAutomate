@@ -477,6 +477,7 @@ namespace FleetAutomate.ViewModel
             ProjectManager.OnProjectPathChanged += (path) =>
             {
                 OnPropertyChanged(nameof(CurrentProjectPath));
+                ActiveProject?.RefreshProjectTree();
             };
 
             ProjectManager.OnUnsavedChangesChanged += (hasChanges) =>
@@ -1365,11 +1366,18 @@ namespace FleetAutomate.ViewModel
             {
                 var environment = ActiveTestFlow?.Model.Environment ?? new Model.Actions.Logic.Environment();
                 var inferredType = GetTypeFromString(variableType);
-                var parsedValue = valueMode == SetVariableValueMode.Expression
+                var fromConfig = valueMode == SetVariableValueMode.FromConfig;
+                if (fromConfig)
+                {
+                    var project = ActiveProject?.Model ?? throw new InvalidOperationException("Open a project first.");
+                    var value = Model.Project.ProjectConfigValues.Resolve(project, Model.Project.ConfigValueReference.Parse(variableValue));
+                    inferredType = value?.GetType() ?? typeof(object);
+                }
+                var parsedValue = fromConfig ? null : valueMode == SetVariableValueMode.Expression
                     ? GetExpressionInitialValue(variableValue, environment, out inferredType)
                     : Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(variableValue, variableType);
 
-                if (parsedValue == null)
+                if (parsedValue == null && !fromConfig)
                 {
                     OnShowError?.Invoke("Invalid Value", $"Could not parse '{variableValue}' as {variableType}.");
                     return null;
@@ -1389,7 +1397,8 @@ namespace FleetAutomate.ViewModel
                     Environment = environment,
                     Variable = variable,
                     ValueMode = valueMode,
-                    ExpressionText = valueMode == SetVariableValueMode.Expression ? variableValue : string.Empty
+                    ExpressionText = valueMode == SetVariableValueMode.Expression ? variableValue : string.Empty,
+                    ConfigReference = fromConfig ? variableValue : string.Empty
                 };
 
                 return action;

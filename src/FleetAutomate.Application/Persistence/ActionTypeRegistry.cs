@@ -133,10 +133,11 @@ internal sealed class SetVariableActionMapper : IActionDocumentMapper
             Properties =
             [
                 ValueSerializer.ToProperty(nameof(Variable.Name), variable.Name, typeof(string)),
-                ValueSerializer.ToProperty(nameof(Variable.Value), variable.Value, variable.Type),
+                ValueSerializer.ToProperty(nameof(Variable.Value), dynamicAction.ValueMode == SetVariableValueMode.FromConfig ? null : variable.Value, variable.Type),
                 ValueSerializer.ToProperty(nameof(Variable.TypeName), TypeIds.FromType(variable.Type), typeof(string)),
                 ValueSerializer.ToProperty(nameof(SetVariableAction<object>.ValueMode), dynamicAction.ValueMode, typeof(string)),
                 ValueSerializer.ToProperty(nameof(SetVariableAction<object>.ExpressionText), dynamicAction.ExpressionText, typeof(string)),
+                ValueSerializer.ToProperty(nameof(SetVariableAction<object>.ConfigReference), dynamicAction.ConfigReference, typeof(string)),
                 ValueSerializer.ToProperty(nameof(SetVariableAction<object>.Description), dynamicAction.Description, typeof(string)),
                 ValueSerializer.ToProperty(nameof(SetVariableAction<object>.IsEnabled), dynamicAction.IsEnabled, typeof(bool))
             ]
@@ -160,6 +161,7 @@ internal sealed class SetVariableActionMapper : IActionDocumentMapper
         };
         dynamicAction.ValueMode = Enum.Parse<SetVariableValueMode>(GetString(properties, nameof(SetVariableAction<object>.ValueMode)) ?? nameof(SetVariableValueMode.Literal));
         dynamicAction.ExpressionText = GetString(properties, nameof(SetVariableAction<object>.ExpressionText)) ?? string.Empty;
+        dynamicAction.ConfigReference = GetString(properties, nameof(SetVariableAction<object>.ConfigReference)) ?? string.Empty;
         dynamicAction.Description = GetString(properties, nameof(SetVariableAction<object>.Description)) ?? "Leave your comment here.";
         dynamicAction.IsEnabled = properties.TryGetValue(nameof(SetVariableAction<object>.IsEnabled), out var enabled)
             ? (bool)ValueSerializer.FromProperty(enabled)!

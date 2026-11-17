@@ -740,84 +740,44 @@
                         </avalonDock:LayoutAnchorablePane>
                     </avalonDock:LayoutPanel>
 
-                    <!-- Right Side: TestFlows -->
-                    <avalonDock:LayoutAnchorablePane DockWidth="300">
-                        <avalonDock:LayoutAnchorable Title="TestFlows" CanClose="False" CanHide="False">
-                            <ListView Name="TestFlowsListView" ItemsSource="{Binding ActiveProject.TestFlows}"
-                                      SelectionMode="Single"
-                                      MouseDoubleClick="TestFlowsListView_MouseDoubleClick"
-                                      PreviewMouseDown="TestFlowsListView_PreviewMouseDown">
-                                <ListView.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Run TestFlow" IsEnabled="False"/>
-                                        <Separator/>
-                                        <MenuItem Header="Enable/Disable" IsEnabled="False"/>
-                                        <Separator/>
-                                        <MenuItem Header="Remove TestFlow" IsEnabled="False"/>
-                                    </ContextMenu>
-                                </ListView.ContextMenu>
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Margin="5">
+                    <!-- Current project -->
+                    <avalonDock:LayoutAnchorablePane DockWidth="310">
+                        <avalonDock:LayoutAnchorable Title="Project" CanClose="False" CanHide="False">
+                            <TreeView x:Name="ProjectTreeView"
+                                      ItemsSource="{Binding ActiveProject.ProjectNodes}"
+                                      PreviewMouseDown="ProjectTreeView_PreviewMouseDown"
+                                      PreviewMouseRightButtonDown="ProjectTreeView_PreviewMouseRightButtonDown"
+                                      SelectedItemChanged="ProjectTreeView_SelectedItemChanged"
+                                      ContextMenuOpening="ProjectTreeView_ContextMenuOpening"
+                                      KeyDown="ProjectTreeView_KeyDown"
+                                      IsEnabled="{Binding IsProjectLoaded}">
+                                <TreeView.ContextMenu><ContextMenu/></TreeView.ContextMenu>
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate DataType="{x:Type vm:ProjectTreeNode}" ItemsSource="{Binding Children}">
+                                        <Grid Margin="2,5" ToolTip="{Binding Detail}">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="25"/>
                                                 <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
-
-                                            <Border Grid.Column="0"
-                                                    Width="28"
-                                                    Height="28"
-                                                    CornerRadius="6"
-                                                    Margin="0,0,8,0"
-                                                    VerticalAlignment="Top"
-                                                    Background="{DynamicResource FleetAccentBrush}">
-                                                <TextBlock Text="TF"
-                                                           Foreground="{DynamicResource FleetAccentTextBrush}"
-                                                           FontSize="10"
-                                                           FontWeight="SemiBold"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center"/>
-                                            </Border>
-
-                                            <Grid Grid.Column="1">
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-
-                                                <!-- TestFlow Name -->
-                                                <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
-
-                                                <!-- Status and Actions Count -->
-                                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,2,0,0">
-                                                    <TextBlock Text="●" FontSize="8" VerticalAlignment="Center" Margin="0,0,3,0">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Foreground" Value="Green"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                                        <Setter Property="Foreground" Value="Red"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    <TextBlock Text="{Binding Actions.Count, StringFormat=\{0\} actions}" FontSize="10" Foreground="Gray"/>
-                                                </StackPanel>
-                                            </Grid>
+                                            <TextBlock Text="{Binding Icon}" FontSize="15" VerticalAlignment="Center" Opacity="0.75"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
                                         </Grid>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                                <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource FleetListViewItemStyle}">
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                                <TreeView.ItemContainerStyle>
+                                    <Style TargetType="TreeViewItem" BasedOn="{StaticResource FleetTreeViewItemStyle}">
+                                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                <Setter Property="Opacity" Value="0.6"/>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="local:MainWindow.IsActionMultiSelected" Value="True"/>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding Value.IsEnabled}" Value="False">
+                                                <Setter Property="Opacity" Value="0.55"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </ListView.ItemContainerStyle>
-                            </ListView>
+                                </TreeView.ItemContainerStyle>
+                            </TreeView>
                         </avalonDock:LayoutAnchorable>
                     </avalonDock:LayoutAnchorablePane>
 

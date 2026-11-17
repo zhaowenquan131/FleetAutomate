@@ -155,6 +155,7 @@ namespace FleetAutomate.Utilities
 
             var xml = SerializeToXml(testProject);
             File.WriteAllText(filePath, xml, Encoding.UTF8);
+            testProject.ProjectFilePath = Path.GetFullPath(filePath);
         }
 
         /// <summary>
@@ -170,7 +171,9 @@ namespace FleetAutomate.Utilities
                 throw new FileNotFoundException($"File not found: {filePath}");
 
             var xml = File.ReadAllText(filePath, Encoding.UTF8);
-            return DeserializeFromXml(xml);
+            var project = DeserializeFromXml(xml);
+            if (project != null) project.ProjectFilePath = Path.GetFullPath(filePath);
+            return project;
         }
 
         /// <summary>

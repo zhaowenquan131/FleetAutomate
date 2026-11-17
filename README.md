@@ -45,6 +45,12 @@ Fleet Automate provides a drag-and-drop interface for creating Windows UI automa
 
 ### Project Management
 - **Multi-Flow Projects**: Organize related test flows in a single project
+- **Project Tree**: The open project contains `test flows`, `configs`, `ui path references`, and `resources`. Right-click a group to create or add items; double-click an item to open it.
+- **Welcome View**: Opening or creating a project closes the Welcome tab automatically.
+- **Configuration Editor**: Create or add JSON/YAML files and edit them with AvalonEdit syntax highlighting. Save with `Ctrl+S`; invalid JSON/YAML is reported before saving. Close with the title-bar button, **Close**, or `Esc`.
+- **Project UI Paths**: Create a named XPath through the same capture window as **Tools → Capture Element**. Select it in an action's path input, or enter `@{reference name}`. The current project's dictionary is resolved during GUI and CLI flow execution.
+- **File References**: Configs and resources inside the project directory use relative paths; external files retain absolute paths. Removing a reference leaves the file on disk. Text resources open in the editor and images open in a preview.
+- **Variables from Config**: In the variable dialog, choose **From config**, pick a project JSON/YAML file, then select an item from its tree. The value and its type are inferred when the action executes; objects and arrays can also be selected.
 - **Separate Files**: Each test flow stored independently for better version control
 - **Recent Projects**: Quick access to recently opened projects
 - **Auto-Save**: Prompts to save unsaved changes

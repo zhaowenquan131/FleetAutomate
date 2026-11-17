@@ -4,6 +4,10 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              x:Name="Root">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="Auto"/>
@@ -31,5 +35,13 @@
                    MinWidth="140"
                    Height="32"
                    VerticalAlignment="Top"/>
+        <StackPanel x:Name="ProjectReferencesPanel" Grid.Row="1" Grid.ColumnSpan="2"
+                    Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
+            <TextBlock Text="Project UI path:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="ProjectReferences" MinWidth="220" MaxWidth="420"
+                      ToolTip="Select a project UI path reference (@{name})"
+                      DropDownOpened="ProjectReferences_DropDownOpened"
+                      SelectionChanged="ProjectReferences_SelectionChanged"/>
+        </StackPanel>
     </Grid>
 </UserControl>

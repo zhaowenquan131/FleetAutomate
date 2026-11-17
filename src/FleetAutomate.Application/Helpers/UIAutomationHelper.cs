@@ -179,6 +179,11 @@ namespace FleetAutomate.Helpers
             string elementIdentifier,
             string debugPrefix = "")
         {
+            if (FleetAutomate.Model.Project.UiPathReferenceResolver.IsReference(elementIdentifier))
+            {
+                elementIdentifier = FleetAutomate.Model.Project.UiPathReferenceResolver.Resolve(elementIdentifier);
+                identifierType = "XPath";
+            }
             try
             {
                 LogDebug(debugPrefix, $"FindElement called - Type: {identifierType}");

@@ -77,11 +77,17 @@ namespace FleetAutomate
             // Set up AvalonDock document management
             Loaded += (s, e) => SetupDocumentManagement();
             Loaded += OnMainWindowLoaded;
+            ViewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainViewModel.ActiveProject) && ViewModel.ActiveProject != null)
+                    DocumentPane.Children.Remove(PlaceholderDocument);
+            };
         }
 
         private void OnMainWindowLoaded(object sender, RoutedEventArgs e)
         {
             InitializeWelcomeDocument();
+            if (ViewModel.ActiveProject != null) DocumentPane.Children.Remove(PlaceholderDocument);
 
             if (System.Windows.Application.Current is FleetAutomate.App app)
             {
@@ -138,7 +144,7 @@ namespace FleetAutomate
             // Handle set variable prompt
             ViewModel.OnPromptSetVariable += () =>
             {
-                var dialog = new SetVariableDialog
+                var dialog = new SetVariableDialog(ViewModel.ActiveProject?.Model)
                 {
                     Owner = this
                 };
@@ -551,15 +557,6 @@ namespace FleetAutomate
             _ = messageBox.ShowDialogAsync();
         }
 
-        private void TestFlowsListView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            // Open the double-clicked TestFlow in a tab
-            if (sender is System.Windows.Controls.ListView listView && listView.SelectedItem is ObservableFlow flow)
-            {
-                ViewModel.OpenTestFlowInTabCommand.Execute(flow);
-                e.Handled = true;
-            }
-        }
 
         private void ActionsToolBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -923,12 +920,6 @@ namespace FleetAutomate
             }
         }
 
-        private void TestFlowsListView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            // When user clicks on a TestFlow in the list, clear the selected action
-            // so that new actions added from toolbox go to the root of the test flow
-            ViewModel.SelectedAction = null;
-        }
 
         private void TestFlowActionsTreeView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -1675,32 +1666,34 @@ namespace FleetAutomate
                 variable.Name,
                 GetVariableTypeKey(variable.Type),
                 GetSetVariableValueText(action, variable),
-                GetSetVariableValueMode(action))
+                GetSetVariableValueMode(action),
+                ViewModel.ActiveProject?.Model)
             {
                 Owner = this
             };
 
             if (dialog.ShowDialog() == true)
             {
-                var parsedValue = dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.Expression
+                var inferredType = GetTypeFromVariableKey(dialog.VariableType);
+                var fromConfig = dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.FromConfig;
+                if (fromConfig) inferredType = dialog.ConfigValueType;
+                var parsedValue = fromConfig ? null : dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.Expression
                     ? GetDefaultValueForDialog(GetTypeFromVariableKey(dialog.VariableType))
                     : Model.Actions.Logic.Expression.LiteralExpressionFactory.CreateLiteral(dialog.VariableValue, dialog.VariableType);
-                if (parsedValue == null)
+                if (parsedValue == null && !fromConfig)
                 {
                     return;
                 }
 
-                variable.Name = dialog.VariableName;
-                variable.Value = parsedValue;
-                variable.Type = GetTypeFromVariableKey(dialog.VariableType);
-
-                action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ValueMode))
-                    ?.SetValue(action, dialog.ValueMode);
-                action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ExpressionText))
-                    ?.SetValue(action, dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.Expression ? dialog.VariableValue : string.Empty);
-
-                var descriptionProperty = action.GetType().GetProperty("Description");
-                descriptionProperty?.SetValue(action, $"Set {variable.ShortTypeName} {variable.Name} = {variable.Value}");
+                var updatedVariable = new Model.Actions.Logic.Variable(dialog.VariableName, parsedValue, inferredType);
+                ViewModel.ApplyActionPropertyChanges(action, "Edit variable", [
+                    (nameof(Model.Actions.Logic.SetVariableAction<object>.Variable), updatedVariable),
+                    (nameof(Model.Actions.Logic.SetVariableAction<object>.ValueMode), dialog.ValueMode),
+                    (nameof(Model.Actions.Logic.SetVariableAction<object>.ExpressionText), dialog.ValueMode == Model.Actions.Logic.SetVariableValueMode.Expression ? dialog.VariableValue : string.Empty),
+                    (nameof(Model.Actions.Logic.SetVariableAction<object>.ConfigReference), fromConfig ? dialog.VariableValue : string.Empty),
+                    (nameof(Model.Actions.Logic.SetVariableAction<object>.Description), fromConfig
+                        ? $"Set {dialog.VariableName} from config" : $"Set {updatedVariable.ShortTypeName} {updatedVariable.Name} = {updatedVariable.Value}")
+                ]);
 
                 RefreshActiveTestFlow();
             }
@@ -1716,6 +1709,8 @@ namespace FleetAutomate
         private static string GetSetVariableValueText(Model.IAction action, Model.Actions.Logic.Variable variable)
         {
             var mode = GetSetVariableValueMode(action);
+            if (mode == Model.Actions.Logic.SetVariableValueMode.FromConfig)
+                return action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ConfigReference))?.GetValue(action)?.ToString() ?? string.Empty;
             if (mode == Model.Actions.Logic.SetVariableValueMode.Expression)
             {
                 return action.GetType().GetProperty(nameof(Model.Actions.Logic.SetVariableAction<object>.ExpressionText))

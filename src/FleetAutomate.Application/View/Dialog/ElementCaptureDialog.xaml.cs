@@ -26,6 +26,12 @@ namespace FleetAutomate.View.Dialog
         public string CapturedXPath { get; private set; } = string.Empty;
         public bool UseInIfCondition { get; private set; } = false;
 
+        public string UseButtonText
+        {
+            get => UseButton.Content?.ToString() ?? string.Empty;
+            set => UseButton.Content = value;
+        }
+
         public ElementCaptureDialog()
         {
             System.Diagnostics.Debug.WriteLine("[ElementCaptureDialog] Constructor called");
