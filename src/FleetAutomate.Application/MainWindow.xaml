@@ -34,10 +34,15 @@
         <converters:ActionTypeToIconVisibilityConverter x:Key="ActionTypeToIconVisibilityConverter"/>
         <converters:ActionToChildActionsConverter x:Key="ActionToChildActionsConverter"/>
         <converters:ActionToFormattedNameConverter x:Key="ActionToFormattedNameConverter"/>
+        <SolidColorBrush x:Key="FleetActionSelectionBrush" Color="{Binding Color, Source={StaticResource FleetAccentBrush}}" Opacity="0.18"/>
 
         <!-- Easing function for smooth pulsing animation -->
         <SineEase x:Key="SineEase" EasingMode="EaseInOut"/>
 
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="{Binding Color, Source={StaticResource FleetAccentBrush}}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="{Binding Color, Source={StaticResource FleetAccentBrush}}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="{Binding Color, Source={StaticResource FleetAccentTextBrush}}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="{Binding Color, Source={StaticResource FleetAccentTextBrush}}"/>
         <Style x:Key="WelcomeLinkButtonStyle" TargetType="Button">
             <Setter Property="Margin" Value="0,2,0,6"/>
             <Setter Property="Padding" Value="6,3"/>
@@ -62,11 +67,332 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
-                                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FleetMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Grid>
+                            <Border x:Name="ItemBorder"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Grid.Column="0"
+                                                      ContentSource="Header"
+                                                      RecognizesAccessKey="True"
+                                                      VerticalAlignment="Center"
+                                                      Margin="0,0,16,0"/>
+                                    <TextBlock x:Name="SubmenuArrow"
+                                               Grid.Column="1"
+                                               Text="›"
+                                               FontSize="16"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Popup x:Name="PART_Popup"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Right"
+                                   PopupAnimation="Fade">
+                                <Border Background="White"
+                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="6"
+                                        SnapsToDevicePixels="True">
+                                    <ScrollViewer CanContentScroll="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentTextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentTextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Role" Value="TopLevelHeader">
+                                <Setter Property="Padding" Value="10,7"/>
+                                <Setter TargetName="PART_Popup" Property="Placement" Value="Bottom"/>
+                                <Setter TargetName="SubmenuArrow" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="Role" Value="TopLevelItem">
+                                <Setter Property="Padding" Value="10,7"/>
+                                <Setter TargetName="SubmenuArrow" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="Role" Value="SubmenuItem">
+                                <Setter TargetName="SubmenuArrow" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="MenuItem" BasedOn="{StaticResource FleetMenuItemStyle}"/>
+
+        <Style x:Key="FleetUiMenuItemStyle" TargetType="ui:MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ui:MenuItem">
+                        <Grid>
+                            <Border x:Name="ItemBorder"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="6"
+                                    Padding="{TemplateBinding Padding}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ContentControl Content="{TemplateBinding Icon}"
+                                                    Width="18"
+                                                    Height="18"
+                                                    Margin="0,0,8,0"
+                                                    VerticalAlignment="Center"/>
+                                    <ContentPresenter ContentSource="Header"
+                                                      RecognizesAccessKey="True"
+                                                      VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                            <Popup x:Name="PART_Popup"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   Placement="Bottom"
+                                   PopupAnimation="Fade">
+                                <Border Background="White"
+                                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="6"
+                                        SnapsToDevicePixels="True">
+                                    <ScrollViewer CanContentScroll="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentTextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSubmenuOpen" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentTextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ui:MenuItem" BasedOn="{StaticResource FleetUiMenuItemStyle}"/>
+
+        <Style x:Key="FleetTreeExpanderStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <TextBlock x:Name="Glyph"
+                                   Text="›"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Glyph" Property="Text" Value="⌄"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Glyph" Property="Foreground" Value="{DynamicResource FleetAccentBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FleetTreeViewItemStyle" TargetType="TreeViewItem">
+            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="18"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ToggleButton x:Name="Expander"
+                                              Grid.Column="0"
+                                              Width="16"
+                                              Height="16"
+                                              Margin="0,0,2,0"
+                                              Style="{StaticResource FleetTreeExpanderStyle}"
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                              ClickMode="Press"/>
+                                <Border x:Name="HeaderBorder"
+                                        Grid.Column="1"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="4"
+                                        Padding="{TemplateBinding Padding}">
+                                    <Grid>
+                                        <Grid x:Name="DropZoneOverlay"
+                                              Visibility="Collapsed"
+                                              IsHitTestVisible="False">
+                                            <Grid x:Name="TwoZoneOverlay" Visibility="Collapsed">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+                                                <Border x:Name="DropTopTwoZone" Grid.Row="0"/>
+                                                <Border x:Name="DropBottomTwoZone" Grid.Row="1"/>
+                                            </Grid>
+                                            <Grid x:Name="ThreeZoneOverlay" Visibility="Collapsed">
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="*"/>
+                                                </Grid.RowDefinitions>
+                                                <Border x:Name="DropTopThreeZone" Grid.Row="0"/>
+                                                <Border x:Name="DropMiddleThreeZone" Grid.Row="1"/>
+                                                <Border x:Name="DropBottomThreeZone" Grid.Row="2"/>
+                                            </Grid>
+                                        </Grid>
+                                        <ContentPresenter x:Name="PART_Header"
+                                                          ContentSource="Header"
+                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                            <ItemsPresenter x:Name="ItemsHost" Margin="18,0,0,0"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                            </Trigger>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentTextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="local:MainWindow.IsActionMultiSelected" Value="True">
+                                <Setter TargetName="HeaderBorder" Property="Background" Value="{DynamicResource FleetActionSelectionBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="DropBefore">
+                                <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="TwoZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="DropTopTwoZone" Property="Background" Value="#FFFFE082"/>
+                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="DropAfter">
+                                <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="TwoZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="DropBottomTwoZone" Property="Background" Value="#FFFFE082"/>
+                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="DropBeforeComposite">
+                                <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ThreeZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="DropTopThreeZone" Property="Background" Value="#FFFFE082"/>
+                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="DropIntoComposite">
+                                <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ThreeZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="DropMiddleThreeZone" Property="Background" Value="#FFFFE082"/>
+                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="Tag" Value="DropAfterComposite">
+                                <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="ThreeZoneOverlay" Property="Visibility" Value="Visible"/>
+                                <Setter TargetName="DropBottomThreeZone" Property="Background" Value="#FFFFE082"/>
+                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FleetListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border x:Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource FleetAccentBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource FleetAccentTextBrush}"/>
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -84,7 +410,7 @@
         </Grid.RowDefinitions>
 
         <!-- TitleBar -->
-        <ui:TitleBar Background="LightGray" Height="30"
+        <ui:TitleBar Background="{DynamicResource FleetTitleBarBrush}" Height="30"
                      Grid.Row="0">
             <ui:TitleBar.Header>
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -103,6 +429,10 @@
 
         <!-- Menu -->
         <Menu Grid.Row="1">
+            <Menu.Resources>
+                <SolidColorBrush x:Key="ControlFillColorSecondaryBrush" Color="{Binding Color, Source={StaticResource FleetAccentBrush}}"/>
+                <SolidColorBrush x:Key="ControlFillColorTertiaryBrush" Color="{Binding Color, Source={StaticResource FleetAccentBrush}}"/>
+            </Menu.Resources>
             <ui:MenuItem Header="File" Icon="{ui:SymbolIcon DocumentSplitHint20}">
                 <MenuItem Header="New Project" Command="{Binding CreateNewProjectCommand}"
                          InputGestureText="Ctrl+N"/>
@@ -125,9 +455,6 @@
                          InputGestureText="Alt+F4"/>
             </ui:MenuItem>
             <Separator/>
-            <ui:MenuItem Header="Open Project" Icon="{ui:SymbolIcon FolderOpen20}"
-                        Command="{Binding OpenProjectCommand}"
-                        ToolTip="Open Project (Ctrl+O)"/>
             <ui:MenuItem Header="Save" Icon="{ui:SymbolIcon Save20}"
                         Command="{Binding SaveProjectCommand}"
                         ToolTip="Save Project (Ctrl+S)"/>
@@ -142,7 +469,7 @@
                         Command="{Binding RunTestFlowCommand}"
                         ToolTip="Execute TestFlow (F5)">
                 <ui:MenuItem.Style>
-                    <Style TargetType="ui:MenuItem">
+                    <Style TargetType="ui:MenuItem" BasedOn="{StaticResource FleetUiMenuItemStyle}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsTestFlowRunning}" Value="True">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -156,7 +483,7 @@
                         Command="{Binding PauseTestFlowCommand}"
                         ToolTip="Pause TestFlow">
                 <ui:MenuItem.Style>
-                    <Style TargetType="ui:MenuItem">
+                    <Style TargetType="ui:MenuItem" BasedOn="{StaticResource FleetUiMenuItemStyle}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <MultiDataTrigger>
@@ -175,7 +502,7 @@
                         Command="{Binding ContinueTestFlowCommand}"
                         ToolTip="Continue TestFlow">
                 <ui:MenuItem.Style>
-                    <Style TargetType="ui:MenuItem">
+                    <Style TargetType="ui:MenuItem" BasedOn="{StaticResource FleetUiMenuItemStyle}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsTestFlowPaused}" Value="True">
@@ -189,7 +516,7 @@
                         Command="{Binding SkipFailedActionCommand}"
                         ToolTip="Skip current failed action and continue">
                 <ui:MenuItem.Style>
-                    <Style TargetType="ui:MenuItem">
+                    <Style TargetType="ui:MenuItem" BasedOn="{StaticResource FleetUiMenuItemStyle}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CanSkipFailedAction}" Value="True">
@@ -204,7 +531,7 @@
                         Command="{Binding StopTestFlowCommand}"
                         ToolTip="Stop TestFlow">
                 <ui:MenuItem.Style>
-                    <Style TargetType="ui:MenuItem">
+                    <Style TargetType="ui:MenuItem" BasedOn="{StaticResource FleetUiMenuItemStyle}">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsTestFlowRunning}" Value="True">
@@ -244,6 +571,18 @@
             <ui:MenuItem Header="Tools" Icon="{ui:SymbolIcon Wrench20}">
                 <MenuItem Header="Capture Element" Click="CaptureElementMenuItem_Click"
                          ToolTip="Press Ctrl while hovering to capture UI element (F12)"/>
+            </ui:MenuItem>
+            <ui:MenuItem Header="Settings" Icon="{ui:SymbolIcon Settings20}">
+                <MenuItem Header="Theme Color">
+                    <MenuItem Header="System" Tag="" Click="ThemeColorMenuItem_Click"/>
+                    <Separator/>
+                    <MenuItem Header="Blue" Tag="#2563EB" Click="ThemeColorMenuItem_Click"/>
+                    <MenuItem Header="Teal" Tag="#0F766E" Click="ThemeColorMenuItem_Click"/>
+                    <MenuItem Header="Green" Tag="#16A34A" Click="ThemeColorMenuItem_Click"/>
+                    <MenuItem Header="Orange" Tag="#EA580C" Click="ThemeColorMenuItem_Click"/>
+                    <MenuItem Header="Rose" Tag="#E11D48" Click="ThemeColorMenuItem_Click"/>
+                    <MenuItem Header="Violet" Tag="#7C3AED" Click="ThemeColorMenuItem_Click"/>
+                </MenuItem>
             </ui:MenuItem>
             <ui:MenuItem Header="Help" Icon="{ui:SymbolIcon QuestionCircle20}">
                 <MenuItem Header="About FleetAutomate" Click="AboutMenuItem_Click"/>
@@ -320,9 +659,7 @@
 
                                     <!-- All categories expanded by default -->
                                     <TreeView.ItemContainerStyle>
-                                        <Style TargetType="TreeViewItem">
-                                            <Setter Property="IsExpanded" Value="True"/>
-                                        </Style>
+                                        <Style TargetType="TreeViewItem" BasedOn="{StaticResource FleetTreeViewItemStyle}"/>
                                     </TreeView.ItemContainerStyle>
                                 </TreeView>
                             </avalonDock:LayoutAnchorable>
@@ -336,55 +673,62 @@
                             <!-- Documents will be added dynamically from code-behind -->
                             <!-- Empty placeholder -->
                             <avalonDock:LayoutDocument Title="Welcome" CanClose="True" x:Name="PlaceholderDocument">
-                                <Grid Margin="48">
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="32"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <Grid Margin="48">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="32"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
 
-                                    <TextBlock Grid.Row="0"
-                                               Text="Fleet Automate"
-                                               FontSize="38"
-                                               FontWeight="SemiBold"/>
-                                    <TextBlock Grid.Row="1"
-                                               x:Name="WelcomeVersionText"
-                                               FontSize="12"
-                                               Foreground="Gray"
-                                               Margin="2,4,0,0"/>
-
-                                    <TextBlock Grid.Row="3"
-                                               Text="Recent Projects"
-                                               FontSize="16"
-                                               FontWeight="SemiBold"
-                                               Margin="0,0,0,10"/>
-
-                                    <StackPanel Grid.Row="4"
-                                                MaxWidth="720"
-                                                HorizontalAlignment="Left">
-                                        <ItemsControl x:Name="WelcomeRecentProjectsList">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Button Content="{Binding FilePath}"
-                                                            Tag="{Binding FilePath}"
-                                                            Click="WelcomeRecentProjectButton_Click"
-                                                            Style="{StaticResource WelcomeLinkButtonStyle}"/>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                        <TextBlock x:Name="WelcomeNoRecentProjectsText"
-                                                   Text="No recent projects"
+                                        <TextBlock Grid.Row="0"
+                                                   Text="Fleet Automate"
+                                                   FontSize="38"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="Blue"/>
+                                        <TextBlock Grid.Row="1"
+                                                   x:Name="WelcomeVersionText"
+                                                   FontSize="12"
                                                    Foreground="Gray"
-                                                   FontStyle="Italic"
-                                                   Visibility="Collapsed"/>
-                                        <Button Content="create new"
-                                                Command="{Binding CreateNewProjectCommand}"
-                                                Margin="0,10,0,0"
-                                                Style="{StaticResource WelcomeLinkButtonStyle}"/>
-                                    </StackPanel>
-                                </Grid>
+                                                   Margin="2,4,0,0"/>
+
+                                        <TextBlock Grid.Row="3"
+                                                   Text="Recent Projects"
+                                                   FontSize="16"
+                                                   FontWeight="SemiBold"
+                                                   Margin="0,0,0,10"/>
+
+                                        <StackPanel Grid.Row="4"
+                                                    MaxWidth="720"
+                                                    HorizontalAlignment="Left">
+                                            <ItemsControl x:Name="WelcomeRecentProjectsList">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Tag="{Binding FilePath}"
+                                                                Click="WelcomeRecentProjectButton_Click"
+                                                                Style="{StaticResource WelcomeLinkButtonStyle}">
+                                                            <TextBlock Text="{Binding FilePath}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       TextWrapping="NoWrap"
+                                                                       ToolTip="{Binding FilePath}"/>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock x:Name="WelcomeNoRecentProjectsText"
+                                                       Text="No recent projects"
+                                                       Foreground="Gray"
+                                                       FontStyle="Italic"
+                                                       Visibility="Collapsed"/>
+                                            <Button Content="create new"
+                                                    Command="{Binding CreateNewProjectCommand}"
+                                                    Style="{StaticResource WelcomeLinkButtonStyle}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </ScrollViewer>
                             </avalonDock:LayoutDocument>
                         </avalonDock:LayoutDocumentPane>
 
@@ -426,9 +770,9 @@
                                                     CornerRadius="6"
                                                     Margin="0,0,8,0"
                                                     VerticalAlignment="Top"
-                                                    Background="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}">
+                                                    Background="{DynamicResource FleetAccentBrush}">
                                                 <TextBlock Text="TF"
-                                                           Foreground="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"
+                                                           Foreground="{DynamicResource FleetAccentTextBrush}"
                                                            FontSize="10"
                                                            FontWeight="SemiBold"
                                                            HorizontalAlignment="Center"
@@ -465,8 +809,7 @@
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                                 <ListView.ItemContainerStyle>
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Style TargetType="ListViewItem" BasedOn="{StaticResource FleetListViewItemStyle}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding IsEnabled}" Value="False">
                                                 <Setter Property="Opacity" Value="0.6"/>

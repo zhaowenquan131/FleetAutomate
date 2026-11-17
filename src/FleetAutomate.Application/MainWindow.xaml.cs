@@ -2,6 +2,7 @@
 using FleetAutomate.ViewModel;
 using FleetAutomate.Application.ActionConfiguration;
 using FleetAutomate.Expressions;
+using FleetAutomate.Services;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -41,6 +42,10 @@ namespace FleetAutomate
         private Model.IAction? _pendingTestFlowDragAction;
         private System.Windows.Controls.TreeViewItem? _activeDropHighlightItem;
         private DropPlacement? _activeDropPlacement;
+        private readonly ThemeSettingsService _themeSettingsService = new();
+        private readonly List<ResourceDictionary> _themeSelectionResourceDictionaries = new();
+        private System.Windows.Media.Color _currentAccentColor = System.Windows.SystemColors.HighlightColor;
+        private System.Windows.Media.Color _currentAccentTextColor = System.Windows.SystemColors.HighlightTextColor;
         private const string ToolboxActionTemplateFormat = "FleetAutomate.ActionTemplate";
         private const string TestFlowActionFormat = "FleetAutomate.TestFlowAction";
 
@@ -64,6 +69,7 @@ namespace FleetAutomate
 
             // Set up UI event handlers
             SetupUIEventHandlers();
+            ApplyThemeAccentColor(_themeSettingsService.LoadAccentColor());
 
             // Set up Open Recent menu
             Loaded += (s, e) => SetupOpenRecentMenu();
@@ -447,6 +453,91 @@ namespace FleetAutomate
             }
         }
 
+        private void ThemeColorMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            var accentColor = (sender as System.Windows.Controls.MenuItem)?.Tag as string;
+            ApplyThemeAccentColor(accentColor);
+            _themeSettingsService.SaveAccentColor(string.IsNullOrWhiteSpace(accentColor) ? null : accentColor);
+        }
+
+        private void ApplyThemeAccentColor(string? accentColor)
+        {
+            if (!TryResolveAccentColors(accentColor, out var accent, out var accentText))
+            {
+                return;
+            }
+
+            _currentAccentColor = accent;
+            _currentAccentTextColor = accentText;
+
+            var appResources = System.Windows.Application.Current.Resources;
+            SetResourceBrushColor(appResources, "FleetAccentBrush", accent);
+            SetResourceBrushColor(appResources, "FleetAccentTextBrush", accentText);
+            Resources["FleetActionSelectionBrush"] = new SolidColorBrush(accent) { Opacity = 0.18 };
+            ApplySelectionResources(appResources, accent, accentText);
+            ApplySelectionResources(Resources, accent, accentText);
+
+            foreach (var resources in _themeSelectionResourceDictionaries)
+            {
+                ApplySelectionResources(resources, accent, accentText);
+            }
+        }
+
+        private static bool TryResolveAccentColors(string? accentColor, out System.Windows.Media.Color accent, out System.Windows.Media.Color accentText)
+        {
+            if (string.IsNullOrWhiteSpace(accentColor))
+            {
+                accent = System.Windows.SystemColors.HighlightColor;
+                accentText = System.Windows.SystemColors.HighlightTextColor;
+                return true;
+            }
+
+            try
+            {
+                accent = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(accentColor);
+                accentText = GetReadableTextColor(accent);
+                return true;
+            }
+            catch
+            {
+                accent = System.Windows.SystemColors.HighlightColor;
+                accentText = System.Windows.SystemColors.HighlightTextColor;
+                return false;
+            }
+        }
+
+        private static System.Windows.Media.Color GetReadableTextColor(System.Windows.Media.Color background)
+        {
+            var luminance = (0.2126 * background.R) + (0.7152 * background.G) + (0.0722 * background.B);
+            return luminance < 140 ? Colors.White : Colors.Black;
+        }
+
+        private static void SetResourceBrushColor(ResourceDictionary resources, string resourceKey, System.Windows.Media.Color color)
+        {
+            resources[resourceKey] = new SolidColorBrush(color);
+        }
+
+        private void RegisterThemeSelectionResources(ResourceDictionary resources)
+        {
+            if (!_themeSelectionResourceDictionaries.Contains(resources))
+            {
+                _themeSelectionResourceDictionaries.Add(resources);
+            }
+
+            ApplySelectionResources(resources, _currentAccentColor, _currentAccentTextColor);
+        }
+
+        private static void ApplySelectionResources(
+            ResourceDictionary resources,
+            System.Windows.Media.Color accent,
+            System.Windows.Media.Color accentText)
+        {
+            resources[System.Windows.SystemColors.HighlightBrushKey] = new SolidColorBrush(accent);
+            resources[System.Windows.SystemColors.InactiveSelectionHighlightBrushKey] = new SolidColorBrush(accent);
+            resources[System.Windows.SystemColors.HighlightTextBrushKey] = new SolidColorBrush(accentText);
+            resources[System.Windows.SystemColors.InactiveSelectionHighlightTextBrushKey] = new SolidColorBrush(accentText);
+        }
+
         private void AboutMenuItem_Click(object sender, RoutedEventArgs e)
         {
             var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "dev";
@@ -518,8 +609,16 @@ namespace FleetAutomate
             }
 
             var data = new System.Windows.DataObject(ToolboxActionTemplateFormat, _pendingToolboxDragTemplate);
-            System.Windows.DragDrop.DoDragDrop(ActionsToolBox, data, System.Windows.DragDropEffects.Copy);
-            _pendingToolboxDragTemplate = null;
+            try
+            {
+                System.Windows.DragDrop.DoDragDrop(ActionsToolBox, data, System.Windows.DragDropEffects.Copy);
+            }
+            finally
+            {
+                _pendingToolboxDragTemplate = null;
+                StopDragAutoScroll();
+                ClearActiveDropHighlight();
+            }
         }
 
         private void ActionsToolBox_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -541,7 +640,7 @@ namespace FleetAutomate
 
         private void ActionsToolBox_ContextMenu_Opening(object sender, RoutedEventArgs e)
         {
-            if (sender is not System.Windows.Controls.ContextMenu contextMenu)
+            if (sender is not ContextMenu contextMenu)
             {
                 return;
             }
@@ -633,7 +732,7 @@ namespace FleetAutomate
                 return new DropInstruction(null, null, DropPlacement.After, null);
             }
 
-            var placement = ResolveDropPlacement(dropTargetItem, fallbackPoint);
+            var placement = ResolveDropPlacement(treeView, dropTargetItem, fallbackPoint);
 
             if (dropTarget is Model.ActionBlock actionBlock)
             {
@@ -656,31 +755,32 @@ namespace FleetAutomate
             return new DropInstruction(dropTarget, dropTarget, placement, dropTargetItem);
         }
 
-        private static DropPlacement ResolveDropPlacement(System.Windows.Controls.TreeViewItem targetItem, System.Windows.Point treePoint)
+        private static DropPlacement ResolveDropPlacement(System.Windows.Controls.TreeView treeView, System.Windows.Controls.TreeViewItem targetItem, System.Windows.Point treePoint)
         {
             if (targetItem.DataContext is Model.ActionBlock)
             {
                 return DropPlacement.Into;
             }
 
-            var localPoint = targetItem.TranslatePoint(treePoint, targetItem);
-            var height = Math.Max(1.0, targetItem.ActualHeight);
-            var topZone = height * 0.25;
-            var bottomZone = height * 0.75;
+            var targetHeader = targetItem.Template?.FindName("PART_Header", targetItem) as FrameworkElement ?? targetItem;
+            var localPoint = treeView.TranslatePoint(treePoint, targetHeader);
+            var height = Math.Max(1.0, targetHeader.ActualHeight);
 
-            if (targetItem.DataContext is Model.Actions.Logic.IfAction)
+            if (targetItem.DataContext is Model.ICompositeAction)
             {
+                var topZone = height / 3.0;
+                var bottomZone = height * 2.0 / 3.0;
                 if (localPoint.Y < topZone)
                 {
                     return DropPlacement.Before;
                 }
 
-                if (localPoint.Y > bottomZone)
+                if (localPoint.Y < bottomZone)
                 {
-                    return DropPlacement.After;
+                    return DropPlacement.Into;
                 }
 
-                return DropPlacement.Into;
+                return DropPlacement.After;
             }
 
             return localPoint.Y < height * 0.5
@@ -715,11 +815,12 @@ namespace FleetAutomate
 
             if (_activeDropHighlightItem != null)
             {
+                var isCompositeAction = _activeDropHighlightItem.DataContext is Model.ICompositeAction;
                 _activeDropHighlightItem.Tag = placement switch
                 {
-                    DropPlacement.Before => "DropBefore",
-                    DropPlacement.Into => "DropInto",
-                    _ => "DropAfter"
+                    DropPlacement.Before => isCompositeAction ? "DropBeforeComposite" : "DropBefore",
+                    DropPlacement.Into => "DropIntoComposite",
+                    _ => isCompositeAction ? "DropAfterComposite" : "DropAfter"
                 };
             }
         }
@@ -742,12 +843,12 @@ namespace FleetAutomate
                 return false;
             }
 
-            if (draggedAction is not Model.ICompositeAction compositeAction)
+            if (draggedAction is not Model.ICompositeAction)
             {
                 return false;
             }
 
-            return ContainsActionRecursive(compositeAction.GetChildActions(), dropTarget);
+            return ContainsActionRecursive([draggedAction], dropTarget);
         }
 
         private bool ContainsActionRecursive(IEnumerable<Model.IAction> actions, Model.IAction target)
@@ -759,8 +860,17 @@ namespace FleetAutomate
                     return true;
                 }
 
-                if (action is Model.ICompositeAction compositeAction &&
-                    ContainsActionRecursive(compositeAction.GetChildActions(), target))
+                if (action is Model.Actions.Logic.IfAction ifAction)
+                {
+                    if (ContainsActionRecursive(ifAction.IfBlock, target) ||
+                        ContainsActionRecursive(ifAction.ElseBlock, target) ||
+                        ContainsActionRecursive(ifAction.ElseIfs, target))
+                    {
+                        return true;
+                    }
+                }
+                else if (action is Model.ICompositeAction compositeAction &&
+                         ContainsActionRecursive(compositeAction.GetChildActions(), target))
                 {
                     return true;
                 }
@@ -769,26 +879,24 @@ namespace FleetAutomate
             return false;
         }
 
-        private void MoveDraggedAction(ObservableFlow flow, Model.IAction draggedAction, Model.IAction? dropTarget, FleetAutomate.ViewModel.ActionInsertionMode insertionMode)
-        {
-            if (ViewModel.ActiveTestFlow != flow)
-            {
-                return;
-            }
-
-            if (!ViewModel.RemoveAction(draggedAction))
-            {
-                return;
-            }
-
-            ViewModel.InsertAction(draggedAction, dropTarget, insertionMode);
-        }
-
         private void TestFlowActionsTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
             if (sender is System.Windows.Controls.TreeView treeView && treeView.DataContext is ObservableFlow flow)
             {
                 ViewModel.ActiveTestFlow = flow;
+                var selection = _actionSelections.GetOrCreateValue(treeView);
+                if (!selection.Updating)
+                {
+                    if (e.NewValue is Model.IAction selected && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                    {
+                        SelectActionRange(treeView, selected);
+                        RefreshActionSelection(treeView);
+                    }
+                    else
+                    {
+                        SelectSingleAction(treeView, e.NewValue as Model.IAction);
+                    }
+                }
             }
 
             // Update the SelectedAction in the ViewModel
@@ -824,38 +932,68 @@ namespace FleetAutomate
 
         private void TestFlowActionsTreeView_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            _testFlowDragStartPoint = e.GetPosition(this);
-            _pendingTestFlowDragAction = FindAncestor<System.Windows.Controls.TreeViewItem>(e.OriginalSource as DependencyObject)?.DataContext as Model.IAction;
-
-            // Check if we clicked on empty space in the TreeView
-            var treeView = sender as System.Windows.Controls.TreeView;
-            if (treeView == null) return;
-
-            var hitTestResult = VisualTreeHelper.HitTest(treeView, e.GetPosition(treeView));
-
-            // If the hit test returns no visual, or the visual is the TreeView itself (not a TreeViewItem),
-            // then empty space was clicked
-            if (hitTestResult?.VisualHit == null)
+            if (e.ChangedButton != MouseButton.Left || sender is not System.Windows.Controls.TreeView treeView)
             {
+                return;
+            }
+
+            _testFlowDragStartPoint = e.GetPosition(this);
+            _pendingTestFlowDragAction = null;
+            var source = e.OriginalSource as DependencyObject;
+            // Expanders and scrollbars retain their normal mouse behavior.
+            if (FindAncestor<System.Windows.Controls.Primitives.ToggleButton>(source) != null ||
+                FindAncestor<System.Windows.Controls.Primitives.ScrollBar>(source) != null)
+            {
+                return;
+            }
+
+            var selection = _actionSelections.GetOrCreateValue(treeView);
+            selection.PendingSingleSelection = null;
+            var item = FindAncestor<System.Windows.Controls.TreeViewItem>(source);
+            if (item?.DataContext is not Model.IAction action)
+            {
+                SelectSingleAction(treeView, null);
+                if (treeView.SelectedItem != null && EnumerateActionItems(treeView).FirstOrDefault(container => container.IsSelected) is { } selectedItem)
+                {
+                    selectedItem.IsSelected = false;
+                }
                 ViewModel.SelectedAction = null;
+                return;
+            }
+
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                SelectActionRange(treeView, action);
+            }
+            else if (selection.Actions.Count > 1 && selection.Actions.Contains(action))
+            {
+                // Collapse on mouse-up only, so pressing a selected row can start a group drag.
+                selection.PendingSingleSelection = action;
             }
             else
             {
-                // Walk up the visual tree to check if we clicked on a TreeViewItem
-                var dependencyObject = hitTestResult.VisualHit as DependencyObject;
-                while (dependencyObject != null)
-                {
-                    if (dependencyObject is System.Windows.Controls.TreeViewItem)
-                    {
-                        // Clicked on a TreeViewItem, let the normal selection logic handle it
-                        return;
-                    }
-                    dependencyObject = VisualTreeHelper.GetParent(dependencyObject);
-                }
-
-                // Clicked on empty space (no TreeViewItem in the visual hierarchy)
-                ViewModel.SelectedAction = null;
+                SelectSingleAction(treeView, action);
             }
+
+            selection.Updating = true;
+            try
+            {
+                item.IsSelected = true;
+                item.Focus();
+            }
+            finally
+            {
+                selection.Updating = false;
+            }
+
+            if (treeView.DataContext is ObservableFlow flow)
+            {
+                ViewModel.ActiveTestFlow = flow;
+            }
+            ViewModel.SelectedAction = action;
+            RefreshActionSelection(treeView);
+            _pendingTestFlowDragAction = action;
+            e.Handled = true;
         }
 
         private void TestFlowActionsTreeView_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -872,12 +1010,15 @@ namespace FleetAutomate
                 return;
             }
 
-            if (sender is not System.Windows.Controls.TreeView treeView || treeView.DataContext is not ObservableFlow)
+            if (sender is not System.Windows.Controls.TreeView treeView || treeView.DataContext is not ObservableFlow flow)
             {
                 return;
             }
 
-            var data = new System.Windows.DataObject(TestFlowActionFormat, _pendingTestFlowDragAction);
+            var selection = _actionSelections.GetOrCreateValue(treeView);
+            selection.PendingSingleSelection = null;
+            var draggedActions = selection.Actions.ToArray();
+            var data = new System.Windows.DataObject(TestFlowActionFormat, new ActionDragSelection(flow, draggedActions));
             try
             {
                 System.Windows.DragDrop.DoDragDrop(treeView, data, System.Windows.DragDropEffects.Move);
@@ -885,6 +1026,7 @@ namespace FleetAutomate
             finally
             {
                 _pendingTestFlowDragAction = null;
+                StopDragAutoScroll();
                 ClearActiveDropHighlight();
             }
         }
@@ -899,11 +1041,22 @@ namespace FleetAutomate
 
             if (sender is System.Windows.Controls.TreeView treeView && e.Effects != System.Windows.DragDropEffects.None)
             {
-                var instruction = ResolveDropInstruction(treeView, e.OriginalSource as DependencyObject, e.GetPosition(treeView));
-                SetActiveDropHighlight(instruction.HighlightItem, instruction.Placement);
+                var point = e.GetPosition(treeView);
+                var instruction = ResolveDropInstruction(treeView, e.OriginalSource as DependencyObject, point);
+                if (acceptsReorder && !CanDropActions(treeView, e.Data, instruction))
+                {
+                    e.Effects = System.Windows.DragDropEffects.None;
+                    ClearActiveDropHighlight();
+                }
+                else
+                {
+                    SetActiveDropHighlight(instruction.HighlightItem, instruction.Placement);
+                }
+                UpdateDragAutoScroll(treeView, e.Data, point);
             }
             else
             {
+                StopDragAutoScroll();
                 ClearActiveDropHighlight();
             }
 
@@ -912,6 +1065,7 @@ namespace FleetAutomate
 
         private void TestFlowActionsTreeView_Drop(object sender, System.Windows.DragEventArgs e)
         {
+            StopDragAutoScroll();
             if (sender is not System.Windows.Controls.TreeView treeView || treeView.DataContext is not ObservableFlow flow)
             {
                 return;
@@ -931,11 +1085,26 @@ namespace FleetAutomate
             }
             else if (e.Data.GetDataPresent(TestFlowActionFormat))
             {
-                if (e.Data.GetData(TestFlowActionFormat) is Model.IAction draggedAction &&
-                    draggedAction != instruction.ValidationTarget &&
-                    !IsDescendantDropTarget(draggedAction, instruction.ValidationTarget))
+                if (CanDropActions(treeView, e.Data, instruction) &&
+                    e.Data.GetData(TestFlowActionFormat) is ActionDragSelection dragged)
                 {
-                    MoveDraggedAction(flow, draggedAction, instruction.InsertionTarget, insertionMode);
+                    var selection = _actionSelections.GetOrCreateValue(treeView);
+                    selection.Updating = true;
+                    try
+                    {
+                        ViewModel.MoveActions(dragged.Actions, instruction.InsertionTarget, insertionMode);
+                        treeView.UpdateLayout();
+                        var selectedItem = EnumerateActionItems(treeView).FirstOrDefault(item => ReferenceEquals(item.DataContext, ViewModel.SelectedAction));
+                        if (selectedItem != null)
+                        {
+                            selectedItem.IsSelected = true;
+                        }
+                        RefreshActionSelection(treeView);
+                    }
+                    finally
+                    {
+                        selection.Updating = false;
+                    }
                 }
             }
 
@@ -945,6 +1114,13 @@ namespace FleetAutomate
 
         private void TestFlowActionsTreeView_DragLeave(object sender, System.Windows.DragEventArgs e)
         {
+            if (sender is System.Windows.Controls.TreeView treeView &&
+                new Rect(treeView.RenderSize).Contains(e.GetPosition(treeView)))
+            {
+                return;
+            }
+
+            StopDragAutoScroll();
             ClearActiveDropHighlight();
         }
 
@@ -1920,21 +2096,28 @@ namespace FleetAutomate
                 DataContext = flow
             };
             treeView.AllowDrop = true;
-            var selectedBackgroundBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255));
-            treeView.Resources[System.Windows.SystemColors.HighlightBrushKey] = selectedBackgroundBrush;
-            treeView.Resources[System.Windows.SystemColors.InactiveSelectionHighlightBrushKey] = selectedBackgroundBrush;
-            treeView.Resources[System.Windows.SystemColors.HighlightTextBrushKey] = System.Windows.Media.Brushes.Black;
-            treeView.Resources[System.Windows.SystemColors.InactiveSelectionHighlightTextBrushKey] = System.Windows.Media.Brushes.Black;
+            RegisterThemeSelectionResources(treeView.Resources);
             treeView.SetBinding(System.Windows.Controls.TreeView.ItemsSourceProperty, new System.Windows.Data.Binding("Actions") { Mode = System.Windows.Data.BindingMode.OneWay });
             treeView.SelectedItemChanged += TestFlowActionsTreeView_SelectedItemChanged;
             treeView.KeyDown += TestFlowActionsTreeView_KeyDown;
             treeView.PreviewMouseDown += TestFlowActionsTreeView_PreviewMouseDown;
             treeView.PreviewMouseMove += TestFlowActionsTreeView_PreviewMouseMove;
+            treeView.PreviewMouseLeftButtonUp += TestFlowActionsTreeView_PreviewMouseLeftButtonUp;
             treeView.PreviewMouseRightButtonDown += TestFlowActionsTreeView_PreviewMouseRightButtonDown;
             treeView.MouseDoubleClick += TestFlowActionsTreeView_MouseDoubleClick;
             treeView.DragOver += TestFlowActionsTreeView_DragOver;
             treeView.Drop += TestFlowActionsTreeView_Drop;
             treeView.DragLeave += TestFlowActionsTreeView_DragLeave;
+            treeView.AddHandler(System.Windows.Controls.TreeViewItem.ExpandedEvent, new RoutedEventHandler(ActionItem_ExpansionChanged));
+            treeView.AddHandler(System.Windows.Controls.TreeViewItem.CollapsedEvent, new RoutedEventHandler(ActionItem_ExpansionChanged));
+            ScrollViewer.SetCanContentScroll(treeView, false);
+            treeView.Unloaded += (_, _) =>
+            {
+                if (ReferenceEquals(_dragScrollTree, treeView))
+                {
+                    StopDragAutoScroll();
+                }
+            };
 
             // Context menu
             var contextMenu = new System.Windows.Controls.ContextMenu();
@@ -2063,9 +2246,12 @@ namespace FleetAutomate
             treeView.ItemTemplate = template;
 
             // Create ItemContainerStyle to highlight executing actions
-            var itemContainerStyle = new Style(typeof(System.Windows.Controls.TreeViewItem));
+            var itemContainerStyle = new Style(
+                typeof(System.Windows.Controls.TreeViewItem),
+                (Style)FindResource("FleetTreeViewItemStyle"));
             itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, System.Windows.Media.Brushes.Transparent));
             itemContainerStyle.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1)));
+            itemContainerStyle.Setters.Add(new EventSetter(LoadedEvent, new RoutedEventHandler(ActionItem_Loaded)));
 
             // Bind Background to State with ActionStateToBackgroundConverter
             var backgroundBinding = new System.Windows.Data.Binding("State")
@@ -2073,40 +2259,6 @@ namespace FleetAutomate
                 Converter = (IValueConverter)this.FindResource("ActionStateToBackgroundConverter")
             };
             itemContainerStyle.Setters.Add(new Setter(BackgroundProperty, backgroundBinding));
-            itemContainerStyle.Triggers.Add(new Trigger
-            {
-                Property = System.Windows.Controls.TreeViewItem.IsSelectedProperty,
-                Value = true,
-                Setters =
-                {
-                    new Setter(BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(221, 238, 255))),
-                    new Setter(ForegroundProperty, System.Windows.Media.Brushes.Black)
-                }
-            });
-            var dropIntoTrigger = new MultiTrigger();
-            dropIntoTrigger.Conditions.Add(new Condition(FrameworkElement.TagProperty, "DropInto"));
-            dropIntoTrigger.Conditions.Add(new Condition(System.Windows.Controls.TreeViewItem.IsSelectedProperty, false));
-            dropIntoTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BackgroundProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 248, 225))));
-            dropIntoTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7))));
-            dropIntoTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black));
-            itemContainerStyle.Triggers.Add(dropIntoTrigger);
-
-            var dropBeforeTrigger = new MultiTrigger();
-            dropBeforeTrigger.Conditions.Add(new Condition(FrameworkElement.TagProperty, "DropBefore"));
-            dropBeforeTrigger.Conditions.Add(new Condition(System.Windows.Controls.TreeViewItem.IsSelectedProperty, false));
-            dropBeforeTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7))));
-            dropBeforeTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1, 2, 1, 1)));
-            dropBeforeTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black));
-            itemContainerStyle.Triggers.Add(dropBeforeTrigger);
-
-            var dropAfterTrigger = new MultiTrigger();
-            dropAfterTrigger.Conditions.Add(new Condition(FrameworkElement.TagProperty, "DropAfter"));
-            dropAfterTrigger.Conditions.Add(new Condition(System.Windows.Controls.TreeViewItem.IsSelectedProperty, false));
-            dropAfterTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderBrushProperty, new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 193, 7))));
-            dropAfterTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.BorderThicknessProperty, new Thickness(1, 1, 1, 2)));
-            dropAfterTrigger.Setters.Add(new Setter(System.Windows.Controls.TreeViewItem.ForegroundProperty, System.Windows.Media.Brushes.Black));
-            itemContainerStyle.Triggers.Add(dropAfterTrigger);
-
             treeView.ItemContainerStyle = itemContainerStyle;
 
             Grid.SetRow(treeView, 1);

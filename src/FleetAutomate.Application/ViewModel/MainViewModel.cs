@@ -1825,6 +1825,24 @@ namespace FleetAutomate.ViewModel
             SelectedAction = action;
         }
 
+        public bool MoveActions(IReadOnlyList<IAction> actions, IAction? insertionTarget, ActionInsertionMode insertionMode)
+        {
+            if (ActiveTestFlow == null || IsTestFlowRunning)
+            {
+                return false;
+            }
+
+            var edit = MoveActionsEdit.Create(ActiveTestFlow, actions, insertionTarget, insertionMode);
+            if (edit == null)
+            {
+                return false;
+            }
+
+            ActiveTestFlow.UndoRedoService.Execute(edit);
+            SelectedAction = actions.FirstOrDefault();
+            return true;
+        }
+
         public bool RemoveAction(IAction action)
         {
             if (ActiveTestFlow == null)
