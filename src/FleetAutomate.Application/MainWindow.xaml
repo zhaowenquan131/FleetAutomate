@@ -19,6 +19,7 @@
         <vm:MainViewModel/>
     </ui:FluentWindow.DataContext>
     <ui:FluentWindow.InputBindings>
+        <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveProjectCommand}"/>
         <KeyBinding Key="Z" Modifiers="Control" Command="{Binding UndoTestFlowCommand}"/>
         <KeyBinding Key="Y" Modifiers="Control" Command="{Binding RedoTestFlowCommand}"/>
     </ui:FluentWindow.InputBindings>
