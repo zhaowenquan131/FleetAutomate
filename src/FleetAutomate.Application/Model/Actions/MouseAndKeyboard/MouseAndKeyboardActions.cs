@@ -11,6 +11,12 @@ public enum MouseButton
     Middle
 }
 
+public enum KeyboardInputMode
+{
+    Text,
+    Shortcut
+}
+
 public interface IInputAutomationBackend
 {
     void MoveMouse(int x, int y);
@@ -84,6 +90,8 @@ public sealed class SendKeysAction : InputActionBase
 {
     private string _text = string.Empty;
     private bool _wait = true;
+    private KeyboardInputMode _inputMode;
+    private string _keyCombination = string.Empty;
 
     public override string Name => "Send Keys";
     protected override string DefaultDescription => "Send keyboard input";
@@ -102,9 +110,30 @@ public sealed class SendKeysAction : InputActionBase
         set => SetProperty(ref _wait, value);
     }
 
+    [DataMember]
+    public KeyboardInputMode InputMode
+    {
+        get => _inputMode;
+        set => SetProperty(ref _inputMode, value);
+    }
+
+    [DataMember]
+    public string KeyCombination
+    {
+        get => _keyCombination;
+        set => SetProperty(ref _keyCombination, value);
+    }
+
     protected override Task ExecuteCoreAsync(CancellationToken cancellationToken)
     {
-        Backend.SendKeys(Text, Wait);
+        if (InputMode == KeyboardInputMode.Shortcut)
+        {
+            KeyboardKeys.SendShortcut(Backend, KeyCombination, cancellationToken);
+        }
+        else
+        {
+            Backend.SendKeys(Text, Wait);
+        }
         return Task.CompletedTask;
     }
 }
@@ -229,22 +258,18 @@ internal sealed class WinFormsInputAutomationBackend : IInputAutomationBackend
 
     public void KeyDown(string key)
     {
-        global::System.Windows.Forms.SendKeys.SendWait($"{{{RequireKey(key)} down}}");
+        foreach (var code in KeyboardKeys.Parse(key))
+        {
+            FlaUI.Core.Input.Keyboard.PressVirtualKeyCode(code);
+        }
     }
 
     public void KeyUp(string key)
     {
-        global::System.Windows.Forms.SendKeys.SendWait($"{{{RequireKey(key)} up}}");
-    }
-
-    private static string RequireKey(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
+        foreach (var code in KeyboardKeys.Parse(key).Reverse())
         {
-            throw new InvalidOperationException("Key cannot be empty.");
+            FlaUI.Core.Input.Keyboard.ReleaseVirtualKeyCode(code);
         }
-
-        return key;
     }
 
     private static (uint Down, uint Up) GetMouseEvents(MouseButton button)

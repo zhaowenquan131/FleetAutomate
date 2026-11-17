@@ -143,11 +143,13 @@ public static class ActionConfigurationSchemaProvider
         Add<MouseSingleClickAction>(schemas, "Configure Mouse Click", PointerFields());
         Add<MouseDoubleClickAction>(schemas, "Configure Mouse Double Click", PointerFields());
         Add<SendKeysAction>(schemas, "Configure Send Keys", [
+            Enum<KeyboardInputMode>(nameof(SendKeysAction.InputMode), "Input mode"),
             Text(nameof(SendKeysAction.Text), "Text", required: true),
+            new(nameof(SendKeysAction.KeyCombination), "Keys / shortcut", ActionConfigurationFieldKind.KeyboardShortcut, true, typeof(string)),
             Bool(nameof(SendKeysAction.Wait), "Wait until sent")
         ]);
-        Add<SendKeyDownAction>(schemas, "Configure Key Down", [Text(nameof(SendKeyDownAction.Key), "Key", required: true)]);
-        Add<SendKeyUpAction>(schemas, "Configure Key Up", [Text(nameof(SendKeyUpAction.Key), "Key", required: true)]);
+        Add<SendKeyDownAction>(schemas, "Configure Key Down", [new(nameof(SendKeyDownAction.Key), "Key / shortcut", ActionConfigurationFieldKind.KeyboardShortcut, true, typeof(string))]);
+        Add<SendKeyUpAction>(schemas, "Configure Key Up", [new(nameof(SendKeyUpAction.Key), "Key / shortcut", ActionConfigurationFieldKind.KeyboardShortcut, true, typeof(string))]);
 
         Add<IfWindowContainsElementAction>(schemas, "Configure Element Check", UiElementFields());
         Add<SetFocusOnElementAction>(schemas, "Configure Focus Element", UiElementFields());

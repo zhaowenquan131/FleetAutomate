@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using FleetAutomate.Application.ActionConfiguration;
 using FleetAutomate.Model;
 using FleetAutomate.Model.Actions.UIAutomation;
+using FleetAutomate.Model.Actions.MouseAndKeyboard;
 using FleetAutomate.View.Controls;
 using WpfButton = System.Windows.Controls.Button;
 using WpfCheckBox = System.Windows.Controls.CheckBox;
@@ -17,6 +18,7 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
     private readonly IAction _action;
     private readonly ActionConfigurationSchema _schema;
     private readonly Dictionary<string, FrameworkElement> _fieldControls = new();
+    private readonly Dictionary<string, FrameworkElement> _fieldLabels = new();
 
     public IReadOnlyList<ActionConfigurationValue> Values { get; private set; } = [];
 
@@ -45,12 +47,34 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
                 Margin = new Thickness(0, 0, 0, 4)
             };
             FieldsPanel.Children.Add(label);
+            _fieldLabels[field.PropertyName] = label;
 
             var control = CreateFieldControl(field);
             control.Margin = new Thickness(0, 0, 0, 14);
             FieldsPanel.Children.Add(control);
             _fieldControls[field.PropertyName] = control;
         }
+
+        if (_action is SendKeysAction && _fieldControls.TryGetValue(nameof(SendKeysAction.InputMode), out var modeControl) &&
+            modeControl is System.Windows.Controls.ComboBox mode)
+        {
+            mode.SelectionChanged += (_, _) => UpdateKeyboardFields();
+            UpdateKeyboardFields();
+        }
+    }
+
+    private void UpdateKeyboardFields()
+    {
+        var shortcut = ReadRawValue(_schema.Fields.First(field => field.PropertyName == nameof(SendKeysAction.InputMode)))?.ToString() == nameof(KeyboardInputMode.Shortcut);
+        SetFieldVisibility(nameof(SendKeysAction.Text), !shortcut);
+        SetFieldVisibility(nameof(SendKeysAction.Wait), !shortcut);
+        SetFieldVisibility(nameof(SendKeysAction.KeyCombination), shortcut);
+    }
+
+    private void SetFieldVisibility(string propertyName, bool visible)
+    {
+        _fieldControls[propertyName].Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        _fieldLabels[propertyName].Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private FrameworkElement CreateFieldControl(ActionConfigurationField field)
@@ -67,6 +91,10 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
 
         return field.Kind switch
         {
+            ActionConfigurationFieldKind.KeyboardShortcut => new KeyboardShortcutInput
+            {
+                Value = Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty
+            },
             ActionConfigurationFieldKind.Boolean => new WpfCheckBox
             {
                 IsChecked = value as bool? ?? false,
@@ -199,9 +227,15 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
         foreach (var field in _schema.Fields)
         {
             var rawValue = ReadRawValue(field);
-            if (field.IsRequired && rawValue is string text && string.IsNullOrWhiteSpace(text))
+            var visible = _fieldControls[field.PropertyName].Visibility == Visibility.Visible;
+            if (visible && field.IsRequired && rawValue is string text && string.IsNullOrWhiteSpace(text))
             {
                 throw new InvalidOperationException($"{field.Label} is required.");
+            }
+
+            if (visible && field.Kind == ActionConfigurationFieldKind.KeyboardShortcut)
+            {
+                rawValue = KeyboardKeys.Format(KeyboardKeys.Parse(rawValue as string));
             }
 
             values.Add(new ActionConfigurationValue(field.PropertyName, ConvertFieldValue(field, rawValue)));
@@ -217,6 +251,7 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
         {
             WpfTextBox textBox => textBox.Text,
             XPathInput xpathInput => xpathInput.XPath,
+            KeyboardShortcutInput keyboardInput => keyboardInput.Value,
             WpfCheckBox checkBox => checkBox.IsChecked == true,
             System.Windows.Controls.ComboBox comboBox => comboBox.SelectedItem?.ToString(),
             DockPanel dockPanel => dockPanel.Children.OfType<WpfTextBox>().FirstOrDefault()?.Text ?? string.Empty,

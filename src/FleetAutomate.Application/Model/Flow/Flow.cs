@@ -223,11 +223,6 @@ namespace FleetAutomate.Model.Flow
 
         public Task<bool> StartFromActionAsync(IAction startAction, CancellationToken cancellationToken)
         {
-            if (!Actions.Contains(startAction))
-            {
-                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
-            }
-
             ResetActionStatesFrom(startAction);
             LastFailedAction = null;
             return ExecuteCoreAsync(startAction, resetStates: false, stepOnce: false, cancellationToken);
@@ -257,11 +252,7 @@ namespace FleetAutomate.Model.Flow
 
         public Task<bool> StepActionAsync(IAction action, CancellationToken cancellationToken)
         {
-            if (!Actions.Contains(action))
-            {
-                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(action));
-            }
-
+            GetExecutionActions(action, nameof(action));
             return ExecuteCoreAsync(action, resetStates: true, stepOnce: true, cancellationToken);
         }
 
@@ -357,15 +348,9 @@ namespace FleetAutomate.Model.Flow
 
         private void ResetActionStatesFrom(IAction startAction)
         {
-            var startIndex = Actions.IndexOf(startAction);
-            if (startIndex < 0)
+            foreach (var action in GetExecutionActions(startAction, nameof(startAction)))
             {
-                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
-            }
-
-            for (var index = startIndex; index < Actions.Count; index++)
-            {
-                ResetActionState(Actions[index]);
+                ResetActionState(action);
             }
         }
 
@@ -432,21 +417,17 @@ namespace FleetAutomate.Model.Flow
                 return true;
             }
 
-            var startIndex = Actions.IndexOf(action);
-            if (startIndex < 0)
-            {
-                throw new ArgumentException("The specified action is not part of this TestFlow.", nameof(startAction));
-            }
+            var executionActions = GetExecutionActions(action, nameof(startAction));
 
             _pauseRequested = false;
             BreakReason = TestFlowBreakReason.None;
             State = ActionState.Running;
             await Task.Yield();
 
-            for (var index = startIndex; index < Actions.Count; index++)
+            for (var index = 0; index < executionActions.Count; index++)
             {
-                var current = Actions[index];
-                var next = index + 1 < Actions.Count ? Actions[index + 1] : null;
+                var current = executionActions[index];
+                var next = index + 1 < executionActions.Count ? executionActions[index + 1] : null;
 
                 CurrentAction = current;
                 await Task.Yield();
@@ -546,13 +527,7 @@ namespace FleetAutomate.Model.Flow
 
         private IAction? GetNextAction(IAction action)
         {
-            var index = Actions.IndexOf(action);
-            if (index < 0 || index + 1 >= Actions.Count)
-            {
-                return null;
-            }
-
-            return Actions[index + 1];
+            return GetExecutionActions(action, nameof(action)).Skip(1).FirstOrDefault();
         }
 
         private void InjectExecutionContext(IAction action)

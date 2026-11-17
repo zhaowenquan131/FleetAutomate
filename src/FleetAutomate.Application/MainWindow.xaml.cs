@@ -961,7 +961,11 @@ namespace FleetAutomate
                 return;
             }
 
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            if (e.ClickCount == 2)
+            {
+                SelectSingleAction(treeView, action);
+            }
+            else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
             {
                 SelectActionRange(treeView, action);
             }
@@ -992,8 +996,12 @@ namespace FleetAutomate
             }
             ViewModel.SelectedAction = action;
             RefreshActionSelection(treeView);
-            _pendingTestFlowDragAction = action;
+            _pendingTestFlowDragAction = e.ClickCount == 2 ? null : action;
             e.Handled = true;
+            if (e.ClickCount == 2)
+            {
+                EditActionAtPointer(treeView, e);
+            }
         }
 
         private void TestFlowActionsTreeView_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
@@ -1149,17 +1157,18 @@ namespace FleetAutomate
             }
         }
 
-        private void TestFlowActionsTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private void EditActionAtPointer(object sender, MouseButtonEventArgs e)
         {
             // Check if we double-clicked on a TreeViewItem
             var treeView = sender as System.Windows.Controls.TreeView;
             if (treeView == null) return;
 
-            var hitTestResult = VisualTreeHelper.HitTest(treeView, e.GetPosition(treeView));
-            if (hitTestResult?.VisualHit == null) return;
-
-            // Walk up the visual tree to find the TreeViewItem
-            var dependencyObject = hitTestResult.VisualHit as DependencyObject;
+            // Prefer the original row, even if selection or focus changed the layout.
+            var dependencyObject = e.OriginalSource as DependencyObject;
+            if (FindAncestor<System.Windows.Controls.TreeViewItem>(dependencyObject) == null)
+            {
+                dependencyObject = VisualTreeHelper.HitTest(treeView, e.GetPosition(treeView))?.VisualHit;
+            }
             while (dependencyObject != null)
             {
                 if (dependencyObject is System.Windows.Controls.TreeViewItem treeViewItem)
@@ -2104,7 +2113,6 @@ namespace FleetAutomate
             treeView.PreviewMouseMove += TestFlowActionsTreeView_PreviewMouseMove;
             treeView.PreviewMouseLeftButtonUp += TestFlowActionsTreeView_PreviewMouseLeftButtonUp;
             treeView.PreviewMouseRightButtonDown += TestFlowActionsTreeView_PreviewMouseRightButtonDown;
-            treeView.MouseDoubleClick += TestFlowActionsTreeView_MouseDoubleClick;
             treeView.DragOver += TestFlowActionsTreeView_DragOver;
             treeView.Drop += TestFlowActionsTreeView_Drop;
             treeView.DragLeave += TestFlowActionsTreeView_DragLeave;
