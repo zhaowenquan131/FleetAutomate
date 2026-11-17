@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using FleetAutomate.Application.ActionConfiguration;
 using FleetAutomate.Model;
+using FleetAutomate.Model.Actions.Logic;
 using FleetAutomate.Model.Actions.UIAutomation;
 using FleetAutomate.Model.Actions.MouseAndKeyboard;
 using FleetAutomate.View.Controls;
@@ -19,15 +20,21 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
     private readonly ActionConfigurationSchema _schema;
     private readonly Dictionary<string, FrameworkElement> _fieldControls = new();
     private readonly Dictionary<string, FrameworkElement> _fieldLabels = new();
+    private readonly IReadOnlyList<Variable> _availableVariables;
+    private readonly IReadOnlyList<FleetAutomate.Helpers.SearchScopeOption> _scopeOptions;
 
     public IReadOnlyList<ActionConfigurationValue> Values { get; private set; } = [];
 
-    public ActionConfigurationDialog(IAction action, ActionConfigurationSchema schema)
+    public ActionConfigurationDialog(IAction action, ActionConfigurationSchema schema,
+        IReadOnlyList<Variable>? availableVariables = null,
+        IEnumerable<FleetAutomate.Helpers.SearchScopeOption>? scopeOptions = null)
     {
         InitializeComponent();
 
         _action = action;
         _schema = schema;
+        _availableVariables = availableVariables ?? [];
+        _scopeOptions = scopeOptions?.ToList() ?? [];
 
         Title = schema.Title;
         HeaderTextBlock.Text = schema.Title;
@@ -50,6 +57,13 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
             _fieldLabels[field.PropertyName] = label;
 
             var control = CreateFieldControl(field);
+            if (field.Kind is ActionConfigurationFieldKind.Text or ActionConfigurationFieldKind.MultilineText
+                or ActionConfigurationFieldKind.FilePath or ActionConfigurationFieldKind.DirectoryPath
+                or ActionConfigurationFieldKind.KeyboardShortcut)
+            {
+                _action.TextVariableBindings.TryGetValue(field.PropertyName, out var variable);
+                control = new TextParameterInput(control, _availableVariables, variable);
+            }
             control.Margin = new Thickness(0, 0, 0, 14);
             FieldsPanel.Children.Add(control);
             _fieldControls[field.PropertyName] = control;
@@ -80,6 +94,17 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
     private FrameworkElement CreateFieldControl(ActionConfigurationField field)
     {
         var value = GetActionValue(field.PropertyName);
+        if (field.PropertyName == nameof(UiElementActionBase.SearchScope))
+        {
+            return new System.Windows.Controls.ComboBox
+            {
+                IsEditable = true, ItemsSource = _scopeOptions,
+                DisplayMemberPath = nameof(FleetAutomate.Helpers.SearchScopeOption.DisplayText),
+                SelectedValuePath = nameof(FleetAutomate.Helpers.SearchScopeOption.Key),
+                SelectedValue = value, Text = Convert.ToString(value) ?? string.Empty,
+                MinHeight = 32
+            };
+        }
         if (field.PropertyName == nameof(UiElementActionBase.ElementIdentifier))
         {
             return new XPathInput
@@ -192,7 +217,7 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
     private object? GetActionValue(string propertyName)
     {
         var property = GetProperty(propertyName);
-        return property.GetValue(_action);
+        return ActionTextParameters.GetLiteralValue(_action, property);
     }
 
     private PropertyInfo GetProperty(string propertyName)
@@ -224,10 +249,27 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
     private IReadOnlyList<ActionConfigurationValue> CollectValues()
     {
         var values = new List<ActionConfigurationValue>();
+        var bindings = new Dictionary<string, string>(_action.TextVariableBindings, StringComparer.Ordinal);
         foreach (var field in _schema.Fields)
         {
-            var rawValue = ReadRawValue(field);
             var visible = _fieldControls[field.PropertyName].Visibility == Visibility.Visible;
+            if (_fieldControls[field.PropertyName] is TextParameterInput input)
+            {
+                if (!visible)
+                {
+                    bindings.Remove(field.PropertyName);
+                    continue;
+                }
+                if (input.UsesVariable)
+                {
+                    if (!_availableVariables.Any(v => v.Name == input.VariableName))
+                        throw new InvalidOperationException($"Select an available variable for {field.Label}.");
+                    bindings[field.PropertyName] = input.VariableName;
+                    continue;
+                }
+                bindings.Remove(field.PropertyName);
+            }
+            var rawValue = ReadRawValue(field);
             if (visible && field.IsRequired && rawValue is string text && string.IsNullOrWhiteSpace(text))
             {
                 throw new InvalidOperationException($"{field.Label} is required.");
@@ -241,19 +283,26 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
             values.Add(new ActionConfigurationValue(field.PropertyName, ConvertFieldValue(field, rawValue)));
         }
 
+        if (bindings.Count != _action.TextVariableBindings.Count || bindings.Any(pair =>
+            !_action.TextVariableBindings.TryGetValue(pair.Key, out var name) || name != pair.Value))
+            values.Add(new ActionConfigurationValue(nameof(IAction.TextVariableBindings), bindings));
+
         return values;
     }
 
     private object? ReadRawValue(ActionConfigurationField field)
     {
         var control = _fieldControls[field.PropertyName];
+        if (control is TextParameterInput input) control = input.LiteralEditor;
         return control switch
         {
             WpfTextBox textBox => textBox.Text,
             XPathInput xpathInput => xpathInput.XPath,
             KeyboardShortcutInput keyboardInput => keyboardInput.Value,
             WpfCheckBox checkBox => checkBox.IsChecked == true,
-            System.Windows.Controls.ComboBox comboBox => comboBox.SelectedItem?.ToString(),
+            System.Windows.Controls.ComboBox comboBox => comboBox.IsEditable
+                ? comboBox.SelectedItem is FleetAutomate.Helpers.SearchScopeOption option ? option.Key : comboBox.Text
+                : comboBox.SelectedItem?.ToString(),
             DockPanel dockPanel => dockPanel.Children.OfType<WpfTextBox>().FirstOrDefault()?.Text ?? string.Empty,
             _ => null
         };

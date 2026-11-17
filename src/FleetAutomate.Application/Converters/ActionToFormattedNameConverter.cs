@@ -21,6 +21,9 @@ namespace FleetAutomate.Converters
         private static readonly SolidColorBrush CyanBrush = new SolidColorBrush(Colors.DarkCyan);
         private static readonly SolidColorBrush LimeBrush = new SolidColorBrush(Colors.LimeGreen);
 
+        private static string ParameterText(IAction action, string propertyName, string literal) =>
+            action.TextVariableBindings.TryGetValue(propertyName, out var variable) ? "${" + variable + "}" : literal;
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             var textBlock = new TextBlock
@@ -61,13 +64,14 @@ namespace FleetAutomate.Converters
 
         private void FormatClickElementAction(TextBlock textBlock, ClickElementAction action)
         {
-            if (string.IsNullOrWhiteSpace(action.ElementIdentifier))
+            var elementIdentifier = ParameterText(action, nameof(action.ElementIdentifier), action.ElementIdentifier);
+            if (string.IsNullOrWhiteSpace(elementIdentifier))
             {
                 textBlock.Text = action.IsDoubleClick ? "Double-Click Element" : "Click Element";
                 return;
             }
 
-            var (controlType, identifier) = ParseElementDescription(action.ElementIdentifier, action.IdentifierType);
+            var (controlType, identifier) = ParseElementDescription(elementIdentifier, action.IdentifierType);
 
             // "Click " or "Double-Click "
             textBlock.Inlines.Add(new Run(action.IsDoubleClick ? "Double-Click " : "Click "));
@@ -88,19 +92,20 @@ namespace FleetAutomate.Converters
 
         private void FormatSetTextAction(TextBlock textBlock, SetTextAction action)
         {
-            if (string.IsNullOrWhiteSpace(action.ElementIdentifier))
+            var elementIdentifier = ParameterText(action, nameof(action.ElementIdentifier), action.ElementIdentifier);
+            if (string.IsNullOrWhiteSpace(elementIdentifier))
             {
                 textBlock.Text = "Set Text";
                 return;
             }
 
-            var (controlType, identifier) = ParseElementDescription(action.ElementIdentifier, action.IdentifierType);
+            var (controlType, identifier) = ParseElementDescription(elementIdentifier, action.IdentifierType);
 
             // "Set "
             textBlock.Inlines.Add(new Run("Set "));
 
             // Text value in quotes
-            string displayText = action.TextToSet;
+            string displayText = ParameterText(action, nameof(action.TextToSet), action.TextToSet);
             if (!string.IsNullOrEmpty(displayText))
             {
                 if (displayText.Length > 30)
@@ -131,13 +136,14 @@ namespace FleetAutomate.Converters
 
         private void FormatWaitForElementAction(TextBlock textBlock, WaitForElementAction action)
         {
-            if (string.IsNullOrWhiteSpace(action.ElementIdentifier))
+            var elementIdentifier = ParameterText(action, nameof(action.ElementIdentifier), action.ElementIdentifier);
+            if (string.IsNullOrWhiteSpace(elementIdentifier))
             {
                 textBlock.Text = "Wait for Element";
                 return;
             }
 
-            var (controlType, identifier) = ParseElementDescription(action.ElementIdentifier, action.IdentifierType);
+            var (controlType, identifier) = ParseElementDescription(elementIdentifier, action.IdentifierType);
 
             // "Wait for "
             textBlock.Inlines.Add(new Run("Wait for "));

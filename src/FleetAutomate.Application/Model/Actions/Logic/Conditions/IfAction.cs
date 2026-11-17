@@ -376,7 +376,7 @@ namespace FleetAutomate.Model.Actions.Logic
                 var action = actionsToExecute[index];
                 if (action.IsEnabled)
                 {
-                    var rst = await action.ExecuteAsync(cancellationToken);
+                    var rst = await ActionTextParameters.ExecuteAsync(action, Environment, cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
                         SetResumePoint(activeBranch, rst ? index + 1 : index);

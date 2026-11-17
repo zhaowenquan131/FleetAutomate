@@ -48,6 +48,9 @@ public sealed class ActionDocument
 
     [DataMember(Name = "children", Order = 4)]
     public List<ActionChildCollectionDocument> Children { get; set; } = [];
+
+    [DataMember(Name = "textVariables", Order = 5, EmitDefaultValue = false)]
+    public List<PropertyDocument>? TextVariables { get; set; }
 }
 
 [DataContract(Name = "ActionChildCollection")]

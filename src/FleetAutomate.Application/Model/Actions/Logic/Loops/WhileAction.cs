@@ -175,10 +175,16 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
             }
             foreach (var action in Body)
             {
-                await action.ExecuteAsync(cancellationToken);
+                var succeeded = await ActionTextParameters.ExecuteAsync(action, Environment, cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     State = ActionState.Paused;
+                    return false;
+                }
+
+                if (!succeeded)
+                {
+                    State = ActionState.Failed;
                     return false;
                 }
 

@@ -225,6 +225,9 @@ namespace FleetAutomate.Model.Actions.System
 
         private async Task<string> ResolveMessageAsync(CancellationToken cancellationToken)
         {
+            if (((IAction)this).TextVariableBindings.ContainsKey(nameof(Message)))
+                return Message;
+
             if (MessageMode == LogMessageMode.Expression)
             {
                 return await ResolveInterpolatedExpressionsAsync(Message, cancellationToken);

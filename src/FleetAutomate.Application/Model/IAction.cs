@@ -11,6 +11,12 @@ namespace FleetAutomate.Model
 
     public interface IAction
     {
+        IReadOnlyDictionary<string, string> TextVariableBindings
+        {
+            get => ActionTextParameters.GetBindings(this);
+            set => ActionTextParameters.SetBindings(this, value);
+        }
+
         /// <summary>
         /// Gets the name of the action.
         /// </summary>

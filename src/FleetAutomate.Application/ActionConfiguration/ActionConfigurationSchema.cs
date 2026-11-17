@@ -88,6 +88,11 @@ public sealed record ActionConfigurationValue(string PropertyName, object? Value
 
 public static class ActionConfigurationValueApplier
 {
+    public static PropertyInfo GetProperty(IAction action, string name) =>
+        action.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public)
+        ?? typeof(IAction).GetProperty(name)
+        ?? throw new InvalidOperationException($"Action property '{name}' was not found.");
+
     public static void ApplyValues(IAction action, IEnumerable<ActionConfigurationValue> values)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -95,8 +100,7 @@ public static class ActionConfigurationValueApplier
 
         foreach (var value in values)
         {
-            var property = action.GetType().GetProperty(value.PropertyName, BindingFlags.Instance | BindingFlags.Public)
-                ?? throw new InvalidOperationException($"Action property '{value.PropertyName}' was not found.");
+            var property = GetProperty(action, value.PropertyName);
 
             if (!property.CanWrite)
             {

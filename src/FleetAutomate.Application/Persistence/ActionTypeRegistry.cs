@@ -42,6 +42,13 @@ public sealed class ActionTypeRegistry
         registry.Register(new IfActionMapper());
         registry.Register(new WhileLoopActionMapper());
         registry.Register(new ForLoopActionMapper());
+        registry.Register(new ReflectionActionMapper<SubFlowAction>("logic.subFlow"));
+        foreach (var type in typeof(ActionBase).Assembly.GetTypes().Where(t =>
+            !t.IsAbstract && !t.ContainsGenericParameters && typeof(ActionBase).IsAssignableFrom(t)))
+        {
+            var mapperType = typeof(ReflectionActionMapper<>).MakeGenericType(type);
+            registry.Register((IActionDocumentMapper)Activator.CreateInstance(mapperType, $"action.{type.Name}")!);
+        }
         return registry;
     }
 
@@ -54,7 +61,11 @@ public sealed class ActionTypeRegistry
     public ActionDocument ToDocument(IAction action)
     {
         var mapper = ResolveMapper(action.GetType());
-        return mapper.ToDocument(action, this);
+        var document = mapper.ToDocument(action, this);
+        if (action.TextVariableBindings.Count > 0)
+            document.TextVariables = action.TextVariableBindings.Select(pair =>
+                ValueSerializer.ToProperty(pair.Key, pair.Value, typeof(string))).ToList();
+        return document;
     }
 
     public IAction FromDocument(ActionDocument document)
@@ -64,7 +75,10 @@ public sealed class ActionTypeRegistry
             throw new InvalidOperationException($"Unknown action typeId '{document.TypeId}'.");
         }
 
-        return mapper.FromDocument(document, this);
+        var action = mapper.FromDocument(document, this);
+        if (document.TextVariables != null)
+            action.TextVariableBindings = document.TextVariables.ToDictionary(p => p.Name, p => p.Value ?? string.Empty, StringComparer.Ordinal);
+        return action;
     }
 
     private IActionDocumentMapper ResolveMapper(Type actionType)
@@ -103,7 +117,7 @@ internal class ReflectionActionMapper<TAction> : IActionDocumentMapper
             TypeId = TypeId,
             Version = 1,
             Properties = ActionPropertyReflection.GetPersistedProperties(action)
-                .Select(p => ValueSerializer.ToProperty(p.Name, p.GetValue(action), p.PropertyType))
+                .Select(p => ValueSerializer.ToProperty(p.Name, ActionTextParameters.GetLiteralValue(action, p), p.PropertyType))
                 .ToList()
         };
     }

@@ -312,7 +312,7 @@ namespace FleetAutomate
                     return [];
                 }
 
-                var dialog = new ActionConfigurationDialog(action, schema)
+                var dialog = new ActionConfigurationDialog(action, schema, ViewModel.ActionConfigurationVariables, GetAvailableScopeOptions())
                 {
                     Owner = this
                 };
@@ -1168,7 +1168,11 @@ namespace FleetAutomate
                     if (treeViewItem.DataContext is Model.IAction action)
                     {
                         // Special handling for IfAction - use IfActionDialog for editing
-                        if (action is Model.Actions.Logic.IfAction ifAction)
+                        if (ActionConfigurationSchemaProvider.HasSchema(action.GetType()))
+                        {
+                            EditSchemaConfiguredAction(action);
+                        }
+                        else if (action is Model.Actions.Logic.IfAction ifAction)
                         {
                             EditIfAction(ifAction);
                         }
@@ -1216,11 +1220,6 @@ namespace FleetAutomate
                         else if (action is Model.Actions.Logic.SubFlowAction subFlowAction)
                         {
                             EditSubFlowAction(subFlowAction);
-                        }
-                        // Schema-backed actions use a typed generic configuration dialog.
-                        else if (ActionConfigurationSchemaProvider.HasSchema(action.GetType()))
-                        {
-                            EditSchemaConfiguredAction(action);
                         }
                         else
                         {
@@ -1289,7 +1288,9 @@ namespace FleetAutomate
                 return;
             }
 
-            var dialog = new ActionConfigurationDialog(action, schema)
+            var flow = ViewModel.ActiveTestFlow;
+            var variables = flow == null ? [] : Model.ActionVariableScope.GetAvailableVariables(flow.Actions, flow.Environment, action);
+            var dialog = new ActionConfigurationDialog(action, schema, variables, GetAvailableScopeOptions(action))
             {
                 Owner = this
             };

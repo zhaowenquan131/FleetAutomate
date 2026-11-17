@@ -478,6 +478,9 @@ namespace FleetAutomate.ViewModel
         /// </summary>
         private void Action_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (sender is IAction action && ActionTextParameters.IsApplyingRuntimeValues(action))
+                return;
+
             if (!IsOnUiThread())
             {
                 RunOnUiThread(() => Action_PropertyChanged(sender, e));

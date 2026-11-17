@@ -202,10 +202,15 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
             // Execute initialization
             if (Initialization is IAction initAction)
             {
-                await initAction.ExecuteAsync(cancellationToken);
+                var succeeded = await ActionTextParameters.ExecuteAsync(initAction, Environment, cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     State = ActionState.Paused;
+                    return false;
+                }
+                if (!succeeded)
+                {
+                    State = ActionState.Failed;
                     return false;
                 }
             }
@@ -235,10 +240,15 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
                 // Execute body
                 foreach (var action in Body)
                 {
-                    await action.ExecuteAsync(cancellationToken);
+                    var succeeded = await ActionTextParameters.ExecuteAsync(action, Environment, cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
                         State = ActionState.Paused;
+                        return false;
+                    }
+                    if (!succeeded)
+                    {
+                        State = ActionState.Failed;
                         return false;
                     }
 
@@ -248,10 +258,15 @@ namespace FleetAutomate.Model.Actions.Logic.Loops
                 // Execute increment
                 if (Increment is IAction incrementAction)
                 {
-                    await incrementAction.ExecuteAsync(cancellationToken);
+                    var succeeded = await ActionTextParameters.ExecuteAsync(incrementAction, Environment, cancellationToken);
                     if (cancellationToken.IsCancellationRequested)
                     {
                         State = ActionState.Paused;
+                        return false;
+                    }
+                    if (!succeeded)
+                    {
+                        State = ActionState.Failed;
                         return false;
                     }
 

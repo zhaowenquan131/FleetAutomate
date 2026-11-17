@@ -310,6 +310,7 @@ namespace FleetAutomate.ViewModel
         /// Returns property values to apply, or null if cancelled.
         /// </summary>
         public event Func<IAction, IReadOnlyList<ActionConfigurationValue>?>? OnPromptActionConfiguration;
+        public IReadOnlyList<Variable> ActionConfigurationVariables { get; private set; } = [];
 
         /// <summary>
         /// Command to create a new project.
@@ -1169,8 +1170,21 @@ namespace FleetAutomate.ViewModel
             {
                 IAction? action = null;
 
+                ActionConfigurationVariables = ActionVariableScope.GetAvailableVariables(ActiveTestFlow.Actions,
+                    ActiveTestFlow.Environment, insertionTarget,
+                    afterTarget: insertionMode == ActionInsertionMode.After,
+                    insideTarget: insertionMode == ActionInsertionMode.Into);
+
                 // Special handling for IfAction - prompt user for condition
-                if (actionTemplate.ActionType == typeof(IfAction))
+                if (ActionConfigurationSchemaProvider.HasSchema(actionTemplate.ActionType) && OnPromptActionConfiguration != null)
+                {
+                    action = CreateActionInstance(actionTemplate);
+                    if (action == null) return;
+                    var values = OnPromptActionConfiguration.Invoke(action);
+                    if (values == null) return;
+                    ActionConfigurationValueApplier.ApplyValues(action, values);
+                }
+                else if (actionTemplate.ActionType == typeof(IfAction))
                 {
                     var result = OnPromptIfAction?.Invoke();
                     if (result == null)
@@ -1302,16 +1316,6 @@ namespace FleetAutomate.ViewModel
                 {
                     // Create instance of the action normally
                     action = CreateActionInstance(actionTemplate);
-                    if (action != null && ActionConfigurationSchemaProvider.HasSchema(action.GetType()) && OnPromptActionConfiguration != null)
-                    {
-                        var values = OnPromptActionConfiguration.Invoke(action);
-                        if (values == null)
-                        {
-                            return;
-                        }
-
-                        ActionConfigurationValueApplier.ApplyValues(action, values);
-                    }
                 }
 
                 if (action != null)
@@ -2082,8 +2086,7 @@ namespace FleetAutomate.ViewModel
             var edits = new List<IUndoableFlowEdit>();
             foreach (var (propertyName, newValue) in changes)
             {
-                var property = action.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
-                    ?? throw new InvalidOperationException($"Action property '{propertyName}' was not found.");
+                var property = ActionConfigurationValueApplier.GetProperty(action, propertyName);
 
                 var oldValue = property.GetValue(action);
                 if (Equals(oldValue, newValue))

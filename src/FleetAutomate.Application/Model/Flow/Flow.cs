@@ -437,7 +437,7 @@ namespace FleetAutomate.Model.Flow
                 try
                 {
                     InjectExecutionContext(current);
-                    var result = await current.ExecuteAsync(_cancellationTokenSource.Token);
+                    var result = await ActionTextParameters.ExecuteAsync(current, Environment, _cancellationTokenSource.Token);
                     if (!result)
                     {
                         if (_cancellationTokenSource.IsCancellationRequested)

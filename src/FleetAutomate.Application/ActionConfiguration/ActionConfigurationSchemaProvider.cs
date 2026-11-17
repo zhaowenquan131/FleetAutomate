@@ -27,6 +27,46 @@ public static class ActionConfigurationSchemaProvider
     {
         var schemas = new Dictionary<Type, ActionConfigurationSchema>();
 
+        Add<LaunchApplicationAction>(schemas, "Configure Launch Application", [
+            File(nameof(LaunchApplicationAction.ExecutablePath), "Executable path / command", required: true),
+            Text(nameof(LaunchApplicationAction.Arguments), "Arguments"),
+            Directory(nameof(LaunchApplicationAction.WorkingDirectory), "Working directory"),
+            Bool(nameof(LaunchApplicationAction.WaitForCompletion), "Wait for completion"),
+            Int(nameof(LaunchApplicationAction.TimeoutMilliseconds), "Timeout (ms)", required: true)
+        ]);
+        Add<ClickElementAction>(schemas, "Configure Click Element", [
+            .. UiElementFields(),
+            Bool(nameof(ClickElementAction.IsDoubleClick), "Double click"),
+            Bool(nameof(ClickElementAction.UseInvoke), "Use Invoke pattern"),
+            Bool(nameof(ClickElementAction.InvokeWithoutWaiting), "Invoke without waiting"),
+            Int(nameof(ClickElementAction.RetryTimes), "Retry count", required: true),
+            Int(nameof(ClickElementAction.RetryDelayMilliseconds), "Retry delay (ms)", required: true)
+        ]);
+        Add<WaitForElementAction>(schemas, "Configure Wait for Element", [
+            .. UiElementFields(),
+            Int(nameof(WaitForElementAction.TimeoutMilliseconds), "Timeout (ms)", required: true),
+            Int(nameof(WaitForElementAction.PollingIntervalMilliseconds), "Polling interval (ms)", required: true)
+        ]);
+        Add<SetTextAction>(schemas, "Configure Set Text", [
+            .. UiElementFields(),
+            Multiline(nameof(SetTextAction.TextToSet), "Text"),
+            Bool(nameof(SetTextAction.ClearExistingText), "Clear existing text"),
+            Int(nameof(SetTextAction.RetryTimes), "Retry count", required: true),
+            Int(nameof(SetTextAction.RetryDelayMilliseconds), "Retry delay (ms)", required: true)
+        ]);
+        Add<IfWindowContainsTextAction>(schemas, "Configure Window Text Check", [
+            EnumText(nameof(IfWindowContainsTextAction.IdentifierType), "Identifier type", ["Name", "AutomationId"]),
+            Text(nameof(IfWindowContainsTextAction.WindowIdentifier), "Window identifier", required: true),
+            Text(nameof(IfWindowContainsTextAction.SearchText), "Search text", required: true),
+            Bool(nameof(IfWindowContainsTextAction.CaseSensitive), "Case sensitive"),
+            Bool(nameof(IfWindowContainsTextAction.DeepSearch), "Search descendants")
+        ]);
+        Add<LogAction>(schemas, "Configure Log", [
+            Enum<FleetAutomate.Model.Actions.System.LogLevel>(nameof(LogAction.LogLevel), "Log level"),
+            Enum<LogMessageMode>(nameof(LogAction.MessageMode), "Message mode"),
+            Multiline(nameof(LogAction.Message), "Message")
+        ]);
+
         Add<IfProcessExistsAction>(schemas, "Configure Process Check", [
             Text(nameof(IfProcessExistsAction.ProcessName), "Process name", required: true)
         ]);

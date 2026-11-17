@@ -28,8 +28,7 @@ public sealed class ActionPropertyEdit : IUndoableFlowEdit
     private void SetValue(ObservableFlow flow, object? value)
     {
         var action = ActionCollectionRef.Root.ResolveAction(flow, _actionPath);
-        var property = action.GetType().GetProperty(_propertyName, BindingFlags.Instance | BindingFlags.Public)
-            ?? throw new InvalidOperationException($"Action property '{_propertyName}' was not found.");
+        var property = FleetAutomate.Application.ActionConfiguration.ActionConfigurationValueApplier.GetProperty(action, _propertyName);
 
         property.SetValue(action, value);
     }
