@@ -6,11 +6,12 @@ namespace FleetAutomate.Cli.Infrastructure;
 internal sealed class CliCommandDispatcher
 {
     private readonly CliOutputWriter _writer;
-    private readonly OfflineCliCommandExecutor _offlineExecutor = new();
+    private readonly OfflineCliCommandExecutor _offlineExecutor;
 
     public CliCommandDispatcher(CliOutputWriter writer)
     {
         _writer = writer;
+        _offlineExecutor = new OfflineCliCommandExecutor(writer);
     }
 
     public async Task<int> DispatchAsync(string resource, string verb, string projectPath, CliArgumentParser parser)

@@ -13,6 +13,7 @@ internal enum OutputFormat
 internal sealed class CliOutputWriter
 {
     private readonly OutputFormat _format;
+    private bool _isTestFlowRunStreaming;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     public CliOutputWriter(OutputFormat format)
@@ -55,7 +56,8 @@ internal sealed class CliOutputWriter
 
         if (result.Payload is TestFlowRunResult runResult)
         {
-            WriteTestFlowRunResult(result, runResult);
+            WriteTestFlowRunResult(result, runResult, _isTestFlowRunStreaming);
+            _isTestFlowRunStreaming = false;
             return;
         }
 
@@ -77,7 +79,47 @@ internal sealed class CliOutputWriter
         }
     }
 
-    private static void WriteTestFlowRunResult(CommandResult result, TestFlowRunResult runResult)
+    public void WriteTestFlowStarted(string projectPath, string flowName)
+    {
+        if (_format == OutputFormat.Json)
+        {
+            return;
+        }
+
+        _isTestFlowRunStreaming = true;
+        WriteColoredLine("=== TESTFLOW RUNNING ===", ConsoleColor.Cyan);
+        Console.WriteLine($"projectPath: {projectPath}");
+        Console.WriteLine($"flowName: {flowName}");
+    }
+
+    public void WriteActionExecutionStarted(string path, string name)
+    {
+        if (_format != OutputFormat.Json)
+        {
+            WriteColoredLine($"  [RUN ] {path} {name}", ConsoleColor.Cyan);
+        }
+    }
+
+    public void WriteActionExecutionCompleted(ActionExecutionRecord action)
+    {
+        if (_format == OutputFormat.Json)
+        {
+            return;
+        }
+
+        var (label, color) = action.State switch
+        {
+            "Completed" => ("PASS", ConsoleColor.Green),
+            "Failed" => ("FAIL", ConsoleColor.Red),
+            "Paused" => ("PAUSED", ConsoleColor.Yellow),
+            _ => (action.State.ToUpperInvariant(), ConsoleColor.Gray)
+        };
+        WriteColoredLine(
+            $"  [{label}] {action.Path} {action.Name} ({action.DurationMilliseconds} ms)",
+            color);
+    }
+
+    private void WriteTestFlowRunResult(CommandResult result, TestFlowRunResult runResult, bool actionLogWasStreamed)
     {
         WriteColoredLine(
             result.Ok ? "=== TESTFLOW SUCCEEDED ===" : "=== TESTFLOW FAILED ===",
@@ -88,26 +130,19 @@ internal sealed class CliOutputWriter
         Console.WriteLine($"state: {runResult.State}");
         Console.WriteLine($"breakReason: {runResult.BreakReason}");
         Console.WriteLine($"failedAction: {runResult.FailedAction}");
-        Console.WriteLine("actions:");
-
-        if (runResult.Actions.Count == 0)
+        if (!actionLogWasStreamed)
         {
-            Console.WriteLine("  (no actions)");
-        }
-        else
-        {
-            foreach (var action in runResult.Actions)
+            Console.WriteLine("actions:");
+            if (runResult.Actions.Count == 0)
             {
-                var (label, color) = action.State switch
+                Console.WriteLine("  (no actions)");
+            }
+            else
+            {
+                foreach (var action in runResult.Actions)
                 {
-                    "Completed" => ("PASS", ConsoleColor.Green),
-                    "Failed" => ("FAIL", ConsoleColor.Red),
-                    "Paused" => ("PAUSED", ConsoleColor.Yellow),
-                    _ => (action.State.ToUpperInvariant(), ConsoleColor.Gray)
-                };
-                WriteColoredLine(
-                    $"  [{label}] {action.Path} {action.Name} ({action.DurationMilliseconds} ms)",
-                    color);
+                    WriteActionExecutionCompleted(action);
+                }
             }
         }
 

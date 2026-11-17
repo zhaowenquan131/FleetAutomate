@@ -10,9 +10,15 @@ namespace FleetAutomate.Cli.Infrastructure;
 
 internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
 {
+    private readonly CliOutputWriter? _outputWriter;
     private readonly ProjectFacade _projectFacade = new();
     private readonly CliActionPathResolver _actionPathResolver = new();
     private readonly CliActionMutationService _actionMutationService = new();
+
+    public OfflineCliCommandExecutor(CliOutputWriter? outputWriter = null)
+    {
+        _outputWriter = outputWriter;
+    }
 
     public Task<CommandResult> ExecuteAsync(CommandEnvelope command, CancellationToken cancellationToken = default)
     {
@@ -89,6 +95,7 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
 
         var flow = _projectFacade.LoadFlow(projectPath, flowName);
         flow.InitializeAfterDeserialization();
+        _outputWriter?.WriteTestFlowStarted(Path.GetFullPath(projectPath), flow.Name);
         var actionExecutions = new List<ActionExecutionRecord>();
         var activeExecutions = new Dictionary<FleetAutomate.Model.IAction, ActionExecutionBuilder>(ReferenceEqualityComparer.Instance);
         var nodes = _actionPathResolver.Flatten(flow);
@@ -120,6 +127,7 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
                             activeExecutions[node.Action] = execution;
                             actionExecutions.Add(execution.ToRecord("Running", 0));
                         }
+                        _outputWriter?.WriteActionExecutionStarted(node.Path, node.Name);
                     }
                     else if (state is "Completed" or "Failed" or "Paused")
                     {
@@ -128,7 +136,15 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
                             if (activeExecutions.Remove(node.Action, out var execution))
                             {
                                 var duration = Stopwatch.GetElapsedTime(execution.StartedAt).TotalMilliseconds;
-                                actionExecutions[execution.RecordIndex] = execution.ToRecord(state, (long)duration);
+                                var completedExecution = execution.ToRecord(state, (long)duration);
+                                actionExecutions[execution.RecordIndex] = completedExecution;
+                                _outputWriter?.WriteActionExecutionCompleted(completedExecution);
+                            }
+                            else
+                            {
+                                var completedExecution = new ActionExecutionRecord(node.Path, node.Name, state, 0);
+                                actionExecutions.Add(completedExecution);
+                                _outputWriter?.WriteActionExecutionCompleted(completedExecution);
                             }
                         }
                     }
@@ -154,7 +170,9 @@ internal sealed class OfflineCliCommandExecutor : IOfflineCommandExecutor
             {
                 if (node.Action.State.ToString() != "Ready" && actionExecutions.All(record => record.Path != node.Path))
                 {
-                    actionExecutions.Add(new ActionExecutionRecord(node.Path, node.Name, node.Action.State.ToString(), 0));
+                    var execution = new ActionExecutionRecord(node.Path, node.Name, node.Action.State.ToString(), 0);
+                    actionExecutions.Add(execution);
+                    _outputWriter?.WriteActionExecutionCompleted(execution);
                 }
             }
         }

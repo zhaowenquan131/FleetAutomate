@@ -29,7 +29,7 @@ internal static class CliProgram
             var router = new CliCommandRouter(
                 new NamedPipeUiSessionClient(),
                 new FileSystemUiSessionDiscovery(),
-                new OfflineCliCommandExecutor());
+                new OfflineCliCommandExecutor(writer));
             var result = await router.RouteAsync(command);
             writer.WriteCommandResult(result);
             return result.Ok ? 0 : 1;
