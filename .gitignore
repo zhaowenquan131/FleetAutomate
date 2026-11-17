@@ -17,3 +17,10 @@ src/.dotnet-cli
 src/.dotnet-home
 src/.dotnet
 src/SampleProjects/WindowsCalculatorCli/.fleet
+
+# Local deployment state and temporary validation files
+.wrangler/
+/src/tmp/
+
+# Generated Windows installers (rebuild before website deployment)
+/website/releases/
