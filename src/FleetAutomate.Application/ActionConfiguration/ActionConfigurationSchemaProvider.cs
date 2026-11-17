@@ -55,8 +55,8 @@ public static class ActionConfigurationSchemaProvider
             Int(nameof(SetTextAction.RetryDelayMilliseconds), "Retry delay (ms)", required: true)
         ]);
         Add<IfWindowContainsTextAction>(schemas, "Configure Window Text Check", [
-            EnumText(nameof(IfWindowContainsTextAction.IdentifierType), "Identifier type", ["Name", "AutomationId"]),
-            Text(nameof(IfWindowContainsTextAction.WindowIdentifier), "Window identifier", required: true),
+            EnumText(nameof(IfWindowContainsTextAction.IdentifierType), "Identifier type", ["Name", "AutomationId", "XPath"]),
+            new(nameof(IfWindowContainsTextAction.WindowIdentifier), "Window identifier", ActionConfigurationFieldKind.UiElement, true, typeof(string)),
             Text(nameof(IfWindowContainsTextAction.SearchText), "Search text", required: true),
             Bool(nameof(IfWindowContainsTextAction.CaseSensitive), "Case sensitive"),
             Bool(nameof(IfWindowContainsTextAction.DeepSearch), "Search descendants")
@@ -206,7 +206,7 @@ public static class ActionConfigurationSchemaProvider
         return
         [
             EnumText(nameof(UiElementActionBase.IdentifierType), "Identifier type", ["XPath", "AutomationId", "Name", "ClassName"]),
-            Text(nameof(UiElementActionBase.ElementIdentifier), "Element identifier", required: true),
+            new(nameof(UiElementActionBase.ElementIdentifier), "Element identifier", ActionConfigurationFieldKind.UiElement, true, typeof(string)),
             Text(nameof(UiElementActionBase.SearchScope), "Search scope key"),
             Bool(nameof(UiElementActionBase.AddToGlobalDictionary), "Add found element to global dictionary"),
             Text(nameof(UiElementActionBase.GlobalDictionaryKey), "Global dictionary key")

@@ -122,6 +122,9 @@ namespace FleetAutomate.Helpers
             string windowIdentifier,
             string debugPrefix = "")
         {
+            if (identifierType == "XPath" || FleetAutomate.Model.Project.UiPathReferenceResolver.IsReference(windowIdentifier))
+                return FindElement(desktop, "XPath", windowIdentifier, debugPrefix);
+
             try
             {
                 var allWindows = desktop.FindAllChildren();

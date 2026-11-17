@@ -14,7 +14,8 @@ public enum ActionConfigurationFieldKind
     FilePath,
     DirectoryPath,
     DateTimeOffset,
-    KeyboardShortcut
+    KeyboardShortcut,
+    UiElement
 }
 
 public sealed record ActionConfigurationField(

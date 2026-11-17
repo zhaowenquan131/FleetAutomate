@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using FleetAutomate.Application.ActionConfiguration;
 using FleetAutomate.Model;
 using FleetAutomate.Model.Actions.Logic;
+using FleetAutomate.Model.Project;
 using FleetAutomate.Model.Actions.UIAutomation;
 using FleetAutomate.Model.Actions.MouseAndKeyboard;
 using FleetAutomate.View.Controls;
@@ -22,12 +23,14 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
     private readonly Dictionary<string, FrameworkElement> _fieldLabels = new();
     private readonly IReadOnlyList<Variable> _availableVariables;
     private readonly IReadOnlyList<FleetAutomate.Helpers.SearchScopeOption> _scopeOptions;
+    private readonly IReadOnlyList<UiPathReference> _uiPaths;
 
     public IReadOnlyList<ActionConfigurationValue> Values { get; private set; } = [];
 
     public ActionConfigurationDialog(IAction action, ActionConfigurationSchema schema,
         IReadOnlyList<Variable>? availableVariables = null,
-        IEnumerable<FleetAutomate.Helpers.SearchScopeOption>? scopeOptions = null)
+        IEnumerable<FleetAutomate.Helpers.SearchScopeOption>? scopeOptions = null,
+        IEnumerable<UiPathReference>? uiPathReferences = null)
     {
         InitializeComponent();
 
@@ -35,6 +38,7 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
         _schema = schema;
         _availableVariables = availableVariables ?? [];
         _scopeOptions = scopeOptions?.ToList() ?? [];
+        _uiPaths = uiPathReferences?.ToList() ?? [];
 
         Title = schema.Title;
         HeaderTextBlock.Text = schema.Title;
@@ -59,15 +63,20 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
             var control = CreateFieldControl(field);
             if (field.Kind is ActionConfigurationFieldKind.Text or ActionConfigurationFieldKind.MultilineText
                 or ActionConfigurationFieldKind.FilePath or ActionConfigurationFieldKind.DirectoryPath
-                or ActionConfigurationFieldKind.KeyboardShortcut)
+                or ActionConfigurationFieldKind.KeyboardShortcut or ActionConfigurationFieldKind.UiElement)
             {
                 _action.TextVariableBindings.TryGetValue(field.PropertyName, out var variable);
-                control = new TextParameterInput(control, _availableVariables, variable);
+                var input = new TextParameterInput(control, _availableVariables, variable,
+                    field.Kind == ActionConfigurationFieldKind.UiElement ? _uiPaths : null);
+                input.SourceChanged += (_, _) => UpdateUiElementIdentifierType();
+                control = input;
             }
             control.Margin = new Thickness(0, 0, 0, 14);
             FieldsPanel.Children.Add(control);
             _fieldControls[field.PropertyName] = control;
         }
+
+        UpdateUiElementIdentifierType();
 
         if (_action is SendKeysAction && _fieldControls.TryGetValue(nameof(SendKeysAction.InputMode), out var modeControl) &&
             modeControl is System.Windows.Controls.ComboBox mode)
@@ -75,6 +84,15 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
             mode.SelectionChanged += (_, _) => UpdateKeyboardFields();
             UpdateKeyboardFields();
         }
+    }
+
+    private void UpdateUiElementIdentifierType()
+    {
+        if (!_fieldControls.TryGetValue(nameof(UiElementActionBase.IdentifierType), out var control)) return;
+        var usesReference = _schema.Fields.Any(field => field.Kind == ActionConfigurationFieldKind.UiElement &&
+            _fieldControls.TryGetValue(field.PropertyName, out var input) && input is TextParameterInput { UsesUiPathReference: true });
+        if (usesReference && control is System.Windows.Controls.ComboBox comboBox) comboBox.SelectedItem = "XPath";
+        control.IsEnabled = !usesReference;
     }
 
     private void UpdateKeyboardFields()
@@ -105,11 +123,12 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
                 MinHeight = 32
             };
         }
-        if (field.PropertyName == nameof(UiElementActionBase.ElementIdentifier))
+        if (field.Kind == ActionConfigurationFieldKind.UiElement)
         {
             return new XPathInput
             {
                 XPath = Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty,
+                AllowProjectReferences = false,
                 MinHeight = 72
             };
         }
@@ -268,6 +287,13 @@ public partial class ActionConfigurationDialog : Wpf.Ui.Controls.FluentWindow
                     continue;
                 }
                 bindings.Remove(field.PropertyName);
+                if (input.UsesUiPathReference)
+                {
+                    if (input.SelectedUiPathReference is not { } reference)
+                        throw new InvalidOperationException($"Select an available project UI path reference for {field.Label}.");
+                    values.Add(new ActionConfigurationValue(field.PropertyName, "@{" + reference.Name + "}"));
+                    continue;
+                }
             }
             var rawValue = ReadRawValue(field);
             if (visible && field.IsRequired && rawValue is string text && string.IsNullOrWhiteSpace(text))

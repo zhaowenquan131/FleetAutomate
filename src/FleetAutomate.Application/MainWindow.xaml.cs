@@ -312,7 +312,8 @@ namespace FleetAutomate
                     return [];
                 }
 
-                var dialog = new ActionConfigurationDialog(action, schema, ViewModel.ActionConfigurationVariables, GetAvailableScopeOptions())
+                var dialog = new ActionConfigurationDialog(action, schema, ViewModel.ActionConfigurationVariables,
+                    GetAvailableScopeOptions(), ViewModel.ActiveProject?.Model.UiPathReferences)
                 {
                     Owner = this
                 };
@@ -1290,7 +1291,8 @@ namespace FleetAutomate
 
             var flow = ViewModel.ActiveTestFlow;
             var variables = flow == null ? [] : Model.ActionVariableScope.GetAvailableVariables(flow.Actions, flow.Environment, action);
-            var dialog = new ActionConfigurationDialog(action, schema, variables, GetAvailableScopeOptions(action))
+            var dialog = new ActionConfigurationDialog(action, schema, variables, GetAvailableScopeOptions(action),
+                ViewModel.ActiveProject?.Model.UiPathReferences)
             {
                 Owner = this
             };
