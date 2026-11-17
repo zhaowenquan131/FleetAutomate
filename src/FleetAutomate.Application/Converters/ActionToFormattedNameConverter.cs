@@ -14,12 +14,16 @@ namespace FleetAutomate.Converters
 {
     /// <summary>
     /// Converts an IAction to a formatted TextBlock with colored and bold text.
-    /// Control types are displayed in cyan, identifiers in bold cyan.
+    /// Parameters follow the current theme accent.
     /// </summary>
     public class ActionToFormattedNameConverter : IValueConverter
     {
-        private static readonly SolidColorBrush CyanBrush = new SolidColorBrush(Colors.DarkCyan);
-        private static readonly SolidColorBrush LimeBrush = new SolidColorBrush(Colors.LimeGreen);
+        private static Run AccentRun(string text)
+        {
+            var run = new Run(text);
+            run.SetResourceReference(TextElement.ForegroundProperty, "FleetAccentBrush");
+            return run;
+        }
 
         private static string ParameterText(IAction action, string propertyName, string literal) =>
             action.TextVariableBindings.TryGetValue(propertyName, out var variable) ? "${" + variable + "}" : literal;
@@ -76,17 +80,17 @@ namespace FleetAutomate.Converters
             // "Click " or "Double-Click "
             textBlock.Inlines.Add(new Run(action.IsDoubleClick ? "Double-Click " : "Click "));
 
-            // Control type in cyan
+            // Control type in theme accent
             if (!string.IsNullOrEmpty(controlType))
             {
-                textBlock.Inlines.Add(new Run(controlType) { Foreground = CyanBrush });
+                textBlock.Inlines.Add(AccentRun(controlType));
                 textBlock.Inlines.Add(new Run(" "));
             }
 
-            // Identifier in bold cyan
+            // Identifier in theme accent
             if (!string.IsNullOrEmpty(identifier))
             {
-                textBlock.Inlines.Add(new Run(identifier) { Foreground = LimeBrush, FontWeight = FontWeights.Bold });
+                textBlock.Inlines.Add(AccentRun(identifier));
             }
         }
 
@@ -112,7 +116,7 @@ namespace FleetAutomate.Converters
                 {
                     displayText = displayText.Substring(0, 27) + "...";
                 }
-                textBlock.Inlines.Add(new Run($"'{displayText}'"));
+                textBlock.Inlines.Add(AccentRun($"'{displayText}'"));
                 textBlock.Inlines.Add(new Run(" to "));
             }
             else
@@ -120,17 +124,17 @@ namespace FleetAutomate.Converters
                 textBlock.Inlines.Add(new Run("text to "));
             }
 
-            // Control type in cyan
+            // Control type in theme accent
             if (!string.IsNullOrEmpty(controlType))
             {
-                textBlock.Inlines.Add(new Run(controlType) { Foreground = CyanBrush });
+                textBlock.Inlines.Add(AccentRun(controlType));
                 textBlock.Inlines.Add(new Run(" "));
             }
 
-            // Identifier in bold cyan
+            // Identifier in theme accent
             if (!string.IsNullOrEmpty(identifier))
             {
-                textBlock.Inlines.Add(new Run(identifier) { Foreground = LimeBrush, FontWeight = FontWeights.Bold });
+                textBlock.Inlines.Add(AccentRun(identifier));
             }
         }
 
@@ -148,17 +152,17 @@ namespace FleetAutomate.Converters
             // "Wait for "
             textBlock.Inlines.Add(new Run("Wait for "));
 
-            // Control type in cyan
+            // Control type in theme accent
             if (!string.IsNullOrEmpty(controlType))
             {
-                textBlock.Inlines.Add(new Run(controlType) { Foreground = CyanBrush });
+                textBlock.Inlines.Add(AccentRun(controlType));
                 textBlock.Inlines.Add(new Run(" "));
             }
 
-            // Identifier in bold cyan
+            // Identifier in theme accent
             if (!string.IsNullOrEmpty(identifier))
             {
-                textBlock.Inlines.Add(new Run(identifier) { Foreground = LimeBrush, FontWeight = FontWeights.Bold });
+                textBlock.Inlines.Add(AccentRun(identifier));
             }
         }
 
@@ -178,17 +182,17 @@ namespace FleetAutomate.Converters
             {
                 var (controlType, identifier) = ParseElementDescription(uiElementExpr.ElementIdentifier, uiElementExpr.IdentifierType);
 
-                // Control type in cyan
+                // Control type in theme accent
                 if (!string.IsNullOrEmpty(controlType))
                 {
-                    textBlock.Inlines.Add(new Run(controlType) { Foreground = CyanBrush });
+                    textBlock.Inlines.Add(AccentRun(controlType));
                     textBlock.Inlines.Add(new Run(" "));
                 }
 
-                // Identifier in bold cyan
+                // Identifier in theme accent
                 if (!string.IsNullOrEmpty(identifier))
                 {
-                    textBlock.Inlines.Add(new Run(identifier) { Foreground = LimeBrush, FontWeight = FontWeights.Bold });
+                    textBlock.Inlines.Add(AccentRun(identifier));
                     textBlock.Inlines.Add(new Run(" "));
                 }
 

@@ -327,36 +327,36 @@
                             <Trigger Property="Tag" Value="DropBefore">
                                 <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="TwoZoneOverlay" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="DropTopTwoZone" Property="Background" Value="#FFFFE082"/>
-                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter TargetName="DropTopTwoZone" Property="Background" Value="{DynamicResource FleetActionSelectionBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="DropAfter">
                                 <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="TwoZoneOverlay" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="DropBottomTwoZone" Property="Background" Value="#FFFFE082"/>
-                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter TargetName="DropBottomTwoZone" Property="Background" Value="{DynamicResource FleetActionSelectionBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="DropBeforeComposite">
                                 <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="ThreeZoneOverlay" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="DropTopThreeZone" Property="Background" Value="#FFFFE082"/>
-                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter TargetName="DropTopThreeZone" Property="Background" Value="{DynamicResource FleetActionSelectionBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="DropIntoComposite">
                                 <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="ThreeZoneOverlay" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="DropMiddleThreeZone" Property="Background" Value="#FFFFE082"/>
-                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter TargetName="DropMiddleThreeZone" Property="Background" Value="{DynamicResource FleetActionSelectionBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                             </Trigger>
                             <Trigger Property="Tag" Value="DropAfterComposite">
                                 <Setter TargetName="DropZoneOverlay" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="ThreeZoneOverlay" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="DropBottomThreeZone" Property="Background" Value="#FFFFE082"/>
-                                <Setter Property="BorderBrush" Value="#FFFFA000"/>
+                                <Setter TargetName="DropBottomThreeZone" Property="Background" Value="{DynamicResource FleetActionSelectionBrush}"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource FleetAccentBrush}"/>
                                 <Setter Property="BorderThickness" Value="1"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
