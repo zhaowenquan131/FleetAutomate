@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fleet Automate is a visual Windows UI automation tool for building, running, and observing TestFlows without writing scripts.">
+  <title>Fleet Automate - Visual Windows UI Automation</title>
+  <link rel="alternate" hreflang="en" href="index.html">
+  <link rel="alternate" hreflang="zh-CN" href="zh-CN.html">
+  <link rel="alternate" hreflang="zh-TW" href="zh-TW.html">
+  <link rel="alternate" hreflang="ja" href="ja.html">
+  <link rel="alternate" hreflang="ko" href="ko.html">
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="#top" aria-label="Fleet Automate home">
+        <span class="brand-mark"><img src="assets/app-icon.svg" alt="" aria-hidden="true"></span>
+        <span>Fleet Automate</span>
+      </a>
+      <div class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#cli">CLI</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#gallery">Screenshots</a>
+        <div class="language-switcher" aria-label="Language selector">
+          <span>English</span>
+          <div class="language-menu">
+            <a aria-current="page" href="index.html">English</a>
+            <a href="zh-CN.html">简体中文</a>
+            <a href="zh-TW.html">繁體中文</a>
+            <a href="ja.html">日本語</a>
+            <a href="ko.html">한국어</a>
+          </div>
+        </div>
+        <a class="nav-cta" href="#getting-started">Get started</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">WYSIWYG automation for Windows apps</p>
+        <h1>Build Windows UI automation flows visually, run them with confidence.</h1>
+        <p class="hero-lede">
+          Fleet Automate helps you create repeatable desktop automation TestFlows with a visual action box,
+          structured flow editor, UI element capture, live execution state, and inspectable logs.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="releases/FleetAutomate-0.1.0-setup.exe">Download for Windows</a>
+          <a class="button secondary" href="#gallery">View screenshots</a>
+        </div>
+        <div class="hero-stats" aria-label="Product highlights">
+          <div><strong>Visual</strong><span>Action builder</span></div>
+          <div><strong>Observable</strong><span>Execution logs</span></div>
+          <div><strong>Windows</strong><span>FlaUI powered</span></div>
+        </div>
+      </div>
+      <div class="hero-media">
+        <div class="screen-frame large">
+          <img src="assets/welcome.png" alt="Fleet Automate main window with Action Box, welcome page, output log, and TestFlows panel">
+        </div>
+      </div>
+    </section>
+
+    <section class="strip" aria-label="Core product areas">
+      <span>Action Box</span>
+      <span>TestFlows</span>
+      <span>Element Capture</span>
+      <span>Undo & Redo</span>
+      <span>Live Logs</span>
+      <span>CLI Sessions</span>
+      <span>AI Agent Loop</span>
+      <span>winauto-cli</span>
+    </section>
+
+    <section id="features" class="section">
+      <div class="section-heading">
+        <p class="eyebrow">Why Fleet Automate</p>
+        <h2>A visual workflow for desktop automation</h2>
+        <p>
+          Design flows from reusable actions, configure each step with focused dialogs,
+          and watch execution state update directly in the UI.
+        </p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card">
+          <span class="icon">01</span>
+          <h3>Compose TestFlows visually</h3>
+          <p>Drag automation, system, logic, and flow-control actions into ordered TestFlows without writing glue code.</p>
+        </article>
+        <article class="feature-card">
+          <span class="icon">02</span>
+          <h3>Capture real UI elements</h3>
+          <p>Use built-in element capture to identify windows, buttons, inputs, and other controls from running apps.</p>
+        </article>
+        <article class="feature-card">
+          <span class="icon">03</span>
+          <h3>Observe every run</h3>
+          <p>Follow action state, output logs, pause/resume behavior, and flow results from the same workspace.</p>
+        </article>
+        <article class="feature-card">
+          <span class="icon">04</span>
+          <h3>Keep flows portable</h3>
+          <p>Projects and TestFlows are file-based, making them easy to inspect, version, copy, and share.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div class="showcase-copy">
+        <p class="eyebrow">From idea to execution</p>
+        <h2>Configure automation steps with purpose-built dialogs.</h2>
+        <p>
+          Each action exposes the properties that matter: identifier type, search scope, retry behavior,
+          invoke mode, and dictionary options. The goal is fast setup with fewer hidden assumptions.
+        </p>
+      </div>
+      <div class="screen-frame">
+        <img src="assets/creating-action.png" alt="Click Element action configuration dialog in Fleet Automate">
+      </div>
+    </section>
+
+    <section id="cli" class="section ai-cli-section">
+      <div class="section-heading">
+        <p class="eyebrow">AI-ready CLI automation</p>
+        <h2>Close the loop from test authoring to automated repair.</h2>
+        <p>
+          Fleet Automate includes CLI capabilities designed for the AI Agent era. An agent can create or modify
+          TestFlows, run automation, inspect results, and iterate on fixes while the UI remains observable for humans.
+        </p>
+      </div>
+
+      <div class="loop-grid">
+        <article>
+          <span>1</span>
+          <h3>Automated test development</h3>
+          <p>Agents can create projects, add flows, insert actions, and update action properties from command line calls.</p>
+        </article>
+        <article>
+          <span>2</span>
+          <h3>Automated test execution</h3>
+          <p>Flows can be prepared by CLI and observed in the desktop UI through UI-hosted command sessions.</p>
+        </article>
+        <article>
+          <span>3</span>
+          <h3>Result analysis</h3>
+          <p>Structured output includes execution mode, payloads, and errors, making it easier for agents to reason about failures.</p>
+        </article>
+        <article>
+          <span>4</span>
+          <h3>Iterative repair</h3>
+          <p>Agents can refine selectors, update action settings, save projects, and repeat until the TestFlow passes.</p>
+        </article>
+      </div>
+
+      <div class="cli-layout">
+        <div class="cli-copy">
+          <h3>FleetAutomate CLI usage</h3>
+          <p>
+            The CLI routes commands to an open Fleet Automate UI session when a matching project is available.
+            If no UI session is found, it falls back to offline file mode and writes directly to project files.
+          </p>
+          <ul>
+            <li><strong>UI session mode:</strong> visible, collaborative edits inside the running desktop app.</li>
+            <li><strong>Offline mode:</strong> project and TestFlow files are updated without opening the UI.</li>
+            <li><strong>Output:</strong> table or JSON, including <code>mode</code> as <code>ui-session</code> or <code>offline</code>.</li>
+          </ul>
+        </div>
+        <div class="code-panel" aria-label="FleetAutomate CLI examples">
+<pre><code>fleetctl testproj show --project D:\demo\sample.testproj
+fleetctl testproj create --project D:\demo\sample.testproj --name SampleProject
+fleetctl testflow create --project D:\demo\sample.testproj --name calculator_flow
+fleetctl testflow tree --project D:\demo\sample.testproj --flow calculator_flow
+fleetctl action add --project D:\demo\sample.testproj --flow calculator_flow --type LaunchApplicationAction
+fleetctl action set --project D:\demo\sample.testproj --flow calculator_flow --path 0 --property ExecutablePath --value calc.exe
+fleetctl action show --project D:\demo\sample.testproj --flow calculator_flow --path 0 --format json
+fleetctl project save --project D:\demo\sample.testproj</code></pre>
+        </div>
+      </div>
+
+      <div class="tool-card">
+        <div>
+          <p class="eyebrow">Companion CLI tool</p>
+          <h3>winauto-cli for UI inspection and selector debugging</h3>
+          <p>
+            <code>winauto-cli</code> is a Python CLI wrapper around <code>pywinauto</code> for Windows desktop automation.
+            It gives agents a command surface for inspection, interaction, validation, screenshots, and path-oriented selector refinement.
+          </p>
+          <p class="source-note">
+            PyPI describes commands such as <code>list-windows</code>, <code>find</code>, <code>inspect</code>,
+            <code>act</code>, <code>assert</code>, and <code>screenshot</code>. It requires Python 3.10+.
+          </p>
+        </div>
+        <div class="tool-actions">
+          <code>pip install winauto-cli</code>
+          <a class="button secondary" href="https://pypi.org/project/winauto-cli/0.1.0/" target="_blank" rel="noreferrer">Open PyPI page</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow" class="section workflow">
+      <div class="section-heading compact">
+        <p class="eyebrow">Workflow</p>
+        <h2>Capture. Configure. Run. Inspect.</h2>
+      </div>
+      <div class="steps">
+        <article>
+          <span>1</span>
+          <h3>Capture target UI</h3>
+          <p>Capture or type element identifiers and keep reusable targets in project dictionaries.</p>
+        </article>
+        <article>
+          <span>2</span>
+          <h3>Build the TestFlow</h3>
+          <p>Combine clicks, waits, conditions, loops, logs, variables, and system actions into a readable flow.</p>
+        </article>
+        <article>
+          <span>3</span>
+          <h3>Run with visibility</h3>
+          <p>Watch completion state, output logs, retries, and pause/resume behavior without losing context.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="product-shot">
+      <div class="screen-frame large">
+        <img src="assets/testflow.png" alt="Fleet Automate TestFlow editor showing completed calculator automation actions">
+      </div>
+      <div class="product-shot-copy">
+        <p class="eyebrow">Calculator demo</p>
+        <h2>Readable flows for real Windows applications.</h2>
+        <p>
+          The calculator sample demonstrates a complete UI automation flow: locate the app,
+          invoke buttons, wait for expected UI, and record execution progress.
+        </p>
+      </div>
+    </section>
+
+    <section id="gallery" class="section gallery-section">
+      <div class="section-heading">
+        <p class="eyebrow">Screenshots</p>
+        <h2>See Fleet Automate in action</h2>
+      </div>
+      <div class="gallery">
+        <figure>
+          <img src="assets/welcome.png" alt="Welcome page and recent projects">
+          <figcaption>Workspace with recent projects, logs, Action Box, and TestFlows.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/testflow.png" alt="TestFlow editor">
+          <figcaption>TestFlow editor with completed calculator automation steps.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/creating-action.png" alt="Action configuration dialog">
+          <figcaption>Focused action configuration for reliable UI targeting.</figcaption>
+        </figure>
+        <figure>
+          <img src="assets/ui-element-capturing.png" alt="UI element capturing workflow">
+          <figcaption>Element capture for identifying controls in running Windows apps.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="getting-started" class="getting-started">
+      <div class="section-heading compact">
+        <p class="eyebrow">Getting started</p>
+        <h2>Download the first Windows release.</h2>
+      </div>
+      <div class="command-card">
+        <p>Install Fleet Automate 0.1.0 for Windows x64:</p>
+        <code>website/releases/FleetAutomate-0.1.0-setup.exe</code>
+        <p>Build the desktop application:</p>
+        <code>dotnet build src/FleetAutomate.Application/FleetAutomate.csproj</code>
+        <p>Then open a sample project from:</p>
+        <code>src/SampleProjects/WindowsCalculatorCli/windows-calculator.testproj</code>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div>
+        <p class="eyebrow">Ready to automate?</p>
+        <h2>Start with the sample Windows Calculator project.</h2>
+        <p>Clone the repository, open the sample project, and inspect a working TestFlow end to end.</p>
+      </div>
+      <a class="button primary" href="releases/FleetAutomate-0.1.0-setup.exe">Download for Windows</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Fleet Automate is a visual Windows UI automation test tool built on .NET, WPF, and FlaUI.</p>
+    <p>Deploy this static site with no build command and <code>website</code> as the output directory.</p>
+  </footer>
+</body>
+</html>

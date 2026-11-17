@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Fleet Automate 是一款視覺化 Windows UI 自動化工具，用於不撰寫腳本地建立、執行與觀察 TestFlow。">
+  <title>Fleet Automate - 視覺化 Windows UI 自動化</title>
+  <link rel="alternate" hreflang="en" href="index.html">
+  <link rel="alternate" hreflang="zh-CN" href="zh-CN.html">
+  <link rel="alternate" hreflang="zh-TW" href="zh-TW.html">
+  <link rel="alternate" hreflang="ja" href="ja.html">
+  <link rel="alternate" hreflang="ko" href="ko.html">
+  <link rel="icon" href="assets/favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="#top" aria-label="Fleet Automate 首頁">
+        <span class="brand-mark"><img src="assets/app-icon.svg" alt="" aria-hidden="true"></span>
+        <span>Fleet Automate</span>
+      </a>
+      <div class="nav-links" aria-label="主導覽">
+        <a href="#features">功能</a><a href="#cli">CLI</a><a href="#workflow">流程</a><a href="#gallery">截圖</a>
+        <div class="language-switcher" aria-label="語言選擇"><span>繁體中文</span><div class="language-menu"><a href="index.html">English</a><a href="zh-CN.html">简体中文</a><a aria-current="page" href="zh-TW.html">繁體中文</a><a href="ja.html">日本語</a><a href="ko.html">한국어</a></div></div>
+        <a class="nav-cta" href="#getting-started">開始使用</a>
+      </div>
+    </nav>
+  </header>
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">面向 Windows 應用程式的所見即所得自動化</p>
+        <h1>以視覺化方式建立 Windows UI 自動化流程，並可靠執行。</h1>
+        <p class="hero-lede">Fleet Automate 透過視覺化 Action Box、結構化 Flow 編輯器、UI 元素擷取、即時執行狀態與可檢視日誌，協助你建立可重複執行的桌面自動化 TestFlow。</p>
+        <div class="hero-actions"><a class="button primary" href="releases/FleetAutomate-0.1.0-setup.exe">下載 Windows 版</a><a class="button secondary" href="#gallery">查看截圖</a></div>
+        <div class="hero-stats" aria-label="產品亮點"><div><strong>視覺化</strong><span>Action 建構器</span></div><div><strong>可觀察</strong><span>執行日誌</span></div><div><strong>Windows</strong><span>FlaUI 驅動</span></div></div>
+      </div>
+      <div class="hero-media"><div class="screen-frame large"><img src="assets/welcome.png" alt="Fleet Automate 主視窗，包含 Action Box、歡迎頁、輸出日誌和 TestFlows 面板"></div></div>
+    </section>
+    <section class="strip" aria-label="核心產品區域"><span>Action Box</span><span>TestFlows</span><span>元素擷取</span><span>復原與重做</span><span>即時日誌</span><span>CLI 會話</span><span>AI Agent 閉環</span><span>winauto-cli</span></section>
+    <section id="features" class="section">
+      <div class="section-heading"><p class="eyebrow">為什麼選擇 Fleet Automate</p><h2>面向桌面自動化的視覺化工作流</h2><p>從可重複使用的 Action 設計流程，透過聚焦的設定對話框配置每一步，並直接在 UI 中觀察執行狀態變化。</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="icon">01</span><h3>視覺化組合 TestFlow</h3><p>將自動化、系統、邏輯與流程控制 Action 拖入有序 TestFlow，不必撰寫膠水程式碼。</p></article>
+        <article class="feature-card"><span class="icon">02</span><h3>擷取真實 UI 元素</h3><p>使用內建元素擷取，從執行中的應用程式識別視窗、按鈕、輸入框和其他控制項。</p></article>
+        <article class="feature-card"><span class="icon">03</span><h3>觀察每次執行</h3><p>在同一個工作區追蹤 Action 狀態、輸出日誌、暫停/繼續行為與 Flow 結果。</p></article>
+        <article class="feature-card"><span class="icon">04</span><h3>保持流程可攜</h3><p>專案和 TestFlow 以檔案保存，便於檢查、版本管理、複製與分享。</p></article>
+      </div>
+    </section>
+    <section class="showcase"><div class="showcase-copy"><p class="eyebrow">從想法到執行</p><h2>用專用對話框配置自動化步驟。</h2><p>每個 Action 只暴露真正重要的屬性：識別符類型、搜尋範圍、重試行為、Invoke 模式與字典選項。目標是更快配置，並減少隱藏假設。</p></div><div class="screen-frame"><img src="assets/creating-action.png" alt="Fleet Automate 中 Click Element Action 的設定對話框"></div></section>
+    <section id="cli" class="section ai-cli-section">
+      <div class="section-heading"><p class="eyebrow">面向 AI 的 CLI 自動化</p><h2>打通從測試開發到自動修復的閉環。</h2><p>Fleet Automate 提供面向 AI Agent 時代的 CLI 能力。Agent 可以建立或修改 TestFlow、執行自動化、檢查結果，並在人類可觀察的 UI 中迭代修復。</p></div>
+      <div class="loop-grid"><article><span>1</span><h3>自動化測試開發</h3><p>Agent 可以透過命令列建立專案、加入 Flow、插入 Action 並更新 Action 屬性。</p></article><article><span>2</span><h3>自動化測試執行</h3><p>CLI 可以準備 Flow，並透過 UI 承載的命令會話讓桌面介面保持可觀察。</p></article><article><span>3</span><h3>結果分析</h3><p>結構化輸出包含執行模式、payload 和錯誤，便於 Agent 分析失敗原因。</p></article><article><span>4</span><h3>迭代修復</h3><p>Agent 可以細化 selector、更新 Action 設定、保存專案並重複執行，直到 TestFlow 通過。</p></article></div>
+      <div class="cli-layout"><div class="cli-copy"><h3>FleetAutomate CLI 使用方式</h3><p>當存在匹配專案的 Fleet Automate UI 會話時，CLI 會將命令路由到該會話；如果沒有找到 UI 會話，則降級到離線檔案模式。</p><ul><li><strong>UI 會話模式：</strong>在執行中的桌面應用程式內進行可見、可協作的編輯。</li><li><strong>離線模式：</strong>無需開啟 UI，直接更新專案和 TestFlow 檔案。</li><li><strong>輸出：</strong>支援 table 或 JSON，並包含 <code>mode</code> 欄位：<code>ui-session</code> 或 <code>offline</code>。</li></ul></div><div class="code-panel" aria-label="FleetAutomate CLI 範例"><pre><code>fleetctl testproj show --project D:\demo\sample.testproj
+fleetctl testproj create --project D:\demo\sample.testproj --name SampleProject
+fleetctl testflow create --project D:\demo\sample.testproj --name calculator_flow
+fleetctl testflow tree --project D:\demo\sample.testproj --flow calculator_flow
+fleetctl action add --project D:\demo\sample.testproj --flow calculator_flow --type LaunchApplicationAction
+fleetctl action set --project D:\demo\sample.testproj --flow calculator_flow --path 0 --property ExecutablePath --value calc.exe
+fleetctl action show --project D:\demo\sample.testproj --flow calculator_flow --path 0 --format json
+fleetctl project save --project D:\demo\sample.testproj</code></pre></div></div>
+      <div class="tool-card"><div><p class="eyebrow">輔助 CLI 工具</p><h3>winauto-cli 用於 UI 檢查與 selector 除錯</h3><p><code>winauto-cli</code> 是圍繞 <code>pywinauto</code> 的 Python CLI 工具，為 Windows 桌面自動化提供檢查、互動、斷言、截圖和路徑化 selector 優化能力。</p><p class="source-note">PyPI 頁面列出了 <code>list-windows</code>、<code>find</code>、<code>inspect</code>、<code>act</code>、<code>assert</code>、<code>screenshot</code> 等命令，需要 Python 3.10+。</p></div><div class="tool-actions"><code>pip install winauto-cli</code><a class="button secondary" href="https://pypi.org/project/winauto-cli/0.1.0/" target="_blank" rel="noreferrer">開啟 PyPI 頁面</a></div></div>
+    </section>
+    <section id="workflow" class="section workflow"><div class="section-heading compact"><p class="eyebrow">工作流</p><h2>擷取、配置、執行、檢查。</h2></div><div class="steps"><article><span>1</span><h3>擷取目標 UI</h3><p>擷取或輸入元素識別符，並在專案字典中維護可重複使用目標。</p></article><article><span>2</span><h3>建立 TestFlow</h3><p>組合點擊、等待、條件、循環、日誌、變數和系統 Action，形成可讀流程。</p></article><article><span>3</span><h3>可見地執行</h3><p>觀察完成狀態、輸出日誌、重試以及暫停/繼續行為，不丟失上下文。</p></article></div></section>
+    <section class="product-shot"><div class="screen-frame large"><img src="assets/testflow.png" alt="Fleet Automate TestFlow 編輯器，顯示已完成的計算器自動化 Action"></div><div class="product-shot-copy"><p class="eyebrow">計算器 Demo</p><h2>面向真實 Windows 應用程式的可讀流程。</h2><p>計算器範例展示完整 UI 自動化流程：定位應用程式、呼叫按鈕、等待預期 UI，並記錄執行進度。</p></div></section>
+    <section id="gallery" class="section gallery-section"><div class="section-heading"><p class="eyebrow">截圖</p><h2>查看 Fleet Automate 實際介面</h2></div><div class="gallery"><figure><img src="assets/welcome.png" alt="歡迎頁和最近專案"><figcaption>包含最近專案、日誌、Action Box 和 TestFlows 的工作區。</figcaption></figure><figure><img src="assets/testflow.png" alt="TestFlow 編輯器"><figcaption>包含已完成計算器自動化步驟的 TestFlow 編輯器。</figcaption></figure><figure><img src="assets/creating-action.png" alt="Action 設定對話框"><figcaption>用於可靠 UI 定位的聚焦 Action 設定。</figcaption></figure><figure><img src="assets/ui-element-capturing.png" alt="UI 元素擷取流程"><figcaption>從執行中的 Windows 應用程式識別控制項的元素擷取流程。</figcaption></figure></div></section>
+    <section id="getting-started" class="getting-started"><div class="section-heading compact"><p class="eyebrow">開始使用</p><h2>下載首個 Windows Release。</h2></div><div class="command-card"><p>安裝 Fleet Automate 0.1.0 Windows x64 版本：</p><code>website/releases/FleetAutomate-0.1.0-setup.exe</code><p>建置桌面應用程式：</p><code>dotnet build src/FleetAutomate.Application/FleetAutomate.csproj</code><p>然後開啟範例專案：</p><code>src/SampleProjects/WindowsCalculatorCli/windows-calculator.testproj</code></div></section>
+    <section class="cta"><div><p class="eyebrow">準備開始自動化？</p><h2>從 Windows Calculator 範例專案開始。</h2><p>複製倉庫、開啟範例專案，並端到端檢查一個可工作的 TestFlow。</p></div><a class="button primary" href="releases/FleetAutomate-0.1.0-setup.exe">下載 Windows 版</a></section>
+  </main>
+  <footer class="site-footer"><p>Fleet Automate 是基於 .NET、WPF 和 FlaUI 建構的視覺化 Windows UI 自動化測試工具。</p><p>此靜態站點可直接部署，輸出目錄為 <code>website</code>，無需建置命令。</p></footer>
+</body>
+</html>
